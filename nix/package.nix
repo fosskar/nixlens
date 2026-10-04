@@ -31,6 +31,7 @@ buildGoModule {
     root = ../.;
     fileset = lib.fileset.unions [
       ../go.mod
+      ../testdata
       (lib.fileset.fileFilter (file: file.hasExt "go") ../.)
     ];
   };

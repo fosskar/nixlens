@@ -93,8 +93,16 @@ func main() {
 	categoryGroupsFile := flag.String("category-groups", "", "hub: path to a JSON object mapping categories to the groups that see them")
 	memFile := flag.String("installed-memory-file", "", "file holding the installed memory in bytes")
 	writeMem := flag.String("write-installed-memory", "", "write the installed memory from smbios to this file and exit; needs root")
+	collectSmartTo := flag.String("collect-smart", "", "query smart data of all disks into this file and exit; needs raw disk access")
+	smartFile := flag.String("smart-file", "", "file with smart data written by -collect-smart")
 	flag.Parse()
 
+	if *collectSmartTo != "" {
+		if err := collectSmart(*collectSmartTo); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if *writeMem != "" {
 		if err := writeInstalledMemory(*writeMem); err != nil {
 			log.Fatal(err)
@@ -112,6 +120,7 @@ func main() {
 	}
 	cpu := newCPUSampler()
 	system := func() (System, error) { return readSystem(cpu, memInstalled) }
+	storage := func() (Storage, error) { return readStorage(*smartFile) }
 
 	local := http.NewServeMux()
 	local.HandleFunc("GET /api/local/system", func(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +128,7 @@ func main() {
 		writeJSON(w, s, err)
 	})
 	local.HandleFunc("GET /api/local/storage", func(w http.ResponseWriter, r *http.Request) {
-		s, err := readStorage()
+		s, err := storage()
 		writeJSON(w, s, err)
 	})
 	local.HandleFunc("GET /api/local/pool/{pool}", func(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +162,7 @@ func main() {
 				acc.adminGroups = append(acc.adminGroups, g)
 			}
 		}
-		h, err := newHub(system, *appsFile, token, peers, strings.Split(*categories, ","), acc)
+		h, err := newHub(system, storage, *appsFile, token, peers, strings.Split(*categories, ","), acc)
 		if err != nil {
 			log.Fatal(err)
 		}

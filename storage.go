@@ -56,10 +56,19 @@ type Member struct {
 	Errors uint64 `json:"errors"`
 }
 
-func readStorage() (Storage, error) {
+func readStorage(smartFile string) (Storage, error) {
 	disks, err := readDisks()
 	if err != nil {
 		return Storage{}, err
+	}
+	smart, err := readSmartFile(smartFile)
+	if err != nil {
+		return Storage{}, err
+	}
+	for i := range disks {
+		if s, ok := smart[smartKey(disks[i])]; ok {
+			disks[i].Smart = &s
+		}
 	}
 	pools, err := readZpools()
 	if err != nil {

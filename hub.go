@@ -25,6 +25,7 @@ type Machine struct {
 type hub struct {
 	self     string
 	system   func() (System, error)
+	storage  func() (Storage, error)
 	appsFile string
 	token    string
 	peers    map[string]string
@@ -49,7 +50,7 @@ func readPeers(path string) (map[string]string, error) {
 	return peers, nil
 }
 
-func newHub(system func() (System, error), appsFile, token string, peers map[string]string, categories []string, acc access) (*hub, error) {
+func newHub(system func() (System, error), storage func() (Storage, error), appsFile, token string, peers map[string]string, categories []string, acc access) (*hub, error) {
 	self, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -64,6 +65,7 @@ func newHub(system func() (System, error), appsFile, token string, peers map[str
 	return &hub{
 		self:     self,
 		system:   system,
+		storage:  storage,
 		appsFile: appsFile,
 		token:    token,
 		peers:    peers,
@@ -149,7 +151,7 @@ func (h *hub) machineData(w http.ResponseWriter, r *http.Request) {
 			s, err := h.system()
 			writeJSON(w, s, err)
 		case "storage":
-			s, err := readStorage()
+			s, err := h.storage()
 			writeJSON(w, s, err)
 		}
 		return

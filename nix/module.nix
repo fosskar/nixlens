@@ -90,6 +90,12 @@ in
       description = "Apps this machine provides, by display name.";
     };
 
+    smart.enable = lib.mkEnableOption ''
+      SMART health of all drives, collected every 30 minutes by a separate
+      oneshot with raw disk access. Sleeping drives are not woken; they keep
+      their last values
+    '';
+
     hub = {
       enable = lib.mkEnableOption "the nOS web UI, aggregating this machine with its peers";
 
@@ -152,6 +158,10 @@ in
             "-installed-memory-file"
             "/run/nos/installed-memory"
           ]
+          ++ lib.optionals cfg.smart.enable [
+            "-smart-file"
+            "/run/nos-smart/smart.json"
+          ]
           ++ lib.optionals (cfg.tokenFile != null) [
             "-token-file"
             "%d/token"
@@ -201,5 +211,51 @@ in
     };
 
     networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [ cfg.port ];
+
+    systemd.services.nos-smart = lib.mkIf cfg.smart.enable {
+      description = "nOS SMART collection";
+      path = [
+        pkgs.smartmontools
+        pkgs.util-linux
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${lib.getExe cfg.package} -collect-smart /run/nos-smart/smart.json";
+        RuntimeDirectory = "nos-smart";
+        RuntimeDirectoryMode = "0755";
+        RuntimeDirectoryPreserve = true;
+        # smartctl needs CAP_SYS_RAWIO for ata passthrough and CAP_SYS_ADMIN
+        # for nvme admin commands; everything else stays closed
+        CapabilityBoundingSet = [
+          "CAP_SYS_RAWIO"
+          "CAP_SYS_ADMIN"
+        ];
+        PrivateNetwork = true;
+        RestrictAddressFamilies = [ "AF_UNIX" ];
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        ProtectControlGroups = true;
+        ProtectKernelModules = true;
+        ProtectKernelLogs = true;
+        ProtectClock = true;
+        ProtectHostname = true;
+        LockPersonality = true;
+        MemoryDenyWriteExecute = true;
+        RestrictRealtime = true;
+        RestrictSUIDSGID = true;
+        RestrictNamespaces = true;
+        SystemCallArchitectures = "native";
+      };
+    };
+
+    systemd.timers.nos-smart = lib.mkIf cfg.smart.enable {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "2min";
+        OnUnitActiveSec = "30min";
+      };
+    };
   };
 }

@@ -23,6 +23,7 @@ type Disk struct {
 	Pool       string      `json:"pool,omitempty"`
 	Group      string      `json:"group,omitempty"`
 	Partitions []Partition `json:"partitions"`
+	Smart      *Smart      `json:"smart,omitempty"`
 }
 
 type lsblkOutput struct {

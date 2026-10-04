@@ -33,6 +33,7 @@ testers.runNixOSTest {
     networking.hostId = "8425e349";
     services.nos = {
       enable = true;
+      smart.enable = true;
       listenAddress = "::";
       openFirewall = true;
       inherit tokenFile;
@@ -91,6 +92,11 @@ testers.runNixOSTest {
     assert data["quota"] == 100 * 2**20 and data["snapshots"] == 1 and data["lastSnapshot"] > 0, data
     assert detail["properties"]["ashift"], detail
     hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/machines/agent/pool/-o")
+
+    agent.succeed("systemctl start nos-smart.service")
+    agent.succeed("test -s /run/nos-smart/smart.json")
+    storage = get(hub, "/api/machines/agent/storage")
+    assert all("smart" not in d for d in storage["disks"]), storage["disks"]
 
     apps = get(hub, "/api/apps")
     assert [(a["name"], a["machine"], a["category"], a["icon"]) for a in apps] == [

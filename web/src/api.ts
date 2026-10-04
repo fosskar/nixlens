@@ -48,6 +48,21 @@ export type Disk = {
   pool?: string
   group?: string
   partitions: Partition[]
+  smart?: Smart
+}
+
+export type Smart = {
+  passed: boolean | null
+  temperature: number
+  powerOnHours: number
+  reallocated: number
+  pending: number
+  uncorrectable: number
+  criticalWarning: number
+  percentageUsed: number
+  mediaErrors: number
+  standby: boolean
+  updated: number
 }
 
 export type Partition = {

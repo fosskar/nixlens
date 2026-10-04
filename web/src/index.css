@@ -162,6 +162,12 @@ body::before {
 .nos-led-warn { --nos-led: var(--color-warning); animation: nos-pulse 2.4s ease-in-out infinite; }
 .nos-led-error { --nos-led: var(--color-error); }
 .nos-led-unknown { --nos-led: var(--color-fg-dim); box-shadow: none; }
+/* after the state classes so a sleeping drive drops their glow and pulse */
+.nos-led-asleep {
+  opacity: 0.45;
+  box-shadow: none;
+  animation: none;
+}
 
 .nos-modal-backdrop {
   animation: nos-fade 200ms ease-out;

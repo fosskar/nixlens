@@ -12,6 +12,7 @@ import {
   type Storage,
   formatBytes,
   usePoll,
+  type Smart,
 } from './api'
 import { SectionTitle, Unavailable, card } from './widgets'
 
@@ -169,12 +170,29 @@ function poolDrives(pool: Pool, disks: Disk[]): Set<string> {
   return names
 }
 
-function driveHealth(disk: Disk, pools: Pool[]): Health {
-  return worst(
-    pools
-      .filter(redundant)
-      .flatMap((p) => p.groups.flatMap((g) => g.members.filter((m) => m.device === disk.name).map((m) => memberHealth(m, p)))),
+// failed overall assessment is red; sector problems, nvme warnings and
+// heavy wear are early signs and orange
+function smartHealth(smart?: Smart): Health | null {
+  if (!smart || smart.passed === null) return null
+  if (!smart.passed) return 'error'
+  if (
+    smart.reallocated > 0 ||
+    smart.pending > 0 ||
+    smart.uncorrectable > 0 ||
+    smart.criticalWarning > 0 ||
+    smart.mediaErrors > 0 ||
+    smart.percentageUsed >= 90
   )
+    return 'warn'
+  return 'ok'
+}
+
+function driveHealth(disk: Disk, pools: Pool[]): Health {
+  const members = pools
+    .filter(redundant)
+    .flatMap((p) => p.groups.flatMap((g) => g.members.filter((m) => m.device === disk.name).map((m) => memberHealth(m, p))))
+  const smart = smartHealth(disk.smart)
+  return worst(smart ? [...members, smart] : members)
 }
 
 function trailingNumber(name: string): string | undefined {
@@ -200,8 +218,13 @@ function driveTitle(disk: Disk): string {
     .join('\n')
 }
 
-function Led({ health, small }: { health: Health; small?: boolean }) {
-  return <span className={`nos-led nos-led-${health} ${small ? '!h-1.5 !w-1.5' : ''}`} />
+function Led({ health, small, asleep }: { health: Health; small?: boolean; asleep?: boolean }) {
+  return (
+    <span
+      title={asleep ? 'asleep' : undefined}
+      className={`nos-led nos-led-${health} ${small ? '!h-1.5 !w-1.5' : ''} ${asleep ? 'nos-led-asleep' : ''}`}
+    />
+  )
 }
 
 function TypeBadge({ children }: { children: ReactNode }) {
@@ -251,7 +274,7 @@ function DriveSlot({ disk, health, lit }: { disk: Disk; health: Health; lit?: bo
           <div className="h-px w-full bg-white/10" />
           <div className="h-px w-full bg-white/10" />
         </div>
-        <Led health={health} />
+        <Led health={health} asleep={disk.smart?.standby} />
       </div>
       <div className="w-full text-center leading-tight">
         {lines.map((line, i) => (
@@ -395,6 +418,49 @@ function ModalBody({ children }: { children: ReactNode }) {
     <div data-modal-body className="flex min-h-0 flex-col gap-6 overflow-y-auto p-5">
       {children}
     </div>
+  )
+}
+
+function SmartFacts({ smart, nvme }: { smart: Smart; nvme: boolean }) {
+  const health = smartHealth(smart)
+  const days = Math.floor(smart.powerOnHours / 24)
+  const rows: [string, ReactNode][] =
+    smart.passed === null
+      ? []
+      : [
+          [
+            'Status',
+            <span key="status" className={health === 'ok' ? 'text-success' : health === 'warn' ? 'text-warning' : 'text-error'}>
+              {smart.passed ? 'passed' : 'failed'}
+            </span>,
+          ],
+          ['Temperature', `${smart.temperature} °C`],
+          ['Power on', `${smart.powerOnHours.toLocaleString()} h · ${days.toLocaleString()} days`],
+          ...((nvme
+            ? [
+                ['Wear', `${smart.percentageUsed} %`],
+                ['Critical warning', smart.criticalWarning === 0 ? 'none' : `0x${smart.criticalWarning.toString(16)}`],
+                ['Media errors', String(smart.mediaErrors)],
+              ]
+            : [
+                ['Reallocated sectors', String(smart.reallocated)],
+                ['Pending sectors', String(smart.pending)],
+                ['Uncorrectable', String(smart.uncorrectable)],
+              ]) as [string, ReactNode][]),
+        ]
+  return (
+    <section>
+      <SectionTitle aside={smart.standby ? 'asleep · not woken' : smart.updated > 0 ? `read ${timeAgo(smart.updated)}` : undefined}>
+        SMART
+      </SectionTitle>
+      {rows.length > 0 ? (
+        <Facts rows={rows} />
+      ) : (
+        <div className={`${card} p-4 text-[12px] text-fg-muted`}>
+          The drive has been asleep since collection started; it is not woken up for SMART.
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -767,6 +833,7 @@ function DriveModal({
             ['Type', disk.rotational ? 'HDD (rotational)' : 'SSD'],
           ]}
         />
+        {disk.smart && <SmartFacts smart={disk.smart} nvme={disk.transport === 'nvme'} />}
         <section>
           <SectionTitle aside={`${partitions.length} ${partitions.length === 1 ? 'partition' : 'partitions'}`}>
             Partitions
