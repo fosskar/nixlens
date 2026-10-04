@@ -65,6 +65,7 @@
             pkgs.go
             pkgs.gopls
             pkgs.nodejs
+            pkgs.oxlint
             treefmtFor.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper
           ];
           env.CGO_ENABLED = 0;
