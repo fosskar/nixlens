@@ -159,6 +159,13 @@ func main() {
 			if _, err := fs.Stat(dist, strings.TrimPrefix(r.URL.Path, "/")); err != nil {
 				r.URL.Path = "/"
 			}
+			// vite names bundles by content hash; everything else (index.html,
+			// favicon) keeps its name across builds and must be revalidated
+			if strings.HasPrefix(r.URL.Path, "/assets/") {
+				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			} else {
+				w.Header().Set("Cache-Control", "no-cache")
+			}
 			files.ServeHTTP(w, r)
 		})
 	}
