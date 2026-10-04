@@ -13,9 +13,10 @@ testers.runNixOSTest {
       hub.enable = true;
       hub.peers.agent = "http://agent:8090";
     };
-    services.caddy = {
-      enable = true;
-      virtualHosts."jellyfin.example.com, http://grafana.example.com:3000".extraConfig = "respond ok";
+    services.nos.apps.Grafana = {
+      url = "http://grafana.example.com:3000";
+      icon = "grafana.svg";
+      category = "Monitoring";
     };
   };
 
@@ -33,21 +34,10 @@ testers.runNixOSTest {
       openFirewall = true;
       inherit tokenFile;
     };
-    services.nginx = {
-      enable = true;
-      virtualHosts."immich.example.com" = { };
-      virtualHosts.explorer.listen = [
-        {
-          addr = "0.0.0.0";
-          port = 8098;
-        }
-      ];
-      virtualHosts.internal.listen = [
-        {
-          addr = "127.0.0.1";
-          port = 8099;
-        }
-      ];
+    services.nos.apps.Immich = {
+      url = "https://immich.example.com";
+      category = "Media";
+      description = "photos";
     };
   };
 
@@ -73,7 +63,8 @@ testers.runNixOSTest {
 
     system = get(hub, "/api/machines/agent/system")
     assert system["hostname"] == "agent", system
-    assert system["memTotal"] > 0 and "swapTotal" in system, system
+    assert system["memTotal"] > 0 and system["swaps"] == [], system
+    assert 0 < system["cores"] <= system["cpus"], system
 
     assert system["memInstalled"] == 1024 * 2**20, system
 
@@ -88,11 +79,9 @@ testers.runNixOSTest {
     assert pooled["vdb"] == "testpool" and pooled["vda"] is None, pooled
 
     apps = get(hub, "/api/apps")
-    assert [(a["name"], a["machine"], a["url"]) for a in apps] == [
-      ("explorer", "agent", "http://agent:8098"),
-      ("grafana", "hub", "http://grafana.example.com:3000"),
-      ("immich", "agent", "https://immich.example.com"),
-      ("jellyfin", "hub", "https://jellyfin.example.com"),
+    assert [(a["name"], a["machine"], a["category"], a["icon"]) for a in apps] == [
+      ("Grafana", "hub", "Monitoring", "grafana.svg"),
+      ("Immich", "agent", "Media", ""),
     ], apps
 
     hub.succeed("curl -sf http://127.0.0.1:8090/ | grep -q '<title>nOS</title>'")

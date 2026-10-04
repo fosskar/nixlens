@@ -7,93 +7,15 @@
 let
   cfg = config.services.nos;
 
-  groups = matches: lib.concatMap (m: if builtins.isList m then m else [ ]) matches;
-
-  mkApp =
-    scheme: address:
-    let
-      parsed = builtins.match "([^:/]+)(:[0-9]+)?.*" address;
-      host = builtins.elemAt parsed 0;
-      port = builtins.elemAt parsed 1;
-    in
-    {
-      name = builtins.head (lib.splitString "." host);
-      url = "${scheme}://${host}${lib.optionalString (port != null) port}";
-    };
-
-  usable =
-    address:
-    address != ""
-    && !(lib.hasPrefix ":" address)
-    && !(lib.hasInfix "*" address)
-    && address != "_"
-    && builtins.match "localhost(:[0-9]+)?" address == null;
-
-  caddyApps =
-    let
-      vhosts = config.services.caddy.virtualHosts;
-      addresses = lib.concatLists (
-        lib.mapAttrsToList (
-          attrName: vhost: lib.concatMap (lib.splitString ",") ([ attrName ] ++ (vhost.serverAliases or [ ]))
-        ) vhosts
-      );
-      toApp =
-        raw:
-        let
-          trimmed = lib.trim raw;
-          http = lib.hasPrefix "http://" trimmed;
-          address = lib.removePrefix "https://" (lib.removePrefix "http://" trimmed);
-        in
-        lib.optional (usable address) (mkApp (if http then "http" else "https") address);
-    in
-    lib.concatMap toApp addresses;
-
-  # a vhost without tls options may still sit behind a tls-terminating proxy,
-  # so hostnames get https. vhosts named by a label rather than a hostname are
-  # reached through their non-loopback listen addresses instead
-  nginxApps = lib.concatLists (
-    lib.mapAttrsToList (
-      attrName: vhost:
-      let
-        hostNames = lib.filter (n: usable n && lib.hasInfix "." n) (
-          [ (if vhost.serverName == null then attrName else vhost.serverName) ] ++ vhost.serverAliases
-        );
-        wildcard = [
-          "0.0.0.0"
-          "::"
-          "[::]"
-        ];
-        loopback = addr: lib.hasPrefix "127." addr || addr == "::1" || addr == "[::1]";
-        listenApp = l: {
-          name = attrName;
-          url = "${if l.ssl then "https" else "http"}://${
-            if lib.elem l.addr wildcard then config.networking.fqdnOrHostName else l.addr
-          }${lib.optionalString (l.port != null) ":${toString l.port}"}";
-        };
-      in
-      if hostNames != [ ] then
-        map (mkApp "https") hostNames
-      else
-        map listenApp (lib.filter (l: !(loopback l.addr)) vhost.listen)
-    ) config.services.nginx.virtualHosts
-  );
-
-  traefikApps =
-    let
-      routers = config.services.traefik.dynamicConfigOptions.http.routers or { };
-      hostClauses = rule: groups (builtins.split "Host\\(([^)]*)\\)" rule);
-      hostsOf = clause: groups (builtins.split "`([^`]+)`" clause);
-      rules = lib.mapAttrsToList (_: router: router.rule or "") routers;
-    in
-    map (mkApp "https") (lib.concatMap (rule: lib.concatMap hostsOf (hostClauses rule)) rules);
-
-  apps = lib.sort (a: b: a.name < b.name) (
-    lib.unique (
-      lib.optionals config.services.caddy.enable caddyApps
-      ++ lib.optionals config.services.nginx.enable nginxApps
-      ++ lib.optionals config.services.traefik.enable traefikApps
-    )
-  );
+  apps = lib.mapAttrsToList (name: app: {
+    inherit name;
+    inherit (app)
+      url
+      icon
+      category
+      description
+      ;
+  }) cfg.apps;
 
   appsFile = pkgs.writeText "nos-apps.json" (builtins.toJSON apps);
 in
@@ -128,6 +50,44 @@ in
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = "File with a bearer token that agents require and the hub sends to its peers.";
+    };
+
+    apps = lib.mkOption {
+      type = lib.types.attrsOf (
+        lib.types.submodule {
+          options = {
+            url = lib.mkOption {
+              type = lib.types.str;
+              description = "URL the app opens.";
+            };
+            icon = lib.mkOption {
+              type = lib.types.str;
+              default = "";
+              example = "jellyfin.svg";
+              description = "Icon: a dashboard-icons file or name, `sh-<name>` (selfh.st), `mdi-<name>`, or a URL.";
+            };
+            category = lib.mkOption {
+              type = lib.types.str;
+              default = "Apps";
+              description = "Section the app is listed under.";
+            };
+            description = lib.mkOption {
+              type = lib.types.str;
+              default = "";
+              description = "Short description shown with the app.";
+            };
+          };
+        }
+      );
+      default = { };
+      example = {
+        Jellyfin = {
+          url = "https://jellyfin.example.com";
+          icon = "jellyfin.svg";
+          category = "Media";
+        };
+      };
+      description = "Apps this machine provides, by display name.";
     };
 
     hub = {

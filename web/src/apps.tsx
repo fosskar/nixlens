@@ -1,7 +1,19 @@
 import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import type { App } from './api'
 
-const iconBase = 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg'
+const dashboardIcons = 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons'
+
+type IconSource = { url: string; mask: boolean }
+
+function iconSource(icon: string): IconSource | null {
+  if (icon === '') return null
+  if (/^(https?:\/\/|\/)/.test(icon)) return { url: icon, mask: false }
+  if (icon.startsWith('sh-')) return { url: `https://cdn.jsdelivr.net/gh/selfhst/icons/svg/${icon.slice(3)}.svg`, mask: false }
+  if (icon.startsWith('mdi-')) return { url: `https://cdn.jsdelivr.net/npm/@mdi/svg/svg/${icon.slice(4)}.svg`, mask: true }
+  const ext = /\.(svg|png|webp)$/.exec(icon)?.[1]
+  if (ext) return { url: `${dashboardIcons}/${ext}/${icon}`, mask: false }
+  return { url: `${dashboardIcons}/svg/${icon}.svg`, mask: false }
+}
 
 const iconSizes = {
   lg: { box: 'h-16 w-16 rounded-2xl', img: 'h-10 w-10', letter: 'text-2xl' },
@@ -10,22 +22,105 @@ const iconSizes = {
 }
 
 export function AppIcon({ app, size = 'lg' }: { app: App; size?: keyof typeof iconSizes }) {
-  const [failed, setFailed] = useState(false)
+  const source = iconSource(app.icon)
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const s = iconSizes[size]
+  const failed = source === null || failedUrl === source.url
+  const onError = () => source && setFailedUrl(source.url)
   return (
     <div
       className={`${s.box} glass-tile grid place-items-center`}
     >
       {failed ? (
         <span className={`${s.letter} font-semibold text-fg-base`}>{app.name.charAt(0).toUpperCase()}</span>
+      ) : source.mask ? (
+        <>
+          <img src={source.url} alt="" hidden onError={onError} />
+          <span
+            className={`${s.img} bg-fg-base`}
+            style={{
+              maskImage: `url("${source.url}")`,
+              maskSize: 'contain',
+              maskRepeat: 'no-repeat',
+              maskPosition: 'center',
+            }}
+          />
+        </>
       ) : (
-        <img src={`${iconBase}/${app.name}.svg`} alt="" className={s.img} onError={() => setFailed(true)} />
+        <img src={source.url} alt="" className={`${s.img} object-contain`} onError={onError} />
       )}
     </div>
   )
 }
 
+function byCategory(apps: App[]): [string, App[]][] {
+  const groups = new Map<string, App[]>()
+  for (const app of apps) {
+    const list = groups.get(app.category)
+    if (list) list.push(app)
+    else groups.set(app.category, [app])
+  }
+  return [...groups].sort(([a], [b]) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)))
+}
+
+const collapsedKey = 'nos.collapsed'
+
+function loadCollapsed(): string[] {
+  const stored = localStorage.getItem(collapsedKey)
+  return stored ? (JSON.parse(stored) as string[]) : []
+}
+
 export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DOMRect) => void }) {
+  const [collapsed, setCollapsed] = useState(loadCollapsed)
+  const toggle = (category: string) => {
+    const next = collapsed.includes(category) ? collapsed.filter((c) => c !== category) : [...collapsed, category]
+    localStorage.setItem(collapsedKey, JSON.stringify(next))
+    setCollapsed(next)
+  }
+  return (
+    <div className="grid items-start gap-x-10 gap-y-8 lg:grid-cols-2">
+      {byCategory(apps).map(([category, list]) => {
+        const open = !collapsed.includes(category)
+        return (
+          <section key={category}>
+            <button
+              onClick={() => toggle(category)}
+              aria-expanded={open}
+              className="group mb-4 flex w-full items-center gap-3 px-1 text-[11px] font-semibold tracking-[0.12em] text-fg-muted uppercase transition-colors hover:text-fg-base"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className={`h-3 w-3 shrink-0 fill-none stroke-current transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+              {category || 'Other'}
+              <span className="text-fg-dim tabular-nums">{list.length}</span>
+              <span className="h-px flex-1 bg-gradient-to-r from-white/[0.10] to-transparent" />
+            </button>
+            <div
+              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+            >
+              <div className={open ? '' : 'overflow-hidden'}>
+                <AppSection apps={list} onOpen={onOpen} />
+              </div>
+            </div>
+          </section>
+        )
+      })}
+    </div>
+  )
+}
+
+function appTitle(app: App): string {
+  const title = `${app.name} on ${app.machine}${app.frameable ? '' : ' (opens in a new tab)'}`
+  return app.description ? `${title}\n${app.description}` : title
+}
+
+function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DOMRect) => void }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-y-6">
       {apps.map((app) => (
@@ -34,7 +129,7 @@ export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from
           onClick={(e: MouseEvent<HTMLButtonElement>) =>
             onOpen(app, (e.currentTarget.firstElementChild ?? e.currentTarget).getBoundingClientRect())
           }
-          title={`${app.name} on ${app.machine}${app.frameable ? '' : ' (opens in a new tab)'}`}
+          title={appTitle(app)}
           className="group flex flex-col items-center gap-2.5 transition-transform duration-300 ease-out hover:-translate-y-1 active:scale-95"
         >
           <div className="relative">
@@ -67,19 +162,19 @@ export function Dock({
 }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center">
-      <div className="glass-strong pointer-events-auto flex items-end gap-2 rounded-[26px] px-3 pt-2 pb-1.5">
+      <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-[26px] p-2.5">
         <button
           onClick={onHome}
           title="Home"
-          className={`mb-2 grid h-11 w-11 place-items-center rounded-xl border transition hover:-translate-y-1 ${active === null ? 'glass-accent text-accent-cyan' : 'glass-tile text-fg-base'}`}
+          className={`grid h-11 w-11 place-items-center rounded-xl border transition hover:-translate-y-1 ${active === null ? 'glass-accent text-accent-cyan' : 'glass-tile text-fg-base'}`}
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
             <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v6H4zM14 15h6v6h-6z" />
           </svg>
         </button>
-        {open.length > 0 && <div className="mx-1 mb-1.5 h-8 w-px self-center bg-white/[0.12]" />}
+        {open.length > 0 && <div className="mx-1 h-8 w-px bg-white/[0.12]" />}
         {open.map((app) => (
-          <div key={app.url} data-dock={app.url} className="group relative flex flex-col items-center">
+          <div key={app.url} data-dock={app.url} className="group relative">
             <button
               onClick={() => onSelect(app)}
               title={`${app.name} on ${app.machine}`}
@@ -95,7 +190,7 @@ export function Dock({
               ×
             </button>
             <span
-              className={`mt-1 h-1 rounded-full transition-all ${active === app.url ? 'w-3 bg-accent-cyan shadow-[0_0_6px_var(--color-accent-cyan)]' : 'w-1 bg-fg-muted'}`}
+              className={`absolute -bottom-2 left-1/2 h-1 -translate-x-1/2 rounded-full transition-all ${active === app.url ? 'w-3 bg-accent-cyan shadow-[0_0_6px_var(--color-accent-cyan)]' : 'w-1 bg-fg-muted'}`}
             />
           </div>
         ))}

@@ -123,7 +123,7 @@ func (h *hub) machines(w http.ResponseWriter, r *http.Request) {
 
 func (h *hub) machineData(w http.ResponseWriter, r *http.Request) {
 	name, kind := r.PathValue("name"), r.PathValue("kind")
-	if kind != "system" && kind != "disks" && kind != "storage" {
+	if kind != "system" && kind != "storage" {
 		http.NotFound(w, r)
 		return
 	}
@@ -132,9 +132,6 @@ func (h *hub) machineData(w http.ResponseWriter, r *http.Request) {
 		case "system":
 			s, err := h.system()
 			writeJSON(w, s, err)
-		case "disks":
-			d, err := readDisks()
-			writeJSON(w, d, err)
 		case "storage":
 			s, err := readStorage()
 			writeJSON(w, s, err)
@@ -197,11 +194,23 @@ func (h *hub) apps(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
-	sort.Slice(all, func(i, j int) bool {
+	// self sorts first among equal urls, so dedup keeps the hub's own entry
+	sort.SliceStable(all, func(i, j int) bool {
 		if all[i].Name != all[j].Name {
 			return all[i].Name < all[j].Name
 		}
+		if (all[i].Machine == h.self) != (all[j].Machine == h.self) {
+			return all[i].Machine == h.self
+		}
 		return all[i].Machine < all[j].Machine
 	})
-	writeJSON(w, all, nil)
+	seen := map[string]bool{}
+	apps := make([]App, 0, len(all))
+	for _, a := range all {
+		if !seen[a.URL] {
+			seen[a.URL] = true
+			apps = append(apps, a)
+		}
+	}
+	writeJSON(w, apps, nil)
 }

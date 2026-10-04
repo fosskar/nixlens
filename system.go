@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,12 +18,19 @@ type System struct {
 	UptimeSec    float64    `json:"uptimeSec"`
 	Load         [3]float64 `json:"load"`
 	CPUs         int        `json:"cpus"`
+	Cores        int        `json:"cores"`
 	CPUPercent   float64    `json:"cpuPercent"`
 	MemInstalled uint64     `json:"memInstalled"`
 	MemTotal     uint64     `json:"memTotal"`
 	MemAvailable uint64     `json:"memAvailable"`
-	SwapTotal    uint64     `json:"swapTotal"`
-	SwapFree     uint64     `json:"swapFree"`
+	Swaps        []Swap     `json:"swaps"`
+}
+
+type Swap struct {
+	Device string `json:"device"`
+	Kind   string `json:"kind"`
+	Size   uint64 `json:"size"`
+	Used   uint64 `json:"used"`
 }
 
 func readTrimmed(path string) (string, error) {
@@ -65,9 +73,13 @@ func readSystem(cpu *cpuSampler, memInstalled uint64) (System, error) {
 	}
 	s.MemTotal = mem["MemTotal"]
 	s.MemAvailable = mem["MemAvailable"]
-	s.SwapTotal = mem["SwapTotal"]
-	s.SwapFree = mem["SwapFree"]
+	if s.Swaps, err = readSwaps(); err != nil {
+		return s, err
+	}
 	s.CPUs, s.CPUPercent = cpu.get()
+	if s.Cores, err = physicalCores(); err != nil {
+		return s, err
+	}
 	return s, nil
 }
 
@@ -105,8 +117,12 @@ type cpuSampler struct {
 }
 
 func newCPUSampler() *cpuSampler {
-	c := &cpuSampler{}
-	go c.run()
+	idle, total, cpus, err := readProcStat()
+	if err != nil {
+		panic(err)
+	}
+	c := &cpuSampler{cpus: cpus}
+	go c.run(idle, total)
 	return c
 }
 
@@ -116,11 +132,7 @@ func (c *cpuSampler) get() (int, float64) {
 	return c.cpus, c.percent
 }
 
-func (c *cpuSampler) run() {
-	prevIdle, prevTotal, _, err := readProcStat()
-	if err != nil {
-		panic(err)
-	}
+func (c *cpuSampler) run(prevIdle, prevTotal uint64) {
 	for range time.Tick(2 * time.Second) {
 		idle, total, cpus, err := readProcStat()
 		if err != nil {
@@ -162,4 +174,57 @@ func readProcStat() (idle, total uint64, cpus int, err error) {
 		}
 	}
 	return idle, total, cpus, sc.Err()
+}
+
+// threads sharing a core report the same package and core id
+func physicalCores() (int, error) {
+	dirs, err := filepath.Glob("/sys/devices/system/cpu/cpu[0-9]*/topology")
+	if err != nil {
+		return 0, err
+	}
+	cores := map[[2]string]bool{}
+	for _, d := range dirs {
+		pkg, err := readTrimmed(filepath.Join(d, "physical_package_id"))
+		if err != nil {
+			return 0, err
+		}
+		core, err := readTrimmed(filepath.Join(d, "core_id"))
+		if err != nil {
+			return 0, err
+		}
+		cores[[2]string{pkg, core}] = true
+	}
+	return len(cores), nil
+}
+
+// /proc/swaps types are partition or file; zram devices report as partitions
+func readSwaps() ([]Swap, error) {
+	f, err := os.Open("/proc/swaps")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	swaps := []Swap{}
+	sc := bufio.NewScanner(f)
+	sc.Scan()
+	for sc.Scan() {
+		fields := strings.Fields(sc.Text())
+		if len(fields) < 4 {
+			return nil, fmt.Errorf("parse /proc/swaps: %q", sc.Text())
+		}
+		size, err := strconv.ParseUint(fields[2], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("parse /proc/swaps: %w", err)
+		}
+		used, err := strconv.ParseUint(fields[3], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("parse /proc/swaps: %w", err)
+		}
+		kind := fields[1]
+		if strings.HasPrefix(fields[0], "/dev/zram") {
+			kind = "zram"
+		}
+		swaps = append(swaps, Swap{Device: fields[0], Kind: kind, Size: size * 1024, Used: used * 1024})
+	}
+	return swaps, sc.Err()
 }

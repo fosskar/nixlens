@@ -14,11 +14,19 @@ export type System = {
   uptimeSec: number
   load: [number, number, number]
   cpus: number
+  cores: number
   cpuPercent: number
   memTotal: number
   memAvailable: number
-  swapTotal: number
-  swapFree: number
+  memInstalled: number
+  swaps: Swap[]
+}
+
+export type Swap = {
+  device: string
+  kind: 'zram' | 'partition' | 'file' | string
+  size: number
+  used: number
 }
 
 export type Disk = {
@@ -29,6 +37,47 @@ export type Disk = {
   serial: string
   transport: string
   rotational: boolean
+  pool?: string
+  group?: string
+}
+
+export type PoolMember = {
+  device: string
+  path: string
+  state: string
+  errors: number
+}
+
+export type PoolGroup = {
+  name: string
+  layout: string
+  class: string
+  state: string
+  members: PoolMember[]
+}
+
+export type PoolScan = {
+  function: string
+  state: string
+  end: number
+  errors: number
+}
+
+export type Pool = {
+  name: string
+  kind: string
+  state: string
+  raw: number
+  usable: number
+  used: number
+  available: number
+  scan?: PoolScan
+  groups: PoolGroup[]
+}
+
+export type Storage = {
+  pools: Pool[]
+  disks: Disk[]
 }
 
 export type App = {
@@ -36,6 +85,9 @@ export type App = {
   url: string
   machine: string
   frameable: boolean
+  icon: string
+  category: string
+  description: string
 }
 
 export type Poll<T> = { data?: T; error?: string }

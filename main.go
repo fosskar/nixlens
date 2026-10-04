@@ -17,10 +17,13 @@ import (
 var webDist embed.FS
 
 type App struct {
-	Name      string `json:"name"`
-	URL       string `json:"url"`
-	Machine   string `json:"machine,omitempty"`
-	Frameable bool   `json:"frameable"`
+	Name        string `json:"name"`
+	URL         string `json:"url"`
+	Icon        string `json:"icon"`
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	Machine     string `json:"machine,omitempty"`
+	Frameable   bool   `json:"frameable"`
 }
 
 func writeJSON(w http.ResponseWriter, v any, err error) {
@@ -110,10 +113,6 @@ func main() {
 	local.HandleFunc("GET /api/local/system", func(w http.ResponseWriter, r *http.Request) {
 		s, err := system()
 		writeJSON(w, s, err)
-	})
-	local.HandleFunc("GET /api/local/disks", func(w http.ResponseWriter, r *http.Request) {
-		d, err := readDisks()
-		writeJSON(w, d, err)
 	})
 	local.HandleFunc("GET /api/local/storage", func(w http.ResponseWriter, r *http.Request) {
 		s, err := readStorage()

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { type App as AppEntry, type Disk, type Machine, type System, usePoll } from './api'
+import { type App as AppEntry, type Machine, type Storage, type System, usePoll } from './api'
 import { AppGrid, AppWindow, Dock, windowMargin } from './apps'
 import { DrivesWidget, MachineSwitcher, SystemWidget, glass } from './widgets'
 
@@ -36,7 +36,7 @@ export default function App() {
   const selected = (machines.find((m) => m.name === stored) ?? machines.find((m) => m.self))?.name
   const base = selected ? `/api/machines/${encodeURIComponent(selected)}` : null
   const system = usePoll<System>(base && `${base}/system`, 3000)
-  const disks = usePoll<Disk[]>(base && `${base}/disks`, 30000)
+  const storage = usePoll<Storage>(base && `${base}/storage`, 30000)
 
   const selectMachine = (name: string) => {
     localStorage.setItem(machineKey, name)
@@ -111,7 +111,7 @@ export default function App() {
         aria-hidden={active !== null}
       >
         <aside
-          className={`${glass} m-3 flex flex-col gap-7 p-4 md:fixed md:inset-y-3 md:left-3 md:m-0 md:w-80 md:overflow-y-auto md:pb-6`}
+          className={`${glass} m-3 flex flex-col gap-7 p-4 md:fixed md:inset-y-3 md:left-3 md:m-0 md:w-[22rem] md:overflow-y-auto md:pb-6`}
         >
           <div className="flex items-center gap-2.5 px-1 pt-1">
             <img src="/favicon.svg" alt="" className="h-7 w-7 drop-shadow-[0_2px_8px_rgb(22_160_133/0.45)]" />
@@ -125,13 +125,13 @@ export default function App() {
           {selected && (
             <>
               <SystemWidget poll={system} />
-              <DrivesWidget poll={disks} />
+              <DrivesWidget poll={storage} />
             </>
           )}
         </aside>
 
         <main
-          className={`px-6 pt-10 pb-32 transition-transform duration-300 md:ml-[21.5rem] md:pt-16 ${active ? 'scale-[0.985]' : ''}`}
+          className={`px-6 pt-10 pb-32 transition-transform duration-300 md:ml-[23.5rem] md:pt-16 ${active ? 'scale-[0.985]' : ''}`}
         >
           <div className="mx-auto max-w-5xl">
             <header className="mb-10 text-center">
