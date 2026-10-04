@@ -190,7 +190,7 @@ func (h *hub) machines(w http.ResponseWriter, r *http.Request) {
 
 func (h *hub) machineData(w http.ResponseWriter, r *http.Request) {
 	kind := r.PathValue("kind")
-	if kind != "system" && kind != "storage" {
+	if kind != "system" && kind != "storage" && kind != "network" {
 		http.NotFound(w, r)
 		return
 	}

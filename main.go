@@ -105,6 +105,10 @@ func main() {
 		s, err := readStorage(*smartFile)
 		writeJSON(w, s, err)
 	})
+	local.HandleFunc("GET /api/local/network", func(w http.ResponseWriter, r *http.Request) {
+		n, err := readNetwork()
+		writeJSON(w, n, err)
+	})
 	local.HandleFunc("GET /api/local/pool/{pool}", func(w http.ResponseWriter, r *http.Request) {
 		d, err := poolDetail(r.PathValue("pool"))
 		if errors.Is(err, errUnknownPool) {

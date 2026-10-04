@@ -118,6 +118,15 @@ testers.runNixOSTest {
 
     assert system["memInstalled"] == 1024 * 2**20, system
 
+    agent.succeed("ip link add nosbr0 type bridge && ip tuntap add nostap0 mode tap && ip link set nostap0 master nosbr0")
+    network = {i["name"]: i for i in get(hub, "/api/machines/agent/network")}
+    assert "lo" not in network, network
+    eth1 = network["eth1"]
+    assert eth1["kind"] == "ethernet" and eth1["up"] and eth1["driver"] == "virtio_net", eth1
+    assert any(a.startswith("192.168.1.") for a in eth1["addresses"]), eth1
+    assert network["nosbr0"]["kind"] == "bridge", network
+    assert network["nostap0"]["kind"] == "tap" and network["nostap0"]["master"] == "nosbr0", network
+
     agent.succeed("zpool create -f testpool mirror /dev/vdb /dev/vdc")
     storage = get(hub, "/api/machines/agent/storage")
     [pool] = [p for p in storage["pools"] if p["kind"] == "zfs"]
