@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useEffectEvent, useId, useRef, useState } from 'react'
 import type { Me } from './api'
 import { type Accent, accents, resetPrefs, setPrefs, usePrefs } from './prefs'
 
@@ -138,22 +138,25 @@ function PreferencesPanel({ onClose }: { onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const titleId = useId()
 
+  // runs once: every preference change re-renders the page, and moving focus
+  // to the panel again would end a drag on the slider
+  const onKey = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key === 'Escape') onClose()
+  })
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
     panel.current?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
     document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('keydown', onKey)
       previous?.focus()
     }
-  }, [onClose])
+  }, [])
 
   return (
     <div
-      className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-[2px]"
+      // no dimming or blur: preferences preview live on the page behind
+      className="fixed inset-0 z-[70]"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
