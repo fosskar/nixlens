@@ -221,9 +221,9 @@ nix develop
 
 # backend
 go test ./...
-go build -o nos . && ./nos -hub
+go build -o nos ./cmd/nos && ./nos -hub
 
-# frontend with hot reload, proxying /api to a hub on 127.0.0.1:7480
+# frontend dev server, reloading on change and proxying /api to a hub on 127.0.0.1:7480
 cd web && npm install && npm run dev
 
 # two-node NixOS VM test: mTLS, ZFS, SMART, network, groups and apps
