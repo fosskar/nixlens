@@ -47,9 +47,12 @@ in
     };
 
     tokenFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
+      # a string, not a path: a path literal would copy the secret into the
+      # world-readable nix store
+      type = lib.types.nullOr lib.types.str;
       default = null;
-      description = "File with a bearer token that agents require and the hub sends to its peers.";
+      example = "/run/secrets/nos-token";
+      description = "Absolute path of a file with a bearer token that agents require and the hub sends to its peers.";
     };
 
     apps = lib.mkOption {
@@ -140,6 +143,23 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion =
+          !cfg.hub.enable
+          || lib.elem cfg.listenAddress [
+            "127.0.0.1"
+            "::1"
+            "localhost"
+          ];
+        message = "services.nos.hub trusts the Remote-* headers of a reverse proxy, so services.nos.listenAddress must be a loopback address";
+      }
+      {
+        assertion = cfg.tokenFile == null || lib.hasPrefix "/" cfg.tokenFile;
+        message = "services.nos.tokenFile must be an absolute path";
+      }
+    ];
+
     systemd.services.nos = {
       description = "nOS dashboard";
       wantedBy = [ "multi-user.target" ];

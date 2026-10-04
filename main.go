@@ -145,7 +145,7 @@ func main() {
 	})
 
 	mux := http.NewServeMux()
-	mux.Handle("GET /api/local/", requireToken(token, local))
+	localHandler := requireToken(token, local)
 
 	if *hub {
 		peers, err := readPeers(*peersFile)
@@ -167,6 +167,8 @@ func main() {
 			log.Fatal(err)
 		}
 		h.register(mux)
+		// without a token the hub's own /api/local/ would bypass adminGroups
+		localHandler = acc.adminOnly(localHandler.ServeHTTP)
 
 		dist, err := fs.Sub(webDist, "web/dist")
 		if err != nil {
@@ -187,6 +189,8 @@ func main() {
 			files.ServeHTTP(w, r)
 		})
 	}
+
+	mux.Handle("GET /api/local/", localHandler)
 
 	log.Printf("listening on %s (hub: %t)", *listen, *hub)
 	log.Fatal(http.ListenAndServe(*listen, mux))

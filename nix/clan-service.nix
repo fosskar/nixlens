@@ -8,6 +8,10 @@
     `agent` machines report their state; the `hub` serves the web UI on
     loopback (put an authenticating reverse proxy in front) and reaches each
     agent at `<machine>.<meta.domain>`. A hub machine needs no agent role.
+
+    The hub sends the shared token to agents over plain http, so that
+    domain must resolve over an encrypted, authenticated network such as
+    yggdrasil or wireguard.
   '';
 
   roles.agent = {

@@ -15,6 +15,11 @@ import (
 	"time"
 )
 
+const (
+	maxPeerResponse = 16 << 20
+	maxFrameProbes  = 8
+)
+
 type Machine struct {
 	Name   string `json:"name"`
 	Self   bool   `json:"self"`
@@ -109,12 +114,15 @@ func (h *hub) fetchPeer(ctx context.Context, name, kind string) ([]byte, error) 
 		return nil, err
 	}
 	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
+	body, err := io.ReadAll(io.LimitReader(res.Body, maxPeerResponse+1))
 	if err != nil {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("%s: %s", name, res.Status)
+	}
+	if len(body) > maxPeerResponse {
+		return nil, fmt.Errorf("%s: response larger than %d bytes", name, maxPeerResponse)
 	}
 	return body, nil
 }
@@ -204,14 +212,6 @@ func (h *hub) apps(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
-	origin := requestOrigin(r)
-	for i := range all {
-		wg.Go(func() {
-			all[i].Frameable = h.frames.check(r.Context(), all[i].URL, origin)
-		})
-	}
-	wg.Wait()
-
 	// self sorts first among equal urls, so dedup keeps the hub's own entry
 	sort.SliceStable(all, func(i, j int) bool {
 		if ci, cj := h.categoryRank(all[i].Category), h.categoryRank(all[j].Category); ci != cj {
@@ -239,6 +239,18 @@ func (h *hub) apps(w http.ResponseWriter, r *http.Request) {
 			apps = append(apps, a)
 		}
 	}
+
+	// probe only what this user sees, a few at a time
+	origin := requestOrigin(r)
+	slots := make(chan struct{}, maxFrameProbes)
+	for i := range apps {
+		wg.Go(func() {
+			slots <- struct{}{}
+			defer func() { <-slots }()
+			apps[i].Frameable = h.frames.check(r.Context(), apps[i].URL, origin)
+		})
+	}
+	wg.Wait()
 	writeJSON(w, apps, nil)
 }
 

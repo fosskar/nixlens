@@ -11,7 +11,10 @@ import (
 	"time"
 )
 
-const frameCacheTTL = 10 * time.Minute
+const (
+	frameCacheTTL = 10 * time.Minute
+	frameCacheMax = 1000
+)
 
 type frameResult struct {
 	frameable bool
@@ -59,6 +62,9 @@ func (c *frameChecker) check(ctx context.Context, appURL, origin string) bool {
 		return cached.frameable
 	}
 
+	if u, err := url.Parse(appURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return false
+	}
 	frameable, err := c.probe(ctx, appURL, origin)
 	if err != nil {
 		// the hub may not reach an app the browser can (e.g. a .lan host),
@@ -67,7 +73,18 @@ func (c *frameChecker) check(ctx context.Context, appURL, origin string) bool {
 		frameable = true
 	}
 	c.mu.Lock()
-	c.cache[key] = frameResult{frameable: frameable, at: time.Now()}
+	// the origin comes from request headers, so keys are not fully under
+	// our control; expired entries go and the cache stays bounded
+	if len(c.cache) >= frameCacheMax {
+		for k, v := range c.cache {
+			if time.Since(v.at) >= frameCacheTTL {
+				delete(c.cache, k)
+			}
+		}
+	}
+	if len(c.cache) < frameCacheMax {
+		c.cache[key] = frameResult{frameable: frameable, at: time.Now()}
+	}
 	c.mu.Unlock()
 	return frameable
 }
