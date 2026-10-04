@@ -167,6 +167,9 @@ func collectSmart(path string) error {
 	if err != nil {
 		return err
 	}
+	// removes the temporary file if anything below fails; a no-op after the
+	// rename
+	defer os.Remove(tmp.Name())
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
 		return err

@@ -1,0 +1,7 @@
+version: '2'
+linters:
+  exclusions:
+    # unchecked Close on read-only files and response bodies, os.Remove in
+    # cleanup and print functions: errors there carry no information
+    presets:
+      - std-error-handling

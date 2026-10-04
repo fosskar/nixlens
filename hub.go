@@ -177,7 +177,9 @@ func (h *hub) proxy(w http.ResponseWriter, r *http.Request, name, path string) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
+	if _, err := w.Write(body); err != nil {
+		log.Printf("%s: write response: %v", name, err)
+	}
 }
 
 func (h *hub) apps(w http.ResponseWriter, r *http.Request) {

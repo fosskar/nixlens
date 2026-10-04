@@ -47,6 +47,6 @@ func FuzzParseSmartctl(f *testing.F) {
 		f.Add(out)
 	}
 	f.Fuzz(func(t *testing.T, out []byte) {
-		parseSmartctl(out)
+		_, _, _, _ = parseSmartctl(out)
 	})
 }
