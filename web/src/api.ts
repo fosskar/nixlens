@@ -16,6 +16,19 @@ export type Machine = {
   error: string
 }
 
+export type NetInterface = {
+  name: string
+  kind: 'ethernet' | 'wifi' | 'usb' | 'bond' | 'bridge' | 'vlan' | 'wireguard' | 'tun' | 'tap' | 'virtual' | string
+  up: boolean
+  state: string
+  speedMbps?: number
+  mac?: string
+  mtu: number
+  driver?: string
+  master?: string
+  addresses: string[]
+}
+
 export type System = {
   hostname: string
   nixosVersion: string

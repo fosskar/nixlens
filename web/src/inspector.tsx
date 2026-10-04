@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { type Storage, type System, usePoll } from './api'
+import { type NetInterface, type Storage, type System, usePoll } from './api'
 import { type Route, canGoBack, closeLayer, goBack, navigate } from './router'
 import { poolBays } from './health'
+import { NetworkWidget } from './network'
 import { DriveDetail, Modal, ModalBody, ModalHeader, ModalTitle, PoolDetail } from './storage'
 import { SectionTitle, SystemWidget, Unavailable } from './widgets'
 
@@ -16,6 +17,7 @@ export function Inspector({ route }: { route: Detail }) {
   const base = `/api/machines/${encodeURIComponent(machine)}`
   const system = usePoll<System>(`${base}/system`, 3000)
   const storagePoll = usePoll<Storage>(`${base}/storage`, 30000)
+  const network = usePoll<NetInterface[]>(`${base}/network`, 10000)
   const storage = storagePoll.data
   const target = route.kind === 'machine' ? null : `${route.kind}-${route.name}`
   const body = useRef<HTMLDivElement>(null)
@@ -45,6 +47,7 @@ export function Inspector({ route }: { route: Detail }) {
       <ModalBody>
         <div ref={body} className="flex flex-col gap-8">
           <SystemWidget poll={system} />
+          <NetworkWidget poll={network} />
           {!storage ? (
             <Unavailable error={storagePoll.error} className="h-48" />
           ) : (

@@ -1,0 +1,150 @@
+import type { NetInterface, Poll } from './api'
+import { Led } from './storage'
+import { SectionTitle, Unavailable, card } from './widgets'
+
+const kindLabels: Record<string, string> = {
+  ethernet: 'Ethernet',
+  wifi: 'Wi-Fi',
+  usb: 'USB Ethernet',
+  bond: 'Bond',
+  bridge: 'Bridge',
+  vlan: 'VLAN',
+  wireguard: 'WireGuard',
+  tun: 'Tunnel',
+  tap: 'Tap',
+  virtual: 'Virtual',
+}
+
+function speedLabel(mbps?: number): string {
+  if (!mbps) return ''
+  return mbps >= 1000 ? `${mbps / 1000}G` : `${mbps}M`
+}
+
+// link-local addresses say nothing about where a machine is reachable
+function shownAddresses(iface: NetInterface): string[] {
+  return iface.addresses.filter((a) => !a.startsWith('fe80:') && !a.startsWith('169.254.'))
+}
+
+function details(iface: NetInterface): string {
+  return [
+    iface.name,
+    iface.driver && `driver ${iface.driver}`,
+    iface.mac && `mac ${iface.mac}`,
+    `mtu ${iface.mtu}`,
+    iface.master && `in ${iface.master}`,
+    ...iface.addresses,
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+// an rj45 socket: the latch notch on top, gold contacts below it, the
+// speed on the body and the link led underneath
+function Port({ iface }: { iface: NetInterface }) {
+  return (
+    <div className="flex w-16 flex-col items-center gap-1.5" title={details(iface)}>
+      <div
+        className={`relative flex h-11 w-14 flex-col items-center rounded-md bg-bg-elevated/90 pt-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-white/10 ${iface.up ? '' : 'opacity-45'}`}
+      >
+        <span className="h-1.5 w-5 rounded-b-sm bg-black/70" />
+        <span className="mt-0.5 font-mono text-[10px] font-semibold text-fg-inverse">
+          {speedLabel(iface.speedMbps) || '—'}
+        </span>
+        <span className="nos-nvme-pins absolute bottom-1.5 h-1.5 w-9 rounded-[1px]" />
+      </div>
+      <Led health={iface.up ? 'ok' : 'unknown'} small />
+      <span className="w-full truncate text-center font-mono text-[9px] text-fg-muted">{iface.name}</span>
+    </div>
+  )
+}
+
+function Chip({ children, dim }: { children: string; dim?: boolean }) {
+  return (
+    <span
+      className={`rounded-md border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] ${dim ? 'text-fg-muted' : 'text-fg-base'}`}
+    >
+      {children}
+    </span>
+  )
+}
+
+// every ipv4 address, but one ipv6 address per kind (global, unique
+// local): slaac hands out a new temporary one every day; all are on hover
+function chipAddresses(iface: NetInterface): { shown: string[]; hidden: number } {
+  const all = shownAddresses(iface)
+  const v4 = all.filter((a) => !a.includes(':'))
+  const ula = all.find((a) => /^f[cd]/i.test(a))
+  const global = all.find((a) => a.includes(':') && !/^f[cd]/i.test(a))
+  const shown = [...v4, ...[global, ula].filter((a): a is string => a !== undefined)]
+  return { shown, hidden: all.length - shown.length }
+}
+
+function Connection({ iface, members }: { iface: NetInterface; members: NetInterface[] }) {
+  const { shown, hidden } = chipAddresses(iface)
+  return (
+    <div className={`${card} flex items-start gap-3 px-3.5 py-2.5`} title={details(iface)}>
+      <span className="pt-1">
+        <Led health={iface.up ? 'ok' : 'unknown'} small />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2 text-[12px]">
+          <span className="font-medium text-fg-inverse">{kindLabels[iface.kind] ?? iface.kind}</span>
+          {!iface.up && <span className="text-[11px] text-fg-dim">{iface.state}</span>}
+        </div>
+        <div className="mt-1 flex flex-wrap gap-1">
+          <Chip>{iface.name}</Chip>
+          {iface.speedMbps && <Chip dim>{speedLabel(iface.speedMbps)}</Chip>}
+          {shown.map((a) => (
+            <Chip key={a}>{a}</Chip>
+          ))}
+          {hidden > 0 && <Chip dim>{`+${hidden}`}</Chip>}
+          {members.length > 0 && <Chip dim>{`via ${members.map((m) => m.name).join(', ')}`}</Chip>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// physical sockets as ports; below them every connection the machine is
+// reachable on, which leaves out link-local-only devices such as a bmc's
+// usb network; bridge and bond members are named on their master
+export function NetworkWidget({ poll }: { poll: Poll<NetInterface[]> }) {
+  const ifaces = poll.data
+  if (!ifaces) {
+    return (
+      <section>
+        <SectionTitle>Network</SectionTitle>
+        <Unavailable error={poll.error} className="h-32" />
+      </section>
+    )
+  }
+  const ports = ifaces.filter((i) => i.kind === 'ethernet')
+  const hardware = ['ethernet', 'wifi', 'usb', 'bond']
+  const connections = ifaces
+    .filter((i) => !i.master && (shownAddresses(i).length > 0 || ifaces.some((m) => m.master === i.name)))
+    .sort((a, b) => Number(!hardware.includes(a.kind)) - Number(!hardware.includes(b.kind)))
+  const up = ports.filter((p) => p.up).length
+  return (
+    <section className={poll.error ? 'opacity-50' : ''} title={poll.error}>
+      <SectionTitle aside={ports.length > 0 ? `${up} of ${ports.length} ports linked` : undefined}>
+        Network
+      </SectionTitle>
+      <div className="flex flex-col gap-3">
+        {ports.length > 0 && (
+          <div className={`${card} nos-bay flex flex-wrap gap-2 p-3`}>
+            {ports.map((p) => (
+              <Port key={p.name} iface={p} />
+            ))}
+          </div>
+        )}
+        {connections.length > 0 && (
+          <div className="grid gap-2 lg:grid-cols-2">
+            {connections.map((c) => (
+              <Connection key={c.name} iface={c} members={ifaces.filter((i) => i.master === c.name)} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
