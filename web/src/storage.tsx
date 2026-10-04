@@ -23,7 +23,6 @@ import {
   redundant,
   resilvering,
   smartHealth,
-  stateHealth,
   worst,
 } from './health'
 import { ScrollArea } from './scroll'
@@ -464,25 +463,71 @@ function Facts({ rows }: { rows: [string, ReactNode][] }) {
   )
 }
 
-function UsageSummary({ pool }: { pool: Pool }) {
+// raw space of the drives a pool keeps its data on; zfs reports parity
+// for raidz but not the second half of a mirror, so it is summed here
+function rawCapacity(pool: Pool, disks: Disk[]): number {
+  return pool.groups
+    .filter((g) => g.class === '' || g.class === 'data')
+    .flatMap((g) => g.members)
+    .reduce((sum, member) => {
+      const disk = disks.find((d) => d.name === member.device)
+      const name = memberPartition(member, pool, disk)
+      const partition = disk?.partitions?.find((p) => p.name === name)
+      return sum + (partition?.size ?? disk?.size ?? 0)
+    }, 0)
+}
+
+const dotRows = 4
+const dotCount = 4 * 48
+
+// the drives' raw space as dots: used, free, and what redundancy takes
+function CapacityView({ pool, disks }: { pool: Pool; disks: Disk[] }) {
   const scan = scanLine(pool)
-  const percent = usedPercent(pool)
   if (!redundant(pool) && pool.state !== 'mounted') {
     return <div className={`${card} p-4 text-[12px] text-fg-muted`}>Not mounted; usage unavailable.</div>
   }
+  const raw = Math.max(rawCapacity(pool, disks), pool.usable)
+  const protection = raw - pool.usable
+  const usedDots = Math.round((dotCount * pool.used) / raw)
+  const protectionDots = Math.round((dotCount * protection) / raw)
+  const percent = usedPercent(pool)
+  const usedColor = percent >= 90 ? 'bg-error' : percent >= 80 ? 'bg-warning' : 'bg-accent-cyan'
+  const legend: [string, string, number][] = [
+    [usedColor, 'used', pool.used],
+    ['bg-accent-cyan/25', 'free', pool.available],
+    ...(protection > 0 ? ([['bg-accent-tertiary/60', 'protection', protection]] as [string, string, number][]) : []),
+  ]
   return (
-    <div className={`${card} p-4`}>
-      <div className="flex items-baseline justify-between text-[12px] tabular-nums">
-        <span className="text-fg-muted">
-          <span className="font-medium text-fg-inverse">{formatCapacity(pool.used)}</span> used of{' '}
-          <span className="font-medium text-fg-inverse">{formatCapacity(pool.usable)}</span>
-        </span>
-        <span className="font-mono text-fg-muted">{Math.round(percent)}%</span>
+    <div className={`${card} grid items-center gap-5 p-4 md:grid-cols-[auto_minmax(0,1fr)] md:gap-8`}>
+      <div>
+        <div className="text-3xl font-semibold tracking-tight text-fg-inverse tabular-nums">
+          {formatCapacity(pool.available)}
+        </div>
+        <div className="mt-0.5 text-[12px] text-fg-muted">available of {formatCapacity(pool.usable)}</div>
+        {scan && <div className={`mt-2 text-[11px] ${textStyles[scan.health]}`}>{scan.text}</div>}
       </div>
-      <UsageBar percent={percent} className="mt-2 h-2" />
-      <div className="mt-2 flex justify-between gap-3 text-[11px] text-fg-muted tabular-nums">
-        {scan && <span className={textStyles[scan.health]}>{scan.text}</span>}
-        <span className="ml-auto">{formatCapacity(pool.available)} free</span>
+      <div>
+        <div
+          className="grid grid-flow-col gap-[3px]"
+          style={{ gridTemplateRows: `repeat(${dotRows}, minmax(0, 1fr))` }}
+          role="img"
+          aria-label={`${formatCapacity(pool.used)} used, ${formatCapacity(pool.available)} free, ${formatCapacity(protection)} for protection`}
+        >
+          {Array.from({ length: dotCount }, (_, i) => (
+            <span
+              key={i}
+              className={`aspect-square rounded-[2px] ${i < usedDots ? usedColor : i >= dotCount - protectionDots ? 'bg-accent-tertiary/60' : 'bg-accent-cyan/25'}`}
+            />
+          ))}
+        </div>
+        <div className="mt-2.5 flex flex-wrap justify-end gap-x-4 gap-y-1 text-[11px] text-fg-muted tabular-nums">
+          {legend.map(([color, label, bytes]) => (
+            <span key={label} className="flex items-center gap-1.5">
+              <span className={`h-2 w-2 rounded-[2px] ${color}`} />
+              {label} <span className="font-mono text-fg-base">{formatCapacity(bytes)}</span>
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -540,40 +585,119 @@ function groupTitle(group: PoolGroup): string {
   return `${group.name} · ${group.class || 'data'}`
 }
 
+// how many member failures a vdev survives by its layout
+function tolerance(group: PoolGroup): number | null {
+  if (group.class === 'cache' || group.class === 'spare') return null
+  if (group.layout === 'mirror') return group.members.length - 1
+  const raidz = /^raidz(\d)?$/.exec(group.layout)
+  if (raidz) return Number(raidz[1] ?? 1)
+  return 0
+}
+
+// pips for the failures a vdev can still take, emptied by failing members
+function Tolerance({ group, pool }: { group: PoolGroup; pool: Pool }) {
+  const total = tolerance(group)
+  if (total === null) return null
+  const failing = group.members.filter((m) => memberHealth(m, pool) !== 'ok').length
+  const left = Math.max(total - failing, 0)
+  const health: Health = total === 0 ? 'unknown' : left === 0 ? 'error' : left < total ? 'warn' : 'ok'
+  const text =
+    total === 0
+      ? 'no redundancy'
+      : left === 0
+        ? 'no failure left'
+        : left < total
+          ? `can lose ${left} more`
+          : `can lose ${total} ${total === 1 ? 'drive' : 'drives'}`
+  return (
+    <span className={`flex items-center gap-1.5 text-[11px] ${textStyles[health]}`}>
+      {Array.from({ length: total }, (_, i) => (
+        <svg
+          key={i}
+          viewBox="0 0 16 16"
+          className={`h-3 w-3 ${i < left ? 'fill-current' : 'fill-none'} stroke-current`}
+        >
+          <path d="M8 1.5l5.5 2v4.2c0 3.3-2.3 5.6-5.5 6.8-3.2-1.2-5.5-3.5-5.5-6.8V3.5z" strokeWidth="1.3" />
+        </svg>
+      ))}
+      {text}
+    </span>
+  )
+}
+
+function MemberTile({
+  member,
+  pool,
+  disk,
+  onOpenDisk,
+}: {
+  member: PoolMember
+  pool: Pool
+  disk?: Disk
+  onOpenDisk: (name: string) => void
+}) {
+  const health = memberHealth(member, pool)
+  const state = member.device === '' ? 'missing' : member.state.toLowerCase()
+  const label = disk?.serial || member.device || 'missing'
+  const content = (
+    <>
+      {disk ? (
+        <DriveGlyph disk={disk} health={health} />
+      ) : (
+        <span className="grid h-14 w-9 place-items-center rounded-md border border-dashed border-error/60 text-error">
+          ?
+        </span>
+      )}
+      <span className="w-full truncate text-center font-mono text-[9px] text-fg-base">{label}</span>
+      {health !== 'ok' && (
+        <span className={`text-[9px] ${textStyles[health]}`}>
+          {member.errors > 0 ? `${member.errors} errors` : state}
+        </span>
+      )}
+    </>
+  )
+  const layout = 'flex w-[4.5rem] flex-col items-center gap-1 rounded-lg px-1 py-1.5'
+  const title = [disk?.model, memberPartition(member, pool, disk), member.state].filter(Boolean).join('\n')
+  if (!disk) return <div className={layout}>{content}</div>
+  return (
+    <button
+      type="button"
+      onClick={() => onOpenDisk(disk.name)}
+      title={title}
+      className={`${layout} outline-accent-cyan transition-colors hover:bg-white/[0.05] focus-visible:outline-2`}
+    >
+      {content}
+    </button>
+  )
+}
+
 function VdevTree({ pool, disks, onOpenDisk }: { pool: Pool; disks: Disk[]; onOpenDisk: (name: string) => void }) {
   const groups = pool.groups ?? []
   return (
     <section>
       <SectionTitle aside={`${groups.length} ${groups.length === 1 ? 'vdev' : 'vdevs'}`}>Layout</SectionTitle>
-      <div className="flex flex-col gap-3">
-        {groups.map((group) => {
-          const health = stateHealth(group.state)
-          return (
-            <div key={group.name} className={`${card} p-3`}>
-              <div className="flex items-center gap-2 px-1 text-[12px]">
-                <span className="font-mono font-semibold text-fg-inverse">{groupTitle(group)}</span>
-                <span className="text-[11px] text-fg-dim">
-                  {group.members.length} {group.members.length === 1 ? 'member' : 'members'}
-                </span>
-                <span className={`ml-auto text-[10px] font-semibold tracking-wide uppercase ${textStyles[health]}`}>
-                  {group.state}
-                </span>
-              </div>
-              <div className="mt-2 ml-2.5 flex flex-col border-l border-white/10 pl-3">
-                {group.members.map((member, i) => (
-                  <MemberRow
-                    key={member.device || member.path || i}
-                    member={member}
-                    pool={pool}
-                    disk={disks.find((d) => d.name === member.device)}
-                    showState
-                    onOpenDisk={onOpenDisk}
-                  />
-                ))}
-              </div>
+      <div className="flex flex-wrap gap-3">
+        {groups.map((group) => (
+          <div key={group.name} className={`${card} p-3`}>
+            <div className="flex items-center gap-3 px-1 text-[12px]">
+              <span className="font-mono font-semibold text-fg-inverse">{groupTitle(group)}</span>
+              <span className="ml-auto">
+                <Tolerance group={group} pool={pool} />
+              </span>
             </div>
-          )
-        })}
+            <div className="mt-2 flex flex-wrap items-end gap-1">
+              {group.members.map((member, i) => (
+                <MemberTile
+                  key={member.device || member.path || i}
+                  member={member}
+                  pool={pool}
+                  disk={disks.find((d) => d.name === member.device)}
+                  onOpenDisk={onOpenDisk}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   )
@@ -746,7 +870,7 @@ export function PoolDetail({
           <HealthPill pool={pool} />
         </span>
       </div>
-      <UsageSummary pool={pool} />
+      <CapacityView pool={pool} disks={disks} />
       {redundant(pool) ? (
         <VdevTree pool={pool} disks={disks} onOpenDisk={onOpenDisk} />
       ) : (
