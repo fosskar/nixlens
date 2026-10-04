@@ -59,8 +59,8 @@
   settings.formatter.oxlint = {
     command = pkgs.oxlint;
     includes = [
-      "web/src/*.ts"
-      "web/src/*.tsx"
+      "web/src/**/*.ts"
+      "web/src/**/*.tsx"
     ];
   };
 }

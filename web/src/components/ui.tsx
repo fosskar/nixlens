@@ -1,5 +1,57 @@
 import { type ReactNode, useId } from 'react'
-import { type Poll, type System, formatBytes } from './api'
+import { type Health } from '@/lib/health'
+
+export function Led({ health, small, asleep }: { health: Health; small?: boolean; asleep?: boolean }) {
+  return (
+    <span
+      title={asleep ? 'asleep' : undefined}
+      className={`nos-led nos-led-${health} ${small ? 'h-1.5 w-1.5' : ''} ${asleep ? 'nos-led-asleep' : ''}`}
+    />
+  )
+}
+
+export function TypeBadge({ children }: { children: ReactNode }) {
+  return (
+    <span className="shrink-0 rounded-md border border-white/10 bg-white/[0.05] px-1.5 py-px text-[10px] font-medium tracking-wide whitespace-nowrap text-fg-muted">
+      {children}
+    </span>
+  )
+}
+
+export function UsageBar({ percent, className }: { percent: number; className: string }) {
+  const fill =
+    percent >= 90
+      ? 'from-error/80 to-error'
+      : percent >= 80
+        ? 'from-warning/80 to-warning'
+        : 'from-accent to-accent-cyan'
+  return (
+    <div
+      className={`overflow-hidden rounded-full bg-white/[0.07] shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] ${className}`}
+    >
+      <div
+        className={`h-full rounded-full bg-gradient-to-r ${fill} shadow-[0_0_8px_color-mix(in_srgb,var(--color-accent-cyan)_40%,transparent)] transition-[width] duration-700 motion-reduce:transition-none`}
+        style={{ width: `${Math.min(percent, 100)}%` }}
+      />
+    </div>
+  )
+}
+
+export const linkTransition =
+  'transition-[opacity,background-color,border-color] duration-200 motion-reduce:transition-none'
+
+export function Facts({ rows }: { rows: [string, ReactNode][] }) {
+  return (
+    <dl className={`${card} grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 p-4 text-[12px]`}>
+      {rows.map(([term, value]) => (
+        <div key={term} className="contents">
+          <dt className="text-fg-muted">{term}</dt>
+          <dd className="min-w-0 truncate text-right font-mono text-fg-base">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
 
 export const glass = 'glass rounded-[28px]'
 
@@ -81,64 +133,6 @@ export function Ring({
         <div className="text-xs font-medium text-fg-base">{label}</div>
         <div className="text-[11px] whitespace-nowrap text-fg-muted tabular-nums">{detail}</div>
       </div>
-    </div>
-  )
-}
-
-function memoryDetail(system: System): string {
-  const total = system.memInstalled || system.memTotal
-  return `${formatBytes(system.memTotal - system.memAvailable, true)} / ${formatBytes(total, true)}`
-}
-
-function formatUptime(sec: number): string {
-  const d = Math.floor(sec / 86400)
-  const h = Math.floor((sec % 86400) / 3600)
-  return d > 0 ? `${d}d ${h}h` : `${h}h ${Math.floor((sec % 3600) / 60)}m`
-}
-
-export function SystemWidget({ poll }: { poll: Poll<System> }) {
-  const system = poll.data
-  return (
-    <div>
-      <SectionTitle aside={system && `up ${formatUptime(system.uptimeSec)}`}>System</SectionTitle>
-      {system ? (
-        <div
-          className={`${card} grid items-center gap-4 p-4 md:grid-cols-2 md:gap-8 ${poll.error ? 'opacity-50' : ''}`}
-          title={poll.error}
-        >
-          <div className="grid grid-cols-2 gap-3 md:order-last">
-            <Ring label="CPU" value={system.cpuPercent} detail={`${system.cores} cores / ${system.cpus} threads`} />
-            <Ring
-              label="Memory"
-              value={(100 * (system.memTotal - system.memAvailable)) / system.memTotal}
-              detail={memoryDetail(system)}
-            />
-          </div>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 border-t border-white/[0.07] pt-3 text-[11px] md:border-t-0 md:pt-0">
-            <dt className="text-fg-muted">NixOS</dt>
-            <dd className="truncate text-right font-mono text-fg-base tabular-nums">{system.nixosVersion}</dd>
-            <dt className="text-fg-muted">Kernel</dt>
-            <dd className="truncate text-right font-mono text-fg-base tabular-nums">{system.kernel}</dd>
-            <dt className="text-fg-muted">Load</dt>
-            <dd className="truncate text-right font-mono text-fg-base tabular-nums">
-              {system.load.map((l) => l.toFixed(2)).join('  ')}
-            </dd>
-            <dt className="text-fg-muted">Swap</dt>
-            <dd className="text-right font-mono text-fg-base tabular-nums">
-              {system.swaps.length === 0
-                ? 'none'
-                : system.swaps.map((s) => (
-                    <div key={s.device} className="truncate" title={s.device}>
-                      <span className="text-fg-muted">{s.kind}</span> {formatBytes(s.used, true)} /{' '}
-                      {formatBytes(s.size, true)}
-                    </div>
-                  ))}
-            </dd>
-          </dl>
-        </div>
-      ) : (
-        <Unavailable error={poll.error} className="h-48" />
-      )}
     </div>
   )
 }

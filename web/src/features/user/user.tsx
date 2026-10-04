@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useEffectEvent, useId, useRef, useState } from 'react'
-import type { Me } from './api'
-import { type Accent, accents, reducedMotion, resetPrefs, setPrefs, usePrefs } from './prefs'
+import { type Me } from '@/lib/api'
+import { type Accent, accents, reducedMotion, resetPrefs, setPrefs, usePrefs } from '@/lib/prefs'
 
 function initials(name: string): string {
   return name

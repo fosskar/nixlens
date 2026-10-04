@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { reducedMotion } from './prefs'
+import { reducedMotion } from '@/lib/prefs'
 
 function ScrollHint({
   direction,

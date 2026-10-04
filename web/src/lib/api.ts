@@ -45,7 +45,7 @@ export type System = {
   swaps: Swap[]
 }
 
-export type Swap = {
+type Swap = {
   device: string
   kind: 'zram' | 'partition' | 'file' | string
   size: number

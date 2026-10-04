@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react'
-import { type NetInterface, type Storage, type System, usePoll } from './api'
-import { type Route, canGoBack, closeLayer, goBack, navigate } from './router'
-import { poolBays } from './health'
-import { NetworkWidget } from './network'
-import { DriveDetail, Modal, ModalBody, ModalHeader, ModalTitle, PoolDetail } from './storage'
-import { SectionTitle, SystemWidget, Unavailable } from './widgets'
+import { Modal, ModalBody, ModalHeader, ModalTitle } from '@/components/modal'
+import { SectionTitle, Unavailable } from '@/components/ui'
+import { SystemWidget } from '@/features/inspector/system'
+import { NetworkWidget } from '@/features/network/network'
+import { DriveDetail } from '@/features/storage/drive-detail'
+import { PoolDetail } from '@/features/storage/pool-detail'
+import { type NetInterface, type Storage, type System, usePoll } from '@/lib/api'
+import { canGoBack, closeLayer, goBack, navigate, type Route } from '@/lib/router'
+import { poolBays } from '@/lib/storage'
 
 type Detail = Extract<Route, { kind: 'machine' | 'pool' | 'disk' }>
 

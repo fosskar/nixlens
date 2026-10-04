@@ -1,8 +1,9 @@
-import type { Disk, Machine, Poll, Pool, Storage, System } from './api'
-import { type Health, driveHealth, poolHealth } from './health'
-import { navigate } from './router'
-import { Led, PoolBays, type Target } from './storage'
-import { Ring, SectionTitle, Unavailable, card } from './widgets'
+import { card, Led, Ring, SectionTitle, Unavailable } from '@/components/ui'
+import { PoolBays } from '@/features/overview/pool-bays'
+import { type Disk, type Machine, type Poll, type Pool, type Storage, type System } from '@/lib/api'
+import { driveHealth, type Health, poolHealth } from '@/lib/health'
+import { navigate } from '@/lib/router'
+import { type Target } from '@/lib/storage'
 
 export type MachineOverview = Machine & { system?: System; storage?: Storage }
 

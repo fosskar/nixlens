@@ -1,5 +1,5 @@
 // health and capacity rules shared by the storage views and the overview
-import type { Disk, Pool, PoolMember, Smart, Storage } from './api'
+import { type Disk, type Pool, type PoolMember, type Smart } from '@/lib/api'
 
 export type Health = 'ok' | 'warn' | 'error' | 'unknown'
 
@@ -20,7 +20,7 @@ export function resilvering(pool: Pool): boolean {
   return pool.scan?.function === 'RESILVER' && pool.scan.state === 'SCANNING'
 }
 
-export function stateHealth(state: string): Health {
+function stateHealth(state: string): Health {
   const tokens = stateTokens(state)
   if (tokens.includes('unmounted')) return 'unknown'
   if (tokens.includes('degraded') || tokens.includes('recovering') || tokens.includes('resyncing')) return 'warn'
@@ -43,17 +43,6 @@ export function memberHealth(member: PoolMember, pool: Pool): Health {
 
 export function worst(healths: Health[]): Health {
   return healths.reduce<Health>((a, b) => (healthRank[b] > healthRank[a] ? b : a), 'ok')
-}
-
-// one decimal below 100 so pool capacities like "11.5 TB" keep their precision
-export function formatCapacity(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
-  let i = 0
-  while (bytes >= 1000 && i < units.length - 1) {
-    bytes /= 1000
-    i++
-  }
-  return `${bytes.toFixed(bytes < 100 && i > 0 ? 1 : 0)} ${units[i]}`
 }
 
 export function redundant(pool: Pool): boolean {
@@ -87,31 +76,17 @@ export function driveHealth(disk: Disk, pools: Pool[]): Health {
   return worst(smart ? [...members, smart] : members)
 }
 
-export type Bay = { pool: Pool; groups: { label: string; drives: Disk[] }[] }
+// tailwind classes per health, for pills and text
+export const pillStyles: Record<Health, string> = {
+  ok: 'border-success/30 bg-success/10 text-success',
+  warn: 'border-warning/35 bg-warning/10 text-warning',
+  error: 'border-error/35 bg-error/10 text-error',
+  unknown: 'border-white/10 bg-white/[0.04] text-fg-muted',
+}
 
-// drives grouped by the pool that keeps its data on them, and within it by
-// vdev. a log, cache or spare on a drive does not make it part of a pool,
-// and boot partitions are left out, so drives with only those are not
-// shown, nor are unused drives
-export function poolBays(storage: Storage): Bay[] {
-  const disks = storage.disks ?? []
-  const placed = new Set<string>()
-  const take = (keep: (d: Disk) => boolean) => {
-    const drives = disks.filter((d) => keep(d) && !placed.has(d.name))
-    drives.forEach((d) => placed.add(d.name))
-    return drives
-  }
-  return (storage.pools ?? [])
-    .filter((pool) => pool.kind !== 'vfat')
-    .map((pool) => {
-      const data = pool.groups.filter((g) => g.class === '' || g.class === 'data')
-      const groups = data.map((g) => {
-        const members = g.members.map((m) => m.device)
-        const drives = take((d) => members.includes(d.name)).sort(
-          (a, b) => members.indexOf(a.name) - members.indexOf(b.name),
-        )
-        return { label: g.layout && g.layout !== 'single' ? g.layout : g.name, drives }
-      })
-      return { pool, groups: groups.filter((g) => g.drives.length > 0) }
-    })
+export const textStyles: Record<Health, string> = {
+  ok: 'text-success',
+  warn: 'text-warning',
+  error: 'text-error',
+  unknown: 'text-fg-muted',
 }

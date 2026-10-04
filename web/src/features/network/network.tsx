@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import type { NetInterface, Poll } from './api'
-import { Led } from './storage'
-import { SectionTitle, Unavailable, card } from './widgets'
+import { card, Led, SectionTitle, Unavailable } from '@/components/ui'
+import { type NetInterface, type Poll } from '@/lib/api'
 
 const kindLabels: Record<string, string> = {
   ethernet: 'Ethernet',
