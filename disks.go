@@ -13,15 +13,16 @@ import (
 )
 
 type Disk struct {
-	Name       string `json:"name"`
-	ID         string `json:"id"`
-	Size       uint64 `json:"size"`
-	Model      string `json:"model"`
-	Serial     string `json:"serial"`
-	Transport  string `json:"transport"`
-	Rotational bool   `json:"rotational"`
-	Pool       string `json:"pool,omitempty"`
-	Group      string `json:"group,omitempty"`
+	Name       string      `json:"name"`
+	ID         string      `json:"id"`
+	Size       uint64      `json:"size"`
+	Model      string      `json:"model"`
+	Serial     string      `json:"serial"`
+	Transport  string      `json:"transport"`
+	Rotational bool        `json:"rotational"`
+	Pool       string      `json:"pool,omitempty"`
+	Group      string      `json:"group,omitempty"`
+	Partitions []Partition `json:"partitions"`
 }
 
 type lsblkOutput struct {

@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"sync"
@@ -75,6 +77,7 @@ func newHub(system func() (System, error), appsFile, token string, peers map[str
 func (h *hub) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/machines", h.access.adminOnly(h.machines))
 	mux.HandleFunc("GET /api/machines/{name}/{kind}", h.access.adminOnly(h.machineData))
+	mux.HandleFunc("GET /api/machines/{name}/pool/{pool}", h.access.adminOnly(h.poolDetail))
 	mux.HandleFunc("GET /api/apps", h.apps)
 	mux.HandleFunc("GET /api/me", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, h.access.me(r), nil)
@@ -246,4 +249,29 @@ func (h *hub) categoryRank(category string) int {
 		return len(h.order) + 1
 	}
 	return len(h.order)
+}
+
+func (h *hub) poolDetail(w http.ResponseWriter, r *http.Request) {
+	name, pool := r.PathValue("name"), r.PathValue("pool")
+	if name == h.self {
+		d, err := poolDetail(pool)
+		if errors.Is(err, errUnknownPool) {
+			http.NotFound(w, r)
+			return
+		}
+		writeJSON(w, d, err)
+		return
+	}
+	if _, ok := h.peers[name]; !ok {
+		http.NotFound(w, r)
+		return
+	}
+	body, err := h.fetchPeer(r.Context(), name, "pool/"+url.PathEscape(pool))
+	if err != nil {
+		log.Print(err)
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
 }

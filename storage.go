@@ -76,9 +76,39 @@ func readStorage() (Storage, error) {
 	}
 	pools = append(pools, volumes...)
 
+	parts, err := readPartitions()
+	if err != nil {
+		return Storage{}, err
+	}
+	// which pool or volume each partition belongs to, keyed by kernel name
+	owners := map[string][2]string{}
+	for _, p := range pools {
+		for _, g := range p.Groups {
+			role := g.Layout
+			if g.Class != "" && g.Class != "data" {
+				role = g.Class + " " + g.Layout
+			}
+			if p.Kind != "zfs" && p.Kind != "md" {
+				role = p.Kind
+			}
+			for _, m := range g.Members {
+				if blk := memberBlock(m.Path); blk != "" {
+					owners[blk] = [2]string{p.Name, role}
+				}
+			}
+		}
+	}
+
 	byName := map[string]*Disk{}
 	for i := range disks {
 		byName[disks[i].Name] = &disks[i]
+		disks[i].Partitions = []Partition{}
+		for _, part := range parts[disks[i].Name] {
+			if o, ok := owners[part.Name]; ok {
+				part.Pool, part.Role = o[0], o[1]
+			}
+			disks[i].Partitions = append(disks[i].Partitions, part)
+		}
 	}
 	for _, p := range pools {
 		for _, g := range p.Groups {

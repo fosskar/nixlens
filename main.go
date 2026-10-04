@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"embed"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -120,6 +121,14 @@ func main() {
 	local.HandleFunc("GET /api/local/storage", func(w http.ResponseWriter, r *http.Request) {
 		s, err := readStorage()
 		writeJSON(w, s, err)
+	})
+	local.HandleFunc("GET /api/local/pool/{pool}", func(w http.ResponseWriter, r *http.Request) {
+		d, err := poolDetail(r.PathValue("pool"))
+		if errors.Is(err, errUnknownPool) {
+			http.NotFound(w, r)
+			return
+		}
+		writeJSON(w, d, err)
 	})
 	local.HandleFunc("GET /api/local/apps", func(w http.ResponseWriter, r *http.Request) {
 		a, err := readApps(*appsFile)
