@@ -15,15 +15,17 @@ type Interface struct {
 	Name string `json:"name"`
 	// ethernet, wifi or usb for hardware; bridge, bond, vlan, wireguard,
 	// tun, tap or virtual otherwise
-	Kind      string   `json:"kind"`
-	Up        bool     `json:"up"`
-	State     string   `json:"state"`
-	SpeedMbps int      `json:"speedMbps,omitempty"`
-	MAC       string   `json:"mac,omitempty"`
-	MTU       int      `json:"mtu"`
-	Driver    string   `json:"driver,omitempty"`
-	Master    string   `json:"master,omitempty"`
-	Addresses []string `json:"addresses"`
+	Kind      string `json:"kind"`
+	Up        bool   `json:"up"`
+	State     string `json:"state"`
+	SpeedMbps int    `json:"speedMbps,omitempty"`
+	// the fastest link mode the port supports, also without a link
+	MaxSpeedMbps int      `json:"maxSpeedMbps,omitempty"`
+	MAC          string   `json:"mac,omitempty"`
+	MTU          int      `json:"mtu"`
+	Driver       string   `json:"driver,omitempty"`
+	Master       string   `json:"master,omitempty"`
+	Addresses    []string `json:"addresses"`
 }
 
 const sysNet = "/sys/class/net"
@@ -73,6 +75,13 @@ func readInterface(iface net.Interface) (Interface, error) {
 		if n, err := strconv.Atoi(speed); err == nil && n > 0 && hardware {
 			i.SpeedMbps = n
 		}
+	}
+	if i.Kind == "ethernet" {
+		out, err := run("ethtool", iface.Name)
+		if err != nil {
+			return i, err
+		}
+		i.MaxSpeedMbps = maxLinkSpeed(string(out))
 	}
 	if driver, err := os.Readlink(filepath.Join(dir, "device", "driver")); err == nil {
 		i.Driver = filepath.Base(driver)
@@ -128,4 +137,33 @@ func interfaceKind(dir string) string {
 		return "usb"
 	}
 	return "ethernet"
+}
+
+// the highest speed among ethtool's "Supported link modes", which are
+// listed like "1000baseT/Full 10000baseT/Full" over several lines
+func maxLinkSpeed(ethtool string) int {
+	fastest := 0
+	inModes := false
+	for line := range strings.SplitSeq(ethtool, "\n") {
+		text := strings.TrimSpace(line)
+		if rest, ok := strings.CutPrefix(text, "Supported link modes:"); ok {
+			inModes = true
+			text = rest
+		} else if inModes && strings.Contains(text, ":") {
+			break
+		}
+		if !inModes {
+			continue
+		}
+		for _, mode := range strings.Fields(text) {
+			digits := strings.IndexFunc(mode, func(r rune) bool { return r < '0' || r > '9' })
+			if digits <= 0 {
+				continue
+			}
+			if n, err := strconv.Atoi(mode[:digits]); err == nil && n > fastest {
+				fastest = n
+			}
+		}
+	}
+	return fastest
 }

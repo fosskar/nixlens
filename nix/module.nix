@@ -212,7 +212,11 @@ in
       description = "nOS dashboard";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
-      path = [ pkgs.util-linux ] ++ lib.optional config.boot.zfs.enabled config.boot.zfs.package;
+      path = [
+        pkgs.ethtool
+        pkgs.util-linux
+      ]
+      ++ lib.optional config.boot.zfs.enabled config.boot.zfs.package;
       serviceConfig = {
         ExecStart = lib.escapeShellArgs (
           [
