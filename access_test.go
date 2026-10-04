@@ -58,29 +58,3 @@ func TestAdminOnly(t *testing.T) {
 		}
 	}
 }
-
-func TestRequireToken(t *testing.T) {
-	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
-	h := requireToken("secret", ok)
-	for header, want := range map[string]int{
-		"Bearer secret": http.StatusOK,
-		"Bearer wrong":  http.StatusUnauthorized,
-		"secret":        http.StatusUnauthorized,
-		"":              http.StatusUnauthorized,
-	} {
-		r := httptest.NewRequest(http.MethodGet, "/api/local/system", nil)
-		if header != "" {
-			r.Header.Set("Authorization", header)
-		}
-		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, r)
-		if rec.Code != want {
-			t.Errorf("Authorization %q: status %d, want %d", header, rec.Code, want)
-		}
-	}
-	rec := httptest.NewRecorder()
-	requireToken("", ok).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/local/system", nil))
-	if rec.Code != http.StatusOK {
-		t.Errorf("without a token configured: status %d, want %d", rec.Code, http.StatusOK)
-	}
-}

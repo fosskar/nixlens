@@ -1,5 +1,15 @@
 { nosModule }:
 { lib, ... }:
+let
+  certs = import ./certs.nix { inherit lib; };
+  certGenerator = pkgs: args: {
+    dependencies = [ "nos-ca" ];
+    files."cert.pem".secret = false;
+    files."key.pem" = { };
+    runtimeInputs = [ pkgs.openssl ];
+    script = certs.cert args;
+  };
+in
 {
   _class = "clan.service";
   manifest.name = "@fosskar/nos";
@@ -7,11 +17,9 @@
   manifest.readme = ''
     `agent` machines report their state; the `hub` serves the web UI on
     loopback (put an authenticating reverse proxy in front) and reaches each
-    agent at `<machine>.<meta.domain>`. A hub machine needs no agent role.
-
-    The hub sends the shared token to agents over plain http, so that
-    domain must resolve over an encrypted, authenticated network such as
-    yggdrasil or wireguard.
+    agent at `<machine>.<meta.domain>` over mutual TLS. A private ca in the
+    vars store signs one certificate per machine. A hub machine needs no
+    agent role.
   '';
 
   roles.agent = {
@@ -33,14 +41,29 @@
     perInstance =
       { settings, ... }:
       {
-        nixosModule = {
-          services.nos = {
-            enable = true;
-            # dual-stack; mesh networks such as yggdrasil are ipv6-only
-            listenAddress = "::";
-            inherit (settings) port openFirewall;
+        nixosModule =
+          { config, pkgs, ... }:
+          let
+            inherit (config.networking) hostName;
+            cert = config.clan.core.vars.generators.nos-agent.files;
+          in
+          {
+            clan.core.vars.generators.nos-agent = certGenerator pkgs {
+              name = hostName;
+              usage = "serverAuth";
+              sans = [
+                "${hostName}.${config.clan.core.settings.domain}"
+                hostName
+              ];
+            };
+            services.nos = {
+              enable = true;
+              listenAddress = "::";
+              inherit (settings) port openFirewall;
+              tls.certFile = cert."cert.pem".path;
+              tls.keyFile = cert."key.pem".path;
+            };
           };
-        };
       };
   };
 
@@ -57,18 +80,27 @@
       { settings, roles, ... }:
       {
         nixosModule =
-          { config, ... }:
+          { config, pkgs, ... }:
+          let
+            cert = config.clan.core.vars.generators.nos-hub.files;
+          in
           {
+            clan.core.vars.generators.nos-hub = certGenerator pkgs {
+              name = config.networking.hostName;
+              usage = "clientAuth";
+            };
             services.nos = {
               enable = true;
-              # explicit, so a machine that is also an agent (0.0.0.0) fails
+              # explicit, so a machine that is also an agent (::) fails
               # evaluation instead of exposing the unauthenticated ui
               listenAddress = "127.0.0.1";
               inherit (settings) port;
+              tls.certFile = cert."cert.pem".path;
+              tls.keyFile = cert."key.pem".path;
               hub.enable = true;
               hub.peers = lib.mapAttrs (
                 name: machine:
-                "http://${name}.${config.clan.core.settings.domain}:${toString machine.settings.port}"
+                "https://${name}.${config.clan.core.settings.domain}:${toString machine.settings.port}"
               ) (roles.agent.machines or { });
             };
           };
@@ -79,14 +111,14 @@
     { config, pkgs, ... }:
     {
       imports = [ nosModule ];
-      clan.core.vars.generators.nos = {
+      # the key never leaves the vars store
+      clan.core.vars.generators.nos-ca = {
         share = true;
-        files.token = { };
+        files."ca.crt".secret = false;
+        files."ca.key".deploy = false;
         runtimeInputs = [ pkgs.openssl ];
-        script = ''
-          openssl rand -hex 32 > "$out/token"
-        '';
+        script = certs.ca;
       };
-      services.nos.tokenFile = config.clan.core.vars.generators.nos.files.token.path;
+      services.nos.tls.caFile = config.clan.core.vars.generators.nos-ca.files."ca.crt".path;
     };
 }

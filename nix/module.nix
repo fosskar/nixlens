@@ -6,6 +6,12 @@
 }:
 let
   cfg = config.services.nos;
+  tlsFilesSet = lib.count (f: f != null) [
+    cfg.tls.certFile
+    cfg.tls.keyFile
+    cfg.tls.caFile
+  ];
+  tls = tlsFilesSet == 3;
 
   apps = lib.mapAttrsToList (name: app: {
     inherit name;
@@ -46,13 +52,28 @@ in
       description = "Open {option}`services.nos.port` in the firewall.";
     };
 
-    tokenFile = lib.mkOption {
-      # rejects paths into the world-readable nix store, where a path
-      # literal would copy the secret
-      type = lib.types.nullOr lib.types.externalPath;
-      default = null;
-      example = "/run/secrets/nos-token";
-      description = "Absolute path of a file with a bearer token that agents require and the hub sends to its peers.";
+    tls = {
+      certFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.path;
+        default = null;
+        description = ''
+          Certificate for mutual TLS: an agent's server certificate
+          (extended key usage serverAuth, naming the host the hub dials), or
+          the hub's client certificate (clientAuth).
+        '';
+      };
+      keyFile = lib.mkOption {
+        # externalPath rejects the world-readable nix store, where a path
+        # literal would copy the key
+        type = lib.types.nullOr lib.types.externalPath;
+        default = null;
+        description = "Private key of {option}`services.nos.tls.certFile`.";
+      };
+      caFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.path;
+        default = null;
+        description = "CA that an agent checks the hub against, and the hub checks its agents against.";
+      };
     };
 
     apps = lib.mkOption {
@@ -154,19 +175,31 @@ in
           ];
         message = "services.nos.hub trusts the Remote-* headers of a reverse proxy, so services.nos.listenAddress must be a loopback address";
       }
+      {
+        assertion = lib.elem tlsFilesSet [
+          0
+          3
+        ];
+        message = "services.nos.tls.certFile, keyFile and caFile must be set together";
+      }
+      {
+        assertion =
+          !(cfg.hub.enable && tls) || lib.all (lib.hasPrefix "https://") (lib.attrValues cfg.hub.peers);
+        message = "with services.nos.tls set, every services.nos.hub.peers url must use https";
+      }
     ];
 
     warnings =
       lib.optional
         (
-          cfg.tokenFile == null
+          !tls
           && !(lib.elem cfg.listenAddress [
             "127.0.0.1"
             "::1"
             "localhost"
           ])
         )
-        "services.nos listens on ${cfg.listenAddress} without services.nos.tokenFile, so anyone who reaches the port can read this machine's system and storage data";
+        "services.nos listens on ${cfg.listenAddress} without services.nos.tls, so anyone who reaches the port can read this machine's system and storage data";
 
     systemd.services.nos = {
       description = "nOS dashboard";
@@ -190,9 +223,13 @@ in
             "-smart-file"
             "/run/nos-smart/smart.json"
           ]
-          ++ lib.optionals (cfg.tokenFile != null) [
-            "-token-file"
-            "%d/token"
+          ++ lib.optionals tls [
+            "-tls-cert"
+            "%d/cert"
+            "-tls-key"
+            "%d/key"
+            "-tls-ca"
+            "%d/ca"
           ]
           ++ lib.optionals cfg.hub.enable [
             "-hub"
@@ -208,7 +245,11 @@ in
         );
         ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nos/installed-memory";
         RuntimeDirectory = "nos";
-        LoadCredential = lib.mkIf (cfg.tokenFile != null) "token:${cfg.tokenFile}";
+        LoadCredential = lib.mkIf tls [
+          "cert:${cfg.tls.certFile}"
+          "key:${cfg.tls.keyFile}"
+          "ca:${cfg.tls.caFile}"
+        ];
         DynamicUser = true;
         Restart = "on-failure";
         ProtectSystem = "strict";

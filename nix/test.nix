@@ -1,7 +1,41 @@
-{ testers, nosModule }:
+{
+  lib,
+  testers,
+  runCommand,
+  openssl,
+  nosModule,
+}:
 let
-  tokenFile = "/etc/nos-token";
-  token.environment.etc."nos-token".text = "test-token";
+  certs = import ./certs.nix { inherit lib; };
+  # the same scripts the clan service runs as vars generators
+  testCerts = runCommand "nos-test-certs" { nativeBuildInputs = [ openssl ]; } ''
+    mkdir -p $out/nos-ca $out/agent $out/hub
+    (out=$out/nos-ca; ${certs.ca})
+    (in=$out; out=$out/agent; cd "$(mktemp -d)"; ${
+      certs.cert {
+        name = "agent";
+        usage = "serverAuth";
+        sans = [ "agent" ];
+      }
+    })
+    (in=$out; out=$out/hub; cd "$(mktemp -d)"; ${
+      certs.cert {
+        name = "hub";
+        usage = "clientAuth";
+      }
+    })
+  '';
+  # keys must not be nix store paths, so they are reached through /etc
+  tlsFor = role: {
+    environment.etc."nos/key.pem".source = "${testCerts}/${role}/key.pem";
+    environment.etc."nos/cert.pem".source = "${testCerts}/${role}/cert.pem";
+    environment.etc."nos/ca.crt".source = "${testCerts}/nos-ca/ca.crt";
+    services.nos.tls = {
+      certFile = "${testCerts}/${role}/cert.pem";
+      keyFile = "/etc/nos/key.pem";
+      caFile = "${testCerts}/nos-ca/ca.crt";
+    };
+  };
 in
 testers.runNixOSTest {
   name = "nos";
@@ -9,13 +43,12 @@ testers.runNixOSTest {
   nodes.hub = {
     imports = [
       nosModule
-      token
+      (tlsFor "hub")
     ];
     services.nos = {
       enable = true;
-      inherit tokenFile;
       hub.enable = true;
-      hub.peers.agent = "http://agent:7480";
+      hub.peers.agent = "https://agent:7480";
       hub.categories = [ "Monitoring" ];
       hub.adminGroups = [ "admin" ];
       hub.categoryGroups.Monitoring = [ "admin" ];
@@ -30,7 +63,7 @@ testers.runNixOSTest {
   nodes.agent = {
     imports = [
       nosModule
-      token
+      (tlsFor "agent")
     ];
     virtualisation.emptyDiskImages = [
       512
@@ -43,7 +76,6 @@ testers.runNixOSTest {
       smart.enable = true;
       listenAddress = "::";
       openFirewall = true;
-      inherit tokenFile;
     };
     services.nos.apps.Immich = {
       url = "https://immich.example.com";
@@ -62,9 +94,15 @@ testers.runNixOSTest {
     agent.wait_for_open_port(7480, timeout=60)
     hub.wait_for_open_port(7480, timeout=60)
 
+    tls = "--cacert /etc/nos/ca.crt"
+    mine = "--cert /etc/nos/cert.pem --key /etc/nos/key.pem"
     hub.fail("curl -sf http://agent:7480/api/local/system")
-    hub.succeed("curl -sf -H 'Authorization: Bearer test-token' http://agent:7480/api/local/system")
-    agent.fail("curl -sf http://127.0.0.1:7480/")
+    hub.fail(f"curl -sf {tls} https://agent:7480/api/local/system")
+    hub.succeed(f"curl -sf {tls} {mine} https://agent:7480/api/local/system")
+    # an agent's own certificate must not work as a client certificate
+    agent.fail(f"curl -sf {tls} {mine} https://agent:7480/api/local/system")
+    # agents serve no ui
+    hub.fail(f"curl -sf {tls} {mine} https://agent:7480/")
 
     machines = get(hub, "/api/machines")
     assert [(m["name"], m["self"], m["online"]) for m in machines] == [

@@ -11,7 +11,6 @@ import (
 	"os"
 	"sort"
 	"sync"
-	"time"
 )
 
 const (
@@ -30,7 +29,6 @@ type hub struct {
 	self     string
 	local    http.Handler
 	appsFile string
-	token    string
 	peers    map[string]string
 	order    map[string]int
 	access   access
@@ -53,7 +51,7 @@ func readPeers(path string) (map[string]string, error) {
 	return peers, nil
 }
 
-func newHub(local http.Handler, appsFile, token string, peers map[string]string, categories []string, acc access) (*hub, error) {
+func newHub(local http.Handler, appsFile string, client *http.Client, peers map[string]string, categories []string, acc access) (*hub, error) {
 	self, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -69,11 +67,10 @@ func newHub(local http.Handler, appsFile, token string, peers map[string]string,
 		self:     self,
 		local:    local,
 		appsFile: appsFile,
-		token:    token,
 		peers:    peers,
 		order:    order,
 		access:   acc,
-		client:   &http.Client{Timeout: 5 * time.Second},
+		client:   client,
 		frames:   newFrameChecker(),
 	}, nil
 }
@@ -102,9 +99,6 @@ func (h *hub) fetchPeer(ctx context.Context, name, kind string) ([]byte, error) 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.peers[name]+"/api/local/"+kind, nil)
 	if err != nil {
 		return nil, err
-	}
-	if h.token != "" {
-		req.Header.Set("Authorization", "Bearer "+h.token)
 	}
 	res, err := h.client.Do(req)
 	if err != nil {
