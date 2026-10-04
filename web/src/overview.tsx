@@ -2,7 +2,7 @@ import type { Disk, Machine, Poll, Pool, Storage, System } from './api'
 import { type Health, driveHealth, poolHealth } from './health'
 import { navigate } from './router'
 import { Led, PoolBays, type Target } from './storage'
-import { SectionTitle, Unavailable, card } from './widgets'
+import { Ring, SectionTitle, Unavailable, card } from './widgets'
 
 export type MachineOverview = Machine & { system?: System; storage?: Storage }
 
@@ -62,30 +62,6 @@ function problems(m: MachineOverview): Problem[] {
   return items.sort((a, b) => (a.health === b.health ? 0 : a.health === 'error' ? -1 : 1))
 }
 
-function Bar({ percent }: { percent: number }) {
-  return (
-    <div className="h-1 overflow-hidden rounded-full bg-white/[0.07]">
-      <div
-        className={`h-full rounded-full ${percent >= fullAt ? 'bg-warning' : 'bg-gradient-to-r from-accent to-accent-cyan'}`}
-        style={{ width: `${Math.min(percent, 100)}%` }}
-      />
-    </div>
-  )
-}
-
-// one labelled meter: name, bar, value; rows share their columns
-function Meter({ label, percent, value }: { label: string; percent: number; value: string }) {
-  return (
-    <>
-      <span className="truncate text-[11px] text-fg-muted" title={label}>
-        {label}
-      </span>
-      <Bar percent={percent} />
-      <span className="text-right font-mono text-[10px] text-fg-muted tabular-nums">{value}</span>
-    </>
-  )
-}
-
 // the last part of a go error is the cause ("connection refused"); the full
 // text stays available on hover
 function shortError(error?: string): string {
@@ -136,16 +112,13 @@ function MachineCard({ m }: { m: MachineOverview }) {
         </div>
 
         {s && (
-          <div className="grid grid-cols-[4.5rem_minmax(0,1fr)_6.5rem] items-center gap-x-2 gap-y-1.5">
-            <Meter
-              label="CPU"
-              percent={s.cpuPercent}
-              value={`${Math.round(s.cpuPercent)} % · ${s.load[0].toFixed(2)}`}
-            />
-            <Meter
+          <div className="grid grid-cols-2 gap-3">
+            <Ring small label="CPU" value={s.cpuPercent} detail={`load ${s.load[0].toFixed(2)}`} />
+            <Ring
+              small
               label="Memory"
-              percent={(100 * (s.memTotal - s.memAvailable)) / s.memTotal}
-              value={`${Math.round((s.memTotal - s.memAvailable) / gib)} / ${Math.round((s.memInstalled || s.memTotal) / gib)} GiB`}
+              value={(100 * (s.memTotal - s.memAvailable)) / s.memTotal}
+              detail={`${Math.round((s.memTotal - s.memAvailable) / gib)} / ${Math.round((s.memInstalled || s.memTotal) / gib)} GiB`}
             />
           </div>
         )}

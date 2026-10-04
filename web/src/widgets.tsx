@@ -29,16 +29,27 @@ export function Unavailable({ error, className }: { error?: string; className: s
   )
 }
 
-function Ring({ label, value, detail }: { label: string; value: number; detail: string }) {
+// small rings sit beside their label, as in the overview's machine cards
+export function Ring({
+  label,
+  value,
+  detail,
+  small,
+}: {
+  label: string
+  value: number
+  detail: string
+  small?: boolean
+}) {
   const r = 26
   const c = 2 * Math.PI * r
   const gradient = useId()
   return (
-    <div className="flex min-w-0 flex-col items-center gap-2">
-      <div className="relative h-16 w-16">
+    <div className={`flex min-w-0 items-center ${small ? 'gap-2.5' : 'flex-col gap-2'}`}>
+      <div className={`relative shrink-0 ${small ? 'h-11 w-11' : 'h-16 w-16'}`}>
         <svg
           viewBox="0 0 64 64"
-          className="h-16 w-16 -rotate-90 drop-shadow-[0_0_6px_color-mix(in_srgb,var(--color-accent-cyan)_35%,transparent)]"
+          className="h-full w-full -rotate-90 drop-shadow-[0_0_6px_color-mix(in_srgb,var(--color-accent-cyan)_35%,transparent)]"
         >
           <defs>
             <linearGradient id={gradient} x1="0" y1="1" x2="1" y2="0">
@@ -60,11 +71,13 @@ function Ring({ label, value, detail }: { label: string; value: number; detail: 
             className="transition-[stroke-dashoffset] duration-700"
           />
         </svg>
-        <span className="absolute inset-0 grid place-items-center text-sm font-semibold text-fg-inverse tabular-nums">
+        <span
+          className={`absolute inset-0 grid place-items-center font-semibold text-fg-inverse tabular-nums ${small ? 'text-[11px]' : 'text-sm'}`}
+        >
           {Math.round(value)}%
         </span>
       </div>
-      <div className="text-center">
+      <div className={`min-w-0 ${small ? '' : 'text-center'}`}>
         <div className="text-xs font-medium text-fg-base">{label}</div>
         <div className="text-[11px] whitespace-nowrap text-fg-muted tabular-nums">{detail}</div>
       </div>
