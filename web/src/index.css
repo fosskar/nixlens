@@ -217,3 +217,33 @@ body::before {
   }
 }
 
+.nos-scroll {
+  scrollbar-width: none;
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  mask-image: linear-gradient(to bottom, transparent 0, black var(--fade-top), black calc(100% - var(--fade-bottom)), transparent 100%);
+}
+.nos-scroll::-webkit-scrollbar {
+  display: none;
+}
+.nos-scroll[data-fade-top] {
+  --fade-top: 2.5rem;
+}
+.nos-scroll[data-fade-bottom] {
+  --fade-bottom: 3.5rem;
+}
+@keyframes nos-hint-bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 2px; }
+}
+.nos-scroll-hint[data-direction='down'] svg {
+  animation: nos-hint-bob 2.4s ease-in-out infinite;
+}
+.nos-scroll-hint[data-direction='up'] svg {
+  animation: nos-hint-bob 2.4s ease-in-out infinite reverse;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nos-scroll-hint svg {
+    animation: none;
+  }
+}

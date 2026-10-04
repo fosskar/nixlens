@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { type App as AppEntry, type Machine, type Me, type Storage, type System, usePoll } from './api'
 import { AppGrid, AppWindow, Dock, windowMargin } from './apps'
+import { ScrollArea } from './scroll'
 import { DrivesWidget } from './storage'
 import { MachineSwitcher, SystemWidget, glass } from './widgets'
 
@@ -116,23 +117,27 @@ export default function App() {
       >
         {admin && (
           <aside
-            className={`${glass} m-3 flex flex-col gap-7 p-4 md:fixed md:inset-y-3 md:left-3 md:m-0 md:w-[22rem] md:overflow-y-auto md:pb-6`}
+            className={`${glass} m-3 flex flex-col md:fixed md:inset-y-3 md:left-3 md:m-0 md:w-[22rem] md:overflow-hidden`}
           >
-            <div className="flex items-center gap-2.5 px-1 pt-1">
-              <img src="/favicon.svg" alt="" className="h-7 w-7 drop-shadow-[0_2px_8px_rgb(22_160_133/0.45)]" />
-              <span className="text-lg font-semibold tracking-tight text-fg-inverse">nOS</span>
-            </div>
-            {machinesPoll.data ? (
-              <MachineSwitcher machines={machines} selected={selected} onSelect={selectMachine} />
-            ) : (
-              <div className="px-1 text-xs text-fg-muted">{machinesPoll.error ?? 'Loading machines…'}</div>
-            )}
-            {selected && (
-              <>
-                <SystemWidget poll={system} />
-                <DrivesWidget key={selected} poll={storage} machine={selected} />
-              </>
-            )}
+            <ScrollArea>
+              <div className="flex flex-col gap-7 p-4 md:pb-6">
+                <div className="flex items-center gap-2.5 px-1 pt-1">
+                  <img src="/favicon.svg" alt="" className="h-7 w-7 drop-shadow-[0_2px_8px_rgb(22_160_133/0.45)]" />
+                  <span className="text-lg font-semibold tracking-tight text-fg-inverse">nOS</span>
+                </div>
+                {machinesPoll.data ? (
+                  <MachineSwitcher machines={machines} selected={selected} onSelect={selectMachine} />
+                ) : (
+                  <div className="px-1 text-xs text-fg-muted">{machinesPoll.error ?? 'Loading machines…'}</div>
+                )}
+                {selected && (
+                  <>
+                    <SystemWidget poll={system} />
+                    <DrivesWidget key={selected} poll={storage} machine={selected} />
+                  </>
+                )}
+              </div>
+            </ScrollArea>
           </aside>
         )}
 
