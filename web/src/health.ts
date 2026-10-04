@@ -95,20 +95,34 @@ function poolDrives(pool: Pool, disks: Disk[]): Set<string> {
   return names
 }
 
-// drives grouped by the first pool they belong to, in vdev order; boot
-// partitions are left out, and drives in no other pool come last
-export function poolBays(storage: Storage): { bays: { pool: Pool; drives: Disk[] }[]; rest: Disk[] } {
+export type Bay = { pool: Pool; groups: { label: string; drives: Disk[] }[] }
+
+// drives grouped by the first pool they belong to, and within it by vdev
+// (data before log or cache); boot partitions are left out, and drives in
+// no other pool come last
+export function poolBays(storage: Storage): { bays: Bay[]; rest: Disk[] } {
   const disks = storage.disks ?? []
   const placed = new Set<string>()
+  const take = (keep: (d: Disk) => boolean) => {
+    const drives = disks.filter((d) => keep(d) && !placed.has(d.name))
+    drives.forEach((d) => placed.add(d.name))
+    return drives
+  }
   const bays = (storage.pools ?? [])
     .filter((pool) => pool.kind !== 'vfat')
     .map((pool) => {
+      const groups = pool.groups.map((g) => {
+        const members = g.members.map((m) => m.device)
+        const drives = take((d) => members.includes(d.name)).sort(
+          (a, b) => members.indexOf(a.name) - members.indexOf(b.name),
+        )
+        const layout = g.layout && g.layout !== 'single' ? g.layout : ''
+        const label = g.class && g.class !== 'data' ? [g.class, layout].filter(Boolean).join(' · ') : layout
+        return { label, drives }
+      })
       const names = poolDrives(pool, disks)
-      const order = pool.groups.flatMap((g) => g.members.map((m) => m.device))
-      const rank = (d: Disk) => (order.includes(d.name) ? order.indexOf(d.name) : order.length)
-      const drives = disks.filter((d) => names.has(d.name) && !placed.has(d.name)).sort((a, b) => rank(a) - rank(b))
-      drives.forEach((d) => placed.add(d.name))
-      return { pool, drives }
+      groups.push({ label: '', drives: take((d) => names.has(d.name)) })
+      return { pool, groups: groups.filter((g) => g.drives.length > 0) }
     })
   return { bays, rest: disks.filter((d) => !placed.has(d.name)) }
 }

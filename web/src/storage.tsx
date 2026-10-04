@@ -276,13 +276,14 @@ export type Target = { kind: 'pool' | 'disk'; name: string }
 
 const linkTransition = 'transition-[opacity,background-color,border-color] duration-200 motion-reduce:transition-none'
 
+// the pool's name, type and bar, heading its bay
 function PoolRow({ pool, onOpen }: { pool: Pool; onOpen: () => void }) {
   const mounted = redundant(pool) || pool.state === 'mounted'
   return (
     <button
       type="button"
       onClick={onOpen}
-      className={`glass-card w-full rounded-xl px-3 py-2.5 text-left outline-accent-cyan hover:bg-white/[0.07] focus-visible:outline-2 ${linkTransition}`}
+      className={`w-full rounded-lg px-2.5 py-2 text-left outline-accent-cyan hover:bg-white/[0.05] focus-visible:outline-2 ${linkTransition}`}
     >
       <div className="flex items-center gap-2">
         <Led health={poolHealth(pool)} />
@@ -933,13 +934,15 @@ export function DriveDetail({
 }
 
 // one bay per pool holding its drives, the pool's bar beneath
+// one bay per pool: its name and bar on top, its drives below, split by
+// vdev when it has more than one kind
 export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (target: Target) => void }) {
   const { bays, rest } = poolBays(storage)
   const pools = storage.pools ?? []
 
-  const bay = (drives: Disk[]) => (
-    <div className="nos-bay grid grid-cols-4 justify-items-center gap-y-1 rounded-xl p-1">
-      {drives.map((disk) => (
+  const drives = (list: Disk[]) => (
+    <div className="grid grid-cols-4 justify-items-center gap-y-1">
+      {list.map((disk) => (
         <button
           key={disk.name}
           type="button"
@@ -952,19 +955,30 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
       ))}
     </div>
   )
+  const label = (text: string) => (
+    <div className="flex items-center gap-2 px-2 pt-1 text-[9px] tracking-[0.12em] text-fg-dim uppercase">
+      {text}
+      <span className="h-px flex-1 bg-white/[0.06]" />
+    </div>
+  )
 
   return (
-    <div className="flex flex-col gap-3">
-      {bays.map(({ pool, drives }) => (
-        <div key={`${pool.kind}:${pool.name}`} className="flex flex-col gap-1.5">
-          {drives.length > 0 && bay(drives)}
+    <div className="flex flex-col gap-2.5">
+      {bays.map(({ pool, groups }) => (
+        <div key={`${pool.kind}:${pool.name}`} className="nos-bay flex flex-col gap-1 rounded-xl p-1">
           <PoolRow pool={pool} onOpen={() => onOpen({ kind: 'pool', name: pool.name })} />
+          {groups.map((group, i) => (
+            <div key={i}>
+              {groups.length > 1 && group.label && label(group.label)}
+              {drives(group.drives)}
+            </div>
+          ))}
         </div>
       ))}
       {rest.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {bay(rest)}
-          <div className="px-1 text-[10px] tracking-[0.1em] text-fg-dim uppercase">not in a pool</div>
+        <div className="nos-bay flex flex-col gap-1 rounded-xl p-1">
+          {label('not in a pool')}
+          {drives(rest)}
         </div>
       )}
     </div>

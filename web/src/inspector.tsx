@@ -35,7 +35,7 @@ export function Inspector({ route }: { route: Detail }) {
   const disks = storage?.disks ?? []
   // drives in the same order as the sidebar's bays
   const bays = storage && poolBays(storage)
-  const ordered = bays ? [...bays.bays.flatMap((b) => b.drives), ...bays.rest] : []
+  const ordered = bays ? [...bays.bays.flatMap((b) => b.groups.flatMap((g) => g.drives)), ...bays.rest] : []
 
   return (
     <Modal focusKey={machine} onBack={canGoBack() ? goBack : undefined} onClose={closeLayer}>
