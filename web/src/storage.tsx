@@ -242,32 +242,6 @@ export type Target = { kind: 'pool' | 'disk'; name: string }
 
 const linkTransition = 'transition-[opacity,background-color,border-color] duration-200 motion-reduce:transition-none'
 
-// the pool's name, type and bar, heading its bay
-function PoolRow({ pool, onOpen }: { pool: Pool; onOpen: () => void }) {
-  const mounted = redundant(pool) || pool.state === 'mounted'
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={`w-full rounded-lg px-2.5 py-2 text-left outline-accent-cyan hover:bg-white/[0.05] focus-visible:outline-2 ${linkTransition}`}
-    >
-      <div className="flex items-center gap-2">
-        <Led health={poolHealth(pool)} />
-        <span className="min-w-0 truncate font-mono text-[13px] font-semibold text-fg-inverse">{pool.name}</span>
-        <span className="ml-auto">
-          <TypeBadge>{poolType(pool)}</TypeBadge>
-        </span>
-      </div>
-      <div className="mt-2 flex items-center gap-3">
-        {mounted ? <UsageBar percent={usedPercent(pool)} className="h-1 flex-1" /> : <span className="flex-1" />}
-        <span className="shrink-0 text-right font-mono text-[11px] text-fg-muted tabular-nums">
-          {mounted ? formatUsage(pool.used, pool.usable) : 'not mounted'}
-        </span>
-      </div>
-    </button>
-  )
-}
-
 // the open popup's title element, which names the dialog
 const ModalTitleId = createContext<string | undefined>(undefined)
 
@@ -1024,48 +998,77 @@ export function DriveDetail({
   )
 }
 
-// one bay per pool: its name and bar on top, its drives below, split by
-// vdev when it has more than one kind
+function poolLayout(pool: Pool): string {
+  const layouts = [
+    ...new Set(
+      pool.groups
+        .filter((g) => g.class === '' || g.class === 'data')
+        .map((g) => g.layout)
+        .filter((l) => l !== '' && l !== 'single'),
+    ),
+  ]
+  return layouts.length > 0 ? layouts.join(' + ') : pool.kind
+}
+
+// one panel per machine, a row per pool: name, layout and its drives on
+// top, the bar beneath; data vdevs are set apart by a thin line
 export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (target: Target) => void }) {
   const bays = poolBays(storage)
   const pools = storage.pools ?? []
-
-  const drives = (list: Disk[]) => (
-    <div className="flex flex-wrap items-end gap-0.5 px-1 pb-1">
-      {list.map((disk) => (
-        <button
-          key={disk.name}
-          type="button"
-          title={driveTitle(disk)}
-          onClick={() => onOpen({ kind: 'disk', name: disk.name })}
-          aria-label={`${disk.model || 'drive'} ${disk.serial || disk.name}`}
-          className={`rounded-lg px-1.5 py-1.5 outline-accent-cyan hover:bg-white/[0.05] focus-visible:outline-2 ${linkTransition}`}
-        >
-          <DriveGlyph disk={disk} health={driveHealth(disk, pools)} />
-        </button>
-      ))}
-    </div>
-  )
-  const label = (text: string) => (
-    <div className="flex items-center gap-2 px-2 pt-1 text-[9px] tracking-[0.12em] text-fg-dim uppercase">
-      {text}
-      <span className="h-px flex-1 bg-white/[0.06]" />
-    </div>
-  )
+  if (bays.length === 0) return null
 
   return (
-    <div className="flex flex-col gap-2.5">
-      {bays.map(({ pool, groups }) => (
-        <div key={`${pool.kind}:${pool.name}`} className="nos-bay flex flex-col gap-1 rounded-xl p-1">
-          <PoolRow pool={pool} onOpen={() => onOpen({ kind: 'pool', name: pool.name })} />
-          {groups.map((group, i) => (
-            <div key={i}>
-              {groups.length > 1 && group.label && label(group.label)}
-              {drives(group.drives)}
+    <div className="nos-bay flex flex-col divide-y divide-white/[0.05] rounded-xl">
+      {bays.map(({ pool, groups }) => {
+        const mounted = redundant(pool) || pool.state === 'mounted'
+        // the row opens the pool; drives sit above its button, since
+        // buttons cannot nest
+        return (
+          <div key={`${pool.kind}:${pool.name}`} className="relative px-3 py-2.5 first:rounded-t-xl last:rounded-b-xl">
+            <button
+              type="button"
+              onClick={() => onOpen({ kind: 'pool', name: pool.name })}
+              aria-label={`Open pool ${pool.name}`}
+              className={`absolute inset-0 rounded-[inherit] outline-accent-cyan hover:bg-white/[0.04] focus-visible:outline-2 ${linkTransition}`}
+            />
+            <div className="pointer-events-none relative flex items-end gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2 self-center">
+                <Led health={poolHealth(pool)} />
+                <span className="truncate font-mono text-[13px] font-semibold text-fg-inverse">{pool.name}</span>
+                <span className="shrink-0 text-[10px] text-fg-muted">{poolLayout(pool)}</span>
+              </div>
+              <div className="pointer-events-auto flex flex-wrap items-end justify-end gap-x-1.5">
+                {groups.map((group, i) => (
+                  <div
+                    key={i}
+                    title={group.label}
+                    className={`flex items-end gap-0.5 ${i > 0 ? 'border-l border-white/10 pl-1.5' : ''}`}
+                  >
+                    {group.drives.map((disk) => (
+                      <button
+                        key={disk.name}
+                        type="button"
+                        title={driveTitle(disk)}
+                        onClick={() => onOpen({ kind: 'disk', name: disk.name })}
+                        aria-label={`${disk.model || 'drive'} ${disk.serial || disk.name}`}
+                        className={`rounded-md p-0.5 outline-accent-cyan hover:bg-white/[0.08] focus-visible:outline-2 ${linkTransition}`}
+                      >
+                        <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      ))}
+            <div className="pointer-events-none relative mt-2 flex items-center gap-3">
+              {mounted ? <UsageBar percent={usedPercent(pool)} className="h-1 flex-1" /> : <span className="flex-1" />}
+              <span className="shrink-0 font-mono text-[11px] text-fg-muted tabular-nums">
+                {mounted ? formatUsage(pool.used, pool.usable) : 'not mounted'}
+              </span>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
