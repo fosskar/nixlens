@@ -163,8 +163,8 @@ export default function App() {
               </h1>
               {machinesPoll.data && (
                 <p className="mt-3 text-sm text-fg-muted tabular-nums">
-                  {online} of {machines.length} {machines.length === 1 ? 'machine' : 'machines'} online ·{' '}
-                  {apps.length} apps
+                  {online} of {machines.length} {machines.length === 1 ? 'machine' : 'machines'} online · {apps.length}{' '}
+                  apps
                 </p>
               )}
             </header>

@@ -5,7 +5,7 @@
 
 # nOS
 
-*A home screen and status overview for your NixOS machines*
+_A home screen and status overview for your NixOS machines_
 
 [![NixOS module](https://img.shields.io/badge/NixOS-module-5277C3?style=flat-square&logo=nixos&logoColor=white)](#getting-started)
 [![Go](https://img.shields.io/badge/Go-standard_library_only-00ADD8?style=flat-square&logo=go&logoColor=white)](./go.mod)
@@ -18,7 +18,7 @@
 
 </div>
 
-nOS is a single place to open your self-hosted apps and see how your machines are doing *right now*: which ones are up, how busy they are, and whether every pool and drive is healthy. Think of a homepage-style launcher paired with the storage view of a NAS operating system, built for NixOS and configured entirely in Nix.
+nOS is a single place to open your self-hosted apps and see how your machines are doing _right now_: which ones are up, how busy they are, and whether every pool and drive is healthy. Think of a homepage-style launcher paired with the storage view of a NAS operating system, built for NixOS and configured entirely in Nix.
 
 > [!NOTE]
 > nOS shows live state only. It keeps no history, draws no charts and sends no alerts. Pair it with a monitoring tool if you need those.
@@ -37,11 +37,11 @@ nOS is a single place to open your self-hosted apps and see how your machines ar
 
 ## Screenshots
 
-| Pool details | Drive details |
-| --- | --- |
+| Pool details                                                                           | Drive details                                                                      |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | ![ZFS pool popup with vdev tree, properties and datasets](./docs/screenshots/pool.png) | ![Drive popup with SMART values and partition table](./docs/screenshots/drive.png) |
-| **App window** | **View for non-admins** |
-| ![An app open in an nOS window above the dock](./docs/screenshots/app-window.png) | ![App grid without the admin sidebar](./docs/screenshots/user-view.png) |
+| **App window**                                                                         | **View for non-admins**                                                            |
+| ![An app open in an nOS window above the dock](./docs/screenshots/app-window.png)      | ![App grid without the admin sidebar](./docs/screenshots/user-view.png)            |
 
 <details>
 <summary>On a phone</summary>
@@ -183,20 +183,20 @@ The hub reaches each agent at `https://<machine>.<meta.domain>:7480`. Run `clan 
 
 ## Configuration
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `services.nos.enable` | `false` | Run the agent, which reports this machine's state. |
-| `services.nos.listenAddress` | `"127.0.0.1"` | Address to listen on. A hub must stay on loopback. |
-| `services.nos.port` | `7480` | Port to listen on. |
-| `services.nos.openFirewall` | `false` | Open the port in the firewall. |
-| `services.nos.apps.<name>` | `{ }` | Apps on this machine: `url`, `icon`, `category` (default `"Apps"`) and `description`. |
-| `services.nos.smart.enable` | `false` | Collect SMART health every 30 minutes without waking sleeping drives. |
-| `services.nos.tls.{certFile,keyFile,caFile}` | `null` | Certificates for mutual TLS between hub and agents. |
-| `services.nos.hub.enable` | `false` | Serve the UI and aggregate this machine with its peers. |
-| `services.nos.hub.peers.<name>` | `{ }` | Agents to show, by machine name and base URL. |
-| `services.nos.hub.categories` | `[ ]` | Categories listed first, in this order; the rest follow alphabetically. |
-| `services.nos.hub.adminGroups` | `[ ]` | Groups that see machines and storage. Empty allows everyone. |
-| `services.nos.hub.categoryGroups.<category>` | `{ }` | Groups that see a category. Unlisted categories are visible to all. |
+| Option                                       | Default       | Description                                                                           |
+| -------------------------------------------- | ------------- | ------------------------------------------------------------------------------------- |
+| `services.nos.enable`                        | `false`       | Run the agent, which reports this machine's state.                                    |
+| `services.nos.listenAddress`                 | `"127.0.0.1"` | Address to listen on. A hub must stay on loopback.                                    |
+| `services.nos.port`                          | `7480`        | Port to listen on.                                                                    |
+| `services.nos.openFirewall`                  | `false`       | Open the port in the firewall.                                                        |
+| `services.nos.apps.<name>`                   | `{ }`         | Apps on this machine: `url`, `icon`, `category` (default `"Apps"`) and `description`. |
+| `services.nos.smart.enable`                  | `false`       | Collect SMART health every 30 minutes without waking sleeping drives.                 |
+| `services.nos.tls.{certFile,keyFile,caFile}` | `null`        | Certificates for mutual TLS between hub and agents.                                   |
+| `services.nos.hub.enable`                    | `false`       | Serve the UI and aggregate this machine with its peers.                               |
+| `services.nos.hub.peers.<name>`              | `{ }`         | Agents to show, by machine name and base URL.                                         |
+| `services.nos.hub.categories`                | `[ ]`         | Categories listed first, in this order; the rest follow alphabetically.               |
+| `services.nos.hub.adminGroups`               | `[ ]`         | Groups that see machines and storage. Empty allows everyone.                          |
+| `services.nos.hub.categoryGroups.<category>` | `{ }`         | Groups that see a category. Unlisted categories are visible to all.                   |
 
 An app's `icon` can be a dashboard-icons file or name (`jellyfin.svg`), a selfh.st icon (`sh-jellyfin`), a Material Design icon (`mdi-printer`) or a URL.
 

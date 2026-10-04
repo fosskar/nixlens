@@ -8,8 +8,10 @@ type IconSource = { url: string; mask: boolean }
 function iconSource(icon: string): IconSource | null {
   if (icon === '') return null
   if (/^(https?:\/\/|\/)/.test(icon)) return { url: icon, mask: false }
-  if (icon.startsWith('sh-')) return { url: `https://cdn.jsdelivr.net/gh/selfhst/icons/svg/${icon.slice(3)}.svg`, mask: false }
-  if (icon.startsWith('mdi-')) return { url: `https://cdn.jsdelivr.net/npm/@mdi/svg/svg/${icon.slice(4)}.svg`, mask: true }
+  if (icon.startsWith('sh-'))
+    return { url: `https://cdn.jsdelivr.net/gh/selfhst/icons/svg/${icon.slice(3)}.svg`, mask: false }
+  if (icon.startsWith('mdi-'))
+    return { url: `https://cdn.jsdelivr.net/npm/@mdi/svg/svg/${icon.slice(4)}.svg`, mask: true }
   const ext = /\.(svg|png|webp)$/.exec(icon)?.[1]
   if (ext) return { url: `${dashboardIcons}/${ext}/${icon}`, mask: false }
   return { url: `${dashboardIcons}/svg/${icon}.svg`, mask: false }
@@ -28,9 +30,7 @@ function AppIcon({ app, size = 'lg' }: { app: App; size?: keyof typeof iconSizes
   const failed = source === null || failedUrl === source.url
   const onError = () => source && setFailedUrl(source.url)
   return (
-    <div
-      className={`${s.box} glass-tile grid place-items-center`}
-    >
+    <div className={`${s.box} glass-tile grid place-items-center`}>
       {failed ? (
         <span className={`${s.letter} font-semibold text-fg-base`}>{app.name.charAt(0).toUpperCase()}</span>
       ) : source.mask ? (
@@ -149,7 +149,9 @@ function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DO
               </span>
             )}
           </div>
-          <span className="max-w-full truncate px-1 text-xs text-fg-muted transition-colors group-hover:text-fg-inverse">{app.name}</span>
+          <span className="max-w-full truncate px-1 text-xs text-fg-muted transition-colors group-hover:text-fg-inverse">
+            {app.name}
+          </span>
         </button>
       ))}
     </div>
@@ -216,7 +218,12 @@ const windowBottom = 96
 
 type WindowState = 'shown' | 'home' | 'switch'
 
-function TitleButton({ title, onClick, danger, children }: {
+function TitleButton({
+  title,
+  onClick,
+  danger,
+  children,
+}: {
   title: string
   onClick: () => void
   danger?: boolean
@@ -229,7 +236,13 @@ function TitleButton({ title, onClick, danger, children }: {
       aria-label={title}
       className={`grid h-7 w-7 place-items-center rounded-lg text-fg-muted transition hover:text-fg-inverse ${danger ? 'hover:bg-error/80' : 'hover:bg-white/[0.08]'}`}
     >
-      <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4 fill-none stroke-current"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         {children}
       </svg>
     </button>

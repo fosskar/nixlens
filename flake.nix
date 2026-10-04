@@ -73,6 +73,8 @@
         };
       });
 
-      formatter = forAllSystems (pkgs: treefmtFor.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
+      formatter = forAllSystems (
+        pkgs: treefmtFor.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper
+      );
     };
 }

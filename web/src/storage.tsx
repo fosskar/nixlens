@@ -191,7 +191,9 @@ function smartHealth(smart?: Smart): Health | null {
 function driveHealth(disk: Disk, pools: Pool[]): Health {
   const members = pools
     .filter(redundant)
-    .flatMap((p) => p.groups.flatMap((g) => g.members.filter((m) => m.device === disk.name).map((m) => memberHealth(m, p))))
+    .flatMap((p) =>
+      p.groups.flatMap((g) => g.members.filter((m) => m.device === disk.name).map((m) => memberHealth(m, p))),
+    )
   const smart = smartHealth(disk.smart)
   return worst(smart ? [...members, smart] : members)
 }
@@ -249,9 +251,16 @@ function HealthPill({ pool }: { pool: Pool }) {
 }
 
 function UsageBar({ percent, className }: { percent: number; className: string }) {
-  const fill = percent >= 90 ? 'from-error/80 to-error' : percent >= 80 ? 'from-warning/80 to-warning' : 'from-accent to-accent-cyan'
+  const fill =
+    percent >= 90
+      ? 'from-error/80 to-error'
+      : percent >= 80
+        ? 'from-warning/80 to-warning'
+        : 'from-accent to-accent-cyan'
   return (
-    <div className={`overflow-hidden rounded-full bg-white/[0.07] shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] ${className}`}>
+    <div
+      className={`overflow-hidden rounded-full bg-white/[0.07] shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] ${className}`}
+    >
       <div
         className={`h-full rounded-full bg-gradient-to-r ${fill} shadow-[0_0_8px_rgb(26_188_156/0.4)] transition-[width] duration-700 motion-reduce:transition-none`}
         style={{ width: `${Math.min(percent, 100)}%` }}
@@ -478,7 +487,13 @@ function Modal({
               title="Back (Alt+←)"
               className="mr-1 flex items-center gap-1 rounded-lg px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
             >
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5 fill-none stroke-current"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M15 6l-6 6 6 6" />
               </svg>
               Back
@@ -545,7 +560,10 @@ function SmartFacts({ smart, nvme }: { smart: Smart; nvme: boolean }) {
       : [
           [
             'Status',
-            <span key="status" className={health === 'ok' ? 'text-success' : health === 'warn' ? 'text-warning' : 'text-error'}>
+            <span
+              key="status"
+              className={health === 'ok' ? 'text-success' : health === 'warn' ? 'text-warning' : 'text-error'}
+            >
               {smart.passed ? 'passed' : 'failed'}
             </span>,
           ],
@@ -565,7 +583,9 @@ function SmartFacts({ smart, nvme }: { smart: Smart; nvme: boolean }) {
         ]
   return (
     <section>
-      <SectionTitle aside={smart.standby ? 'asleep · not woken' : smart.updated > 0 ? `read ${timeAgo(smart.updated)}` : undefined}>
+      <SectionTitle
+        aside={smart.standby ? 'asleep · not woken' : smart.updated > 0 ? `read ${timeAgo(smart.updated)}` : undefined}
+      >
         SMART
       </SectionTitle>
       {rows.length > 0 ? (
@@ -634,7 +654,9 @@ function MemberRow({
     <>
       {showState && <Led health={health} />}
       <span className="min-w-0">
-        <span className="block truncate font-mono text-[12px] text-fg-inverse">{disk?.serial || member.device || 'missing'}</span>
+        <span className="block truncate font-mono text-[12px] text-fg-inverse">
+          {disk?.serial || member.device || 'missing'}
+        </span>
         <span className="block truncate text-[10px] text-fg-muted">{disk?.model || member.path}</span>
       </span>
       <span className="font-mono text-[11px] text-fg-muted">{memberPartition(member, pool, disk)}</span>
@@ -681,7 +703,9 @@ function VdevTree({ pool, disks, onOpenDisk }: { pool: Pool; disks: Disk[]; onOp
                 <span className="text-[11px] text-fg-dim">
                   {group.members.length} {group.members.length === 1 ? 'member' : 'members'}
                 </span>
-                <span className={`ml-auto text-[10px] font-semibold tracking-wide uppercase ${textStyles[health]}`}>{group.state}</span>
+                <span className={`ml-auto text-[10px] font-semibold tracking-wide uppercase ${textStyles[health]}`}>
+                  {group.state}
+                </span>
               </div>
               <div className="mt-2 ml-2.5 flex flex-col border-l border-white/10 pl-3">
                 {group.members.map((member, i) => (
@@ -737,7 +761,9 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
           </div>
         )}
       </td>
-      <td className="px-3 py-2 text-right font-mono whitespace-nowrap text-fg-inverse">{formatCapacity(dataset.used)}</td>
+      <td className="px-3 py-2 text-right font-mono whitespace-nowrap text-fg-inverse">
+        {formatCapacity(dataset.used)}
+      </td>
       <td className="px-3 py-2 text-right font-mono whitespace-nowrap">{formatCapacity(dataset.available)}</td>
       <td className="px-3 py-2 text-right font-mono">{dataset.compressRatio}x</td>
       <td className={`max-w-40 truncate px-3 py-2 font-mono ${mount ? 'text-fg-dim' : ''}`} title={dataset.mountpoint}>
@@ -750,7 +776,9 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
         {dataset.snapshots > 0 ? (
           <>
             <span className="font-mono text-fg-inverse">{dataset.snapshots}</span>
-            {dataset.lastSnapshot > 0 && <span className="text-fg-muted"> · latest {shortAgo(dataset.lastSnapshot)}</span>}
+            {dataset.lastSnapshot > 0 && (
+              <span className="text-fg-muted"> · latest {shortAgo(dataset.lastSnapshot)}</span>
+            )}
           </>
         ) : (
           <span className="text-fg-dim">none</span>
@@ -778,7 +806,11 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap gap-2">
               {[16, 20, 14, 18, 12, 22].map((w, i) => (
-                <div key={i} className="h-6 animate-pulse rounded-lg bg-white/[0.06]" style={{ width: `${w * 0.25}rem` }} />
+                <div
+                  key={i}
+                  className="h-6 animate-pulse rounded-lg bg-white/[0.06]"
+                  style={{ width: `${w * 0.25}rem` }}
+                />
               ))}
             </div>
             <div className={`${card} h-32 animate-pulse`} />
@@ -813,7 +845,9 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
         </div>
       </section>
       <section>
-        <SectionTitle aside={`${datasets.length} ${datasets.length === 1 ? 'dataset' : 'datasets'}`}>Datasets</SectionTitle>
+        <SectionTitle aside={`${datasets.length} ${datasets.length === 1 ? 'dataset' : 'datasets'}`}>
+          Datasets
+        </SectionTitle>
         <div className={`${card} overflow-x-auto`}>
           <table className="w-full text-[12px] text-fg-base tabular-nums">
             <thead>
@@ -990,7 +1024,9 @@ function DriveModal({
                     return (
                       <tr key={partition.name} className={partition.pool ? '' : 'opacity-45'}>
                         <td className="py-2 pr-3 pl-4 font-mono whitespace-nowrap text-fg-inverse">{partition.name}</td>
-                        <td className="px-3 py-2 text-right font-mono whitespace-nowrap">{formatBytes(partition.size)}</td>
+                        <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
+                          {formatBytes(partition.size)}
+                        </td>
                         <td className="px-3 py-2 font-mono whitespace-nowrap">
                           {partition.fstype || <span className="text-fg-dim">—</span>}
                           {partition.label && <span className="text-fg-muted"> · {partition.label}</span>}
@@ -1083,7 +1119,11 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
     (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, undefined, { numeric: true }),
   )
   const litDisks =
-    hover?.kind === 'pool' ? (links.get(hover.name) ?? new Set<string>()) : hover?.kind === 'disk' ? new Set([hover.name]) : null
+    hover?.kind === 'pool'
+      ? (links.get(hover.name) ?? new Set<string>())
+      : hover?.kind === 'disk'
+        ? new Set([hover.name])
+        : null
   const litPools =
     hover?.kind === 'disk'
       ? new Set(pools.filter((p) => links.get(p.name)?.has(hover.name)).map((p) => p.name))
@@ -1097,7 +1137,7 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
   const openDisk = open?.kind === 'disk' ? disks.find((d) => d.name === open.name) : undefined
   const close = () => setStack([])
   const crumbLabel = (t: Target) =>
-    t.kind === 'pool' ? t.name : (disks.find((d) => d.name === t.name)?.serial || t.name)
+    t.kind === 'pool' ? t.name : disks.find((d) => d.name === t.name)?.serial || t.name
   const trail = stack.map((t, i) => ({ label: crumbLabel(t), onClick: () => backTo(i + 1) }))
 
   return (

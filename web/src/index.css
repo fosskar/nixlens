@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* system insets (notch, status bar, home indicator) when installed as an
    app; zero in a desktop browser */
@@ -10,8 +10,8 @@
 }
 
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "CommitMono Nerd Font Propo", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'CommitMono Nerd Font Propo', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --color-bg-base: #202020;
   --color-bg-surface: #282828;
@@ -52,7 +52,7 @@ body {
 }
 
 body::before {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -70,11 +70,11 @@ body::before {
 @utility glass {
   background-color: rgb(255 255 255 / 0.055);
   background-image: linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0) 40%);
-  border: 1px solid rgb(255 255 255 / 0.10);
+  border: 1px solid rgb(255 255 255 / 0.1);
   backdrop-filter: blur(32px) saturate(150%);
   -webkit-backdrop-filter: blur(32px) saturate(150%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.10),
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
     inset 0 0 0 1px rgb(255 255 255 / 0.02),
     0 24px 60px -24px rgb(0 0 0 / 0.65),
     0 2px 6px -2px rgb(0 0 0 / 0.35);
@@ -103,7 +103,7 @@ body::before {
 @utility glass-tile {
   background-color: rgb(255 255 255 / 0.07);
   background-image: linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0) 60%);
-  border: 1px solid rgb(255 255 255 / 0.10);
+  border: 1px solid rgb(255 255 255 / 0.1);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   box-shadow:
@@ -116,7 +116,7 @@ body::before {
   background-image: linear-gradient(180deg, rgb(26 188 156 / 0.12), rgb(22 160 133 / 0.04));
   border: 1px solid rgb(26 188 156 / 0.28);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.10),
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
     0 6px 20px -10px rgb(22 160 133 / 0.55);
 }
 
@@ -135,141 +135,190 @@ body::before {
 
 /* in the components layer, so utilities can override these without ! */
 @layer components {
-.nos-window {
-  --nos-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  transition:
-    transform 350ms var(--nos-ease),
-    opacity 350ms var(--nos-ease),
-    visibility 0s linear 0s,
-    inset 350ms var(--nos-ease),
-    border-radius 350ms var(--nos-ease);
-}
+  .nos-window {
+    --nos-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+      transform 350ms var(--nos-ease),
+      opacity 350ms var(--nos-ease),
+      visibility 0s linear 0s,
+      inset 350ms var(--nos-ease),
+      border-radius 350ms var(--nos-ease);
+  }
 
+  .nos-window[data-state='home'],
+  .nos-window[data-state='switch'] {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      transform 350ms var(--nos-ease),
+      opacity 300ms var(--nos-ease),
+      visibility 0s linear 350ms;
+  }
 
-.nos-window[data-state="home"],
-.nos-window[data-state="switch"] {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition:
-    transform 350ms var(--nos-ease),
-    opacity 300ms var(--nos-ease),
-    visibility 0s linear 350ms;
-}
+  .nos-window[data-state='home'] {
+    transform: scale(0.08);
+  }
 
-.nos-window[data-state="home"] {
-  transform: scale(0.08);
-}
+  .nos-breathe {
+    animation: nos-breathe 1.8s ease-in-out infinite;
+  }
 
-.nos-breathe {
-  animation: nos-breathe 1.8s ease-in-out infinite;
-}
+  .nos-bay {
+    background-color: rgb(0 0 0 / 0.22);
+    box-shadow:
+      inset 0 1px 3px rgb(0 0 0 / 0.5),
+      inset 0 0 0 1px rgb(0 0 0 / 0.25),
+      0 1px 0 rgb(255 255 255 / 0.05);
+  }
 
-.nos-bay {
-  background-color: rgb(0 0 0 / 0.22);
-  box-shadow:
-    inset 0 1px 3px rgb(0 0 0 / 0.5),
-    inset 0 0 0 1px rgb(0 0 0 / 0.25),
-    0 1px 0 rgb(255 255 255 / 0.05);
-}
+  .nos-led {
+    display: inline-block;
+    width: 0.375rem;
+    height: 0.375rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background-color: var(--nos-led);
+    box-shadow:
+      0 0 3px color-mix(in srgb, var(--nos-led) 90%, transparent),
+      0 0 9px 2px color-mix(in srgb, var(--nos-led) 45%, transparent);
+  }
 
-.nos-led {
-  display: inline-block;
-  width: 0.375rem;
-  height: 0.375rem;
-  flex-shrink: 0;
-  border-radius: 9999px;
-  background-color: var(--nos-led);
-  box-shadow:
-    0 0 3px color-mix(in srgb, var(--nos-led) 90%, transparent),
-    0 0 9px 2px color-mix(in srgb, var(--nos-led) 45%, transparent);
-}
+  .nos-led-ok {
+    --nos-led: var(--color-success);
+  }
+  .nos-led-warn {
+    --nos-led: var(--color-warning);
+    animation: nos-pulse 2.4s ease-in-out infinite;
+  }
+  .nos-led-error {
+    --nos-led: var(--color-error);
+  }
+  .nos-led-unknown {
+    --nos-led: var(--color-fg-dim);
+    box-shadow: none;
+  }
+  /* after the state classes so a sleeping drive drops their glow and pulse */
+  .nos-led-asleep {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--color-fg-muted);
+    animation: none;
+  }
 
-.nos-led-ok { --nos-led: var(--color-success); }
-.nos-led-warn { --nos-led: var(--color-warning); animation: nos-pulse 2.4s ease-in-out infinite; }
-.nos-led-error { --nos-led: var(--color-error); }
-.nos-led-unknown { --nos-led: var(--color-fg-dim); box-shadow: none; }
-/* after the state classes so a sleeping drive drops their glow and pulse */
-.nos-led-asleep {
-  background-color: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--color-fg-muted);
-  animation: none;
-}
+  .nos-modal-backdrop {
+    animation: nos-fade 200ms ease-out;
+  }
 
-.nos-modal-backdrop {
-  animation: nos-fade 200ms ease-out;
-}
+  .nos-modal {
+    animation: nos-modal-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
 
-.nos-modal {
-  animation: nos-modal-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
-}
+  @keyframes nos-fade {
+    from {
+      opacity: 0;
+    }
+  }
 
-@keyframes nos-fade {
-  from { opacity: 0; }
-}
+  @keyframes nos-modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+  }
 
-@keyframes nos-modal-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.98); }
-}
+  @keyframes nos-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
 
-@keyframes nos-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
-}
+  @keyframes nos-breathe {
+    0%,
+    100% {
+      transform: scale(0.94);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scale(1.04);
+      opacity: 1;
+    }
+  }
 
-@keyframes nos-breathe {
-  0%, 100% { transform: scale(0.94); opacity: 0.6; }
-  50% { transform: scale(1.04); opacity: 1; }
-}
-
-/* apps fade out before they reach the dock. the mask needs the content to
+  /* apps fade out before they reach the dock. the mask needs the content to
    scroll inside a viewport-sized box, which the md layout provides; below md
    the page itself scrolls, so a fixed overlay does the fade there */
-@media (min-width: 48rem) {
-  .nos-dock-fade {
-    mask-image: linear-gradient(to bottom, transparent 0, black 2.5rem, black calc(100% - 11rem), transparent calc(100% - 4.5rem));
+  @media (min-width: 48rem) {
+    .nos-dock-fade {
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        black 2.5rem,
+        black calc(100% - 11rem),
+        transparent calc(100% - 4.5rem)
+      );
+    }
   }
-}
 
-.nos-scroll {
-  scrollbar-width: none;
-  --fade-top: 0px;
-  --fade-bottom: 0px;
-  mask-image: linear-gradient(to bottom, transparent 0, black var(--fade-top), black calc(100% - var(--fade-bottom)), transparent 100%);
-}
-.nos-scroll::-webkit-scrollbar {
-  display: none;
-}
-.nos-scroll[data-fade-top] {
-  --fade-top: 2.5rem;
-}
-.nos-scroll[data-fade-bottom] {
-  --fade-bottom: 3.5rem;
-}
-@keyframes nos-hint-bob {
-  0%, 100% { translate: 0 0; }
-  50% { translate: 0 2px; }
-}
-.nos-scroll-hint[data-direction='down'] svg {
-  animation: nos-hint-bob 2.4s ease-in-out infinite;
-}
-.nos-scroll-hint[data-direction='up'] svg {
-  animation: nos-hint-bob 2.4s ease-in-out infinite reverse;
-}
-@keyframes nos-view-from-right {
-  from { opacity: 0; translate: 1.5rem 0; }
-}
-@keyframes nos-view-from-left {
-  from { opacity: 0; translate: -1.5rem 0; }
-}
-.nos-view-forward {
-  animation: nos-view-from-right 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.nos-view-back {
-  animation: nos-view-from-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.nos-nvme-pins {
-  background-image: repeating-linear-gradient(90deg, rgb(199 154 58 / 0.85) 0 2px, transparent 2px 3.5px);
-  box-shadow: inset 0 1px 0 rgb(0 0 0 / 0.4);
-}
+  .nos-scroll {
+    scrollbar-width: none;
+    --fade-top: 0px;
+    --fade-bottom: 0px;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      black var(--fade-top),
+      black calc(100% - var(--fade-bottom)),
+      transparent 100%
+    );
+  }
+  .nos-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .nos-scroll[data-fade-top] {
+    --fade-top: 2.5rem;
+  }
+  .nos-scroll[data-fade-bottom] {
+    --fade-bottom: 3.5rem;
+  }
+  @keyframes nos-hint-bob {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 2px;
+    }
+  }
+  .nos-scroll-hint[data-direction='down'] svg {
+    animation: nos-hint-bob 2.4s ease-in-out infinite;
+  }
+  .nos-scroll-hint[data-direction='up'] svg {
+    animation: nos-hint-bob 2.4s ease-in-out infinite reverse;
+  }
+  @keyframes nos-view-from-right {
+    from {
+      opacity: 0;
+      translate: 1.5rem 0;
+    }
+  }
+  @keyframes nos-view-from-left {
+    from {
+      opacity: 0;
+      translate: -1.5rem 0;
+    }
+  }
+  .nos-view-forward {
+    animation: nos-view-from-right 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .nos-view-back {
+    animation: nos-view-from-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .nos-nvme-pins {
+    background-image: repeating-linear-gradient(90deg, rgb(199 154 58 / 0.85) 0 2px, transparent 2px 3.5px);
+    box-shadow: inset 0 1px 0 rgb(0 0 0 / 0.4);
+  }
 }

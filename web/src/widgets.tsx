@@ -55,7 +55,11 @@ export function MachineSwitcher({
               className={`h-2 w-2 shrink-0 rounded-full ${m.online ? 'bg-success shadow-[0_0_8px_var(--color-success)]' : 'bg-error shadow-[0_0_6px_var(--color-error)]'}`}
             />
             <span className="flex-1 truncate font-medium">{m.name}</span>
-            {m.self && <span className="rounded-md border border-accent-cyan/25 bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent-cyan">hub</span>}
+            {m.self && (
+              <span className="rounded-md border border-accent-cyan/25 bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent-cyan">
+                hub
+              </span>
+            )}
             {!m.online && <span className="text-[10px] text-error/80">offline</span>}
           </button>
         ))}
@@ -136,14 +140,17 @@ export function SystemWidget({ poll }: { poll: Poll<System> }) {
             <dt className="text-fg-muted">Kernel</dt>
             <dd className="truncate text-right font-mono text-fg-base tabular-nums">{system.kernel}</dd>
             <dt className="text-fg-muted">Load</dt>
-            <dd className="truncate text-right font-mono text-fg-base tabular-nums">{system.load.map((l) => l.toFixed(2)).join('  ')}</dd>
+            <dd className="truncate text-right font-mono text-fg-base tabular-nums">
+              {system.load.map((l) => l.toFixed(2)).join('  ')}
+            </dd>
             <dt className="text-fg-muted">Swap</dt>
             <dd className="text-right font-mono text-fg-base tabular-nums">
               {system.swaps.length === 0
                 ? 'none'
                 : system.swaps.map((s) => (
                     <div key={s.device} className="truncate" title={s.device}>
-                      <span className="text-fg-muted">{s.kind}</span> {formatBytes(s.used, true)} / {formatBytes(s.size, true)}
+                      <span className="text-fg-muted">{s.kind}</span> {formatBytes(s.used, true)} /{' '}
+                      {formatBytes(s.size, true)}
                     </div>
                   ))}
             </dd>
