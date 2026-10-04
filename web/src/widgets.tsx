@@ -305,7 +305,7 @@ function groupLabel(group: PoolGroup): string {
   return parts.join(' · ')
 }
 
-function PoolCard({ pool, disks }: { pool: Pool; disks: Disk[] }) {
+function PoolCard({ pool, disks, partitions }: { pool: Pool; disks: Disk[]; partitions: Map<string, Pool[]> }) {
   const health = poolHealth(pool)
   const scan = scanLine(pool)
   const usedPercent = pool.usable > 0 ? (100 * pool.used) / pool.usable : 0
@@ -365,6 +365,11 @@ function PoolCard({ pool, disks }: { pool: Pool; disks: Disk[] }) {
                 />
               ))}
             </div>
+            {(group.members ?? [])
+              .flatMap((m) => partitions.get(m.device) ?? [])
+              .map((v) => (
+                <PartitionRow key={`${v.kind}:${v.name}`} volume={v} />
+              ))}
           </div>
         )
       })}
@@ -442,6 +447,11 @@ export function DrivesWidget({ poll }: { poll: Poll<Storage> }) {
   // are partitions and group under their disk
   const pools: Pool[] = []
   const partitions = new Map<string, Pool[]>()
+  const pooled = new Set(
+    (storage.pools ?? [])
+      .filter((p) => p.kind === 'zfs' || p.kind === 'md')
+      .flatMap((p) => p.groups.flatMap((g) => g.members.map((m) => m.device))),
+  )
   for (const p of storage.pools ?? []) {
     const devices = new Set(p.groups.flatMap((g) => g.members.map((m) => m.device)))
     if (p.kind === 'zfs' || p.kind === 'md' || devices.size !== 1) {
@@ -456,9 +466,9 @@ export function DrivesWidget({ poll }: { poll: Poll<Storage> }) {
       <SectionTitle aside={`${disks.length} ${disks.length === 1 ? 'disk' : 'disks'}`}>Storage</SectionTitle>
       <div className={`flex flex-col gap-3 ${poll.error ? 'opacity-50' : ''}`} title={poll.error}>
         {pools.map((pool) => (
-          <PoolCard key={`${pool.kind}:${pool.name}`} pool={pool} disks={disks} />
+          <PoolCard key={`${pool.kind}:${pool.name}`} pool={pool} disks={disks} partitions={partitions} />
         ))}
-        {[...partitions].map(([device, volumes]) => {
+        {[...partitions].filter(([device]) => !pooled.has(device)).map(([device, volumes]) => {
           const disk = disks.find((d) => d.name === device)
           return disk && <DiskCard key={device} disk={disk} volumes={volumes} />
         })}
