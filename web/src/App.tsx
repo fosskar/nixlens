@@ -168,6 +168,11 @@ export default function App() {
                   apps
                 </p>
               )}
+              {appsPoll.error && (
+                <p className="mt-2 text-sm text-error/90" title={appsPoll.error}>
+                  {appsPoll.data ? 'The app list could not be updated' : 'The app list could not be loaded'}
+                </p>
+              )}
             </header>
             <AppGrid apps={apps} onOpen={openApp} />
           </div>

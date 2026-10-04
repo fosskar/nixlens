@@ -174,6 +174,8 @@ export type Poll<T> = { data?: T; error?: string }
 
 type PollState<T> = Poll<T> & { path: string | null }
 
+const requestTimeout = 15000
+
 export function usePoll<T>(path: string | null, intervalMs: number): Poll<T> {
   const [state, setState] = useState<PollState<T>>({ path })
   // one request at a time: the next starts intervalMs after the previous
@@ -185,7 +187,8 @@ export function usePoll<T>(path: string | null, intervalMs: number): Poll<T> {
     let timer: ReturnType<typeof setTimeout>
     const load = async () => {
       try {
-        const res = await fetch(path, { signal: abort.signal })
+        // a request that never finishes would stop the polling for good
+        const res = await fetch(path, { signal: AbortSignal.any([abort.signal, AbortSignal.timeout(requestTimeout)]) })
         if (!res.ok) {
           const body = (await res.text()).trim()
           throw new Error(body || `${res.status} ${res.statusText}`)
@@ -194,7 +197,12 @@ export function usePoll<T>(path: string | null, intervalMs: number): Poll<T> {
         setState({ path, data })
       } catch (e) {
         if (abort.signal.aborted) return
-        const error = e instanceof Error ? e.message : String(e)
+        const error =
+          e instanceof DOMException && e.name === 'TimeoutError'
+            ? 'request timed out'
+            : e instanceof Error
+              ? e.message
+              : String(e)
         setState((s) => ({ path, data: s.path === path ? s.data : undefined, error }))
       }
       if (!abort.signal.aborted) timer = setTimeout(load, intervalMs)

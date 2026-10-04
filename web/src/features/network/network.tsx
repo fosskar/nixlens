@@ -67,23 +67,25 @@ function Port({ iface }: { iface: NetInterface }) {
 
 // an address chip that copies the bare address, without its prefix length
 function AddressChip({ address }: { address: string }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'copied' | 'failed' | null>(null)
   // the clipboard api exists only on https and localhost
   if (!window.isSecureContext) return <Chip>{address}</Chip>
   const copy = () => {
-    void navigator.clipboard.writeText(address.split('/')[0]).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1200)
-    })
+    // the browser can deny clipboard access
+    navigator.clipboard.writeText(address.split('/')[0]).then(
+      () => setCopied('copied'),
+      () => setCopied('failed'),
+    )
+    setTimeout(() => setCopied(null), 1200)
   }
   return (
     <button
       type="button"
       onClick={copy}
       title="Copy"
-      className={`rounded-md border px-1.5 py-0.5 font-mono text-[10px] outline-accent-cyan transition-colors focus-visible:outline-2 ${copied ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : 'border-white/[0.08] bg-white/[0.04] text-fg-base hover:border-white/20 hover:bg-white/[0.08]'}`}
+      className={`rounded-md border px-1.5 py-0.5 font-mono text-[10px] outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-white/[0.08] bg-white/[0.04] text-fg-base hover:border-white/20 hover:bg-white/[0.08]'}`}
     >
-      {copied ? `✓ copied` : address}
+      {copied === 'copied' ? '✓ copied' : copied === 'failed' ? 'copy failed' : address}
     </button>
   )
 }
