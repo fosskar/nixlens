@@ -140,6 +140,7 @@ testers.runNixOSTest {
     assert any(p["pool"] == root[0]["name"] for p in vda["partitions"]), vda
     vdb = next(d for d in storage["disks"] if d["name"] == "vdb")
     assert any(p["pool"] == "testpool" and p["role"] == "mirror" for p in vdb["partitions"]), vdb
+    assert any(p["pool"] == "" and p["role"] == "zfs reserved" for p in vdb["partitions"]), vdb
 
     agent.succeed("zfs create -o quota=100M testpool/data && zfs snapshot testpool/data@one")
     detail = get(hub, "/api/machines/agent/pool/testpool")

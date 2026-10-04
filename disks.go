@@ -35,13 +35,14 @@ type blockDevice struct {
 	Fstype      string        `json:"fstype"`
 	Label       string        `json:"label"`
 	UUID        string        `json:"uuid"`
+	Parttype    string        `json:"parttype"`
 	Mountpoints []string      `json:"mountpoints"`
 	Children    []blockDevice `json:"children"`
 }
 
 // whole disks with their partition tree; zram is memory, not storage
 func readBlockDevices() ([]blockDevice, error) {
-	out, err := run("lsblk", "--json", "--bytes", "--output", "NAME,TYPE,SIZE,MODEL,SERIAL,TRAN,ROTA,FSTYPE,LABEL,UUID,MOUNTPOINTS")
+	out, err := run("lsblk", "--json", "--bytes", "--output", "NAME,TYPE,SIZE,MODEL,SERIAL,TRAN,ROTA,FSTYPE,LABEL,UUID,PARTTYPE,MOUNTPOINTS")
 	if err != nil {
 		return nil, err
 	}
