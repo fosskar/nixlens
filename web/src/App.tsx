@@ -11,10 +11,10 @@ import { glass } from './widgets'
 
 function greeting(): string {
   const h = new Date().getHours()
-  if (h < 5) return 'Good night'
-  if (h < 12) return 'Good morning'
-  if (h < 18) return 'Good afternoon'
-  return 'Good evening'
+  if (h < 5) return 'good night'
+  if (h < 12) return 'good morning'
+  if (h < 18) return 'good afternoon'
+  return 'good evening'
 }
 
 // viewport centre of an icon; the window turns it into its own transform
@@ -30,7 +30,7 @@ function dockRect(url: string): DOMRect | undefined {
 export default function App() {
   const me = usePoll<Me>('/api/me', 60000).data
   const admin = me?.admin ?? false
-  const firstName = me?.name.split(' ')[0]
+  const firstName = me?.name.split(' ')[0].toLowerCase()
   const overview = usePoll<MachineOverview[]>(admin ? '/api/overview' : null, 10000)
   const machines = overview.data ?? []
   const appsPoll = usePoll<AppEntry[]>('/api/apps', 30000)
