@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":automergeRequireAllStatusChecks",
+    ":configMigration",
+    "abandonments:recommended",
+    "security:minimumReleaseAgeNpm",
+    ":rebaseStalePrs"
+  ],
+  "dependencyDashboard": true,
+  "automerge": true,
+  "platformAutomerge": true,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "postUpdateOptions": ["gomodTidy"],
+  "nix": {
+    "enabled": false
+  }
+}

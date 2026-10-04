@@ -2,23 +2,29 @@
   lib,
   buildGoModule,
   buildNpmPackage,
+  importNpmLock,
 }:
 let
   version = "0.1.0";
 
+  webSrc = lib.fileset.toSource {
+    root = ../web;
+    fileset = lib.fileset.difference ../web (
+      lib.fileset.unions [
+        (lib.fileset.maybeMissing ../web/node_modules)
+        (lib.fileset.maybeMissing ../web/dist)
+      ]
+    );
+  };
+
   web = buildNpmPackage {
     pname = "nos-web";
     inherit version;
-    src = lib.fileset.toSource {
-      root = ../web;
-      fileset = lib.fileset.difference ../web (
-        lib.fileset.unions [
-          (lib.fileset.maybeMissing ../web/node_modules)
-          (lib.fileset.maybeMissing ../web/dist)
-        ]
-      );
-    };
-    npmDepsHash = "sha256-ctX0NmlbZyGMbMljfI+jPqz8f92doBQzmSnY68EPa4w=";
+    src = webSrc;
+    # dependencies come straight from package-lock.json, so dependency
+    # updates need no hash bump
+    npmDeps = importNpmLock { npmRoot = webSrc; };
+    inherit (importNpmLock) npmConfigHook;
     installPhase = ''
       cp -r dist $out
     '';
