@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgb(20 184 166 / 0.35), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgb(99 102 241 / 0.30), transparent 60%),
+    radial-gradient(900px 600px at 50% 120%, rgb(16 185 129 / 0.25), transparent 60%),
+    linear-gradient(180deg, #071a1f 0%, #0c1426 100%);
+  background-attachment: fixed;
+}
