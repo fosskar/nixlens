@@ -23,6 +23,12 @@ func TestParseSmartctl(t *testing.T) {
 		}},
 		{"testdata/smart-standby.json", false, true, func(Smart) bool { return true }},
 	}
+	if _, _, _, err := parseSmartctl([]byte(`{"smartctl":{"exit_status":2,"messages":[{"string":"Smartctl open device: /dev/sdz failed: Permission denied"}]}}`)); err == nil {
+		t.Error("an unopenable device must be an error")
+	}
+	if _, _, ok, err := parseSmartctl([]byte(`{"smartctl":{"exit_status":1,"messages":[{"string":"/dev/vda: Unable to detect device type"}]}}`)); err != nil || ok {
+		t.Errorf("a device without smart must be skipped: ok=%t err=%v", ok, err)
+	}
 	for _, c := range cases {
 		out, err := os.ReadFile(c.file)
 		if err != nil {

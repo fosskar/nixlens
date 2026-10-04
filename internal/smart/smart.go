@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -28,6 +29,12 @@ type Smart struct {
 }
 
 type smartctlOutput struct {
+	Smartctl struct {
+		ExitStatus int `json:"exit_status"`
+		Messages   []struct {
+			String string `json:"string"`
+		} `json:"messages"`
+	} `json:"smartctl"`
 	SerialNumber string `json:"serial_number"`
 	SmartStatus  *struct {
 		Passed bool `json:"passed"`
@@ -56,16 +63,28 @@ type smartctlOutput struct {
 	} `json:"nvme_smart_health_information_log"`
 }
 
+// bit 1 of smartctl's exit status: the device could not be opened, or with
+// -n standby, it was asleep and not queried
+const smartctlOpenFailed = 1 << 1
+
 // parses `smartctl -a --json` output. ok is false when the device reports
 // no smart data at all (virtual disks); standby means smartctl did not query
-// a sleeping drive because of -n standby
+// a sleeping drive because of -n standby. a drive smartctl could not open
+// is an error, not a drive without smart data
 func parseSmartctl(out []byte) (s Smart, standby, ok bool, err error) {
 	var o smartctlOutput
 	if err := json.Unmarshal(out, &o); err != nil {
 		return s, false, false, err
 	}
+	standby = o.PowerMode.Name == "STANDBY" || o.PowerMode.Name == "SLEEP"
+	if o.Smartctl.ExitStatus&smartctlOpenFailed != 0 && !standby {
+		msgs := make([]string, len(o.Smartctl.Messages))
+		for i, m := range o.Smartctl.Messages {
+			msgs[i] = m.String
+		}
+		return s, false, false, fmt.Errorf("device open failed: %s", strings.Join(msgs, "; "))
+	}
 	if o.SerialNumber == "" {
-		standby = o.PowerMode.Name == "STANDBY" || o.PowerMode.Name == "SLEEP"
 		return s, standby, false, nil
 	}
 	if o.SmartStatus != nil {
@@ -125,6 +144,9 @@ func Collect(path string, disks []Device) error {
 		return err
 	}
 	result := map[string]Smart{}
+	// one failing drive keeps its last values and fails the run at the end,
+	// so the other drives still get updated
+	var errs []error
 	for _, d := range disks {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		out, runErr := exec.CommandContext(ctx, "smartctl", "-a", "--json=c", "-n", "standby", "/dev/"+d.Name).Output()
@@ -132,14 +154,18 @@ func Collect(path string, disks []Device) error {
 		// smartctl's exit status is a bit mask that is also set for drives
 		// with logged errors, so the json decides, not the status
 		var exitErr *exec.ExitError
+		key := d.Key
 		if runErr != nil && !errors.As(runErr, &exitErr) {
-			return fmt.Errorf("smartctl %s: %w", d.Name, runErr)
+			errs = append(errs, fmt.Errorf("smartctl %s: %w", d.Name, runErr))
+			keep(result, previous, key)
+			continue
 		}
 		s, standby, ok, err := parseSmartctl(out)
 		if err != nil {
-			return fmt.Errorf("smartctl %s: %w", d.Name, err)
+			errs = append(errs, fmt.Errorf("smartctl %s: %w", d.Name, err))
+			keep(result, previous, key)
+			continue
 		}
-		key := d.Key
 		switch {
 		case standby:
 			prev := previous[key]
@@ -173,5 +199,14 @@ func Collect(path string, disks []Device) error {
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-	return os.Rename(tmp.Name(), path)
+	if err := os.Rename(tmp.Name(), path); err != nil {
+		return err
+	}
+	return errors.Join(errs...)
+}
+
+func keep(result, previous map[string]Smart, key string) {
+	if prev, ok := previous[key]; ok {
+		result[key] = prev
+	}
 }
