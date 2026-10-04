@@ -161,29 +161,33 @@ type PollState<T> = Poll<T> & { path: string | null }
 
 export function usePoll<T>(path: string | null, intervalMs: number): Poll<T> {
   const [state, setState] = useState<PollState<T>>({ path })
+  // one request at a time: the next starts intervalMs after the previous
+  // finished, so a slow peer cannot stack requests or let an old answer
+  // overwrite a newer one
   useEffect(() => {
     if (path === null) return
-    let cancelled = false
+    const abort = new AbortController()
+    let timer: ReturnType<typeof setTimeout>
     const load = async () => {
       try {
-        const res = await fetch(path)
+        const res = await fetch(path, { signal: abort.signal })
         if (!res.ok) {
           const body = (await res.text()).trim()
           throw new Error(body || `${res.status} ${res.statusText}`)
         }
         const data = (await res.json()) as T
-        if (!cancelled) setState({ path, data })
+        setState({ path, data })
       } catch (e) {
-        if (cancelled) return
+        if (abort.signal.aborted) return
         const error = e instanceof Error ? e.message : String(e)
         setState((s) => ({ path, data: s.path === path ? s.data : undefined, error }))
       }
+      if (!abort.signal.aborted) timer = setTimeout(load, intervalMs)
     }
     load()
-    const timer = setInterval(load, intervalMs)
     return () => {
-      cancelled = true
-      clearInterval(timer)
+      abort.abort()
+      clearTimeout(timer)
     }
   }, [path, intervalMs])
   return state.path === path ? state : {}

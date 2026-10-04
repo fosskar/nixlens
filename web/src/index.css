@@ -20,7 +20,7 @@
 
   --color-fg-base: #cccccc;
   --color-fg-muted: #9d9d9d;
-  --color-fg-dim: #616161;
+  --color-fg-dim: #959595;
   --color-fg-inverse: #ffffff;
 
   --color-accent: #16a085;
@@ -120,13 +120,31 @@ body::before {
     0 6px 20px -10px rgb(22 160 133 / 0.55);
 }
 
+/* reduced motion: movement and animation become instant everywhere,
+   including utilities, hence !important */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* in the components layer, so utilities can override these without ! */
+@layer components {
 .nos-window {
   --nos-ease: cubic-bezier(0.22, 1, 0.36, 1);
   transition:
     transform 350ms var(--nos-ease),
     opacity 350ms var(--nos-ease),
-    visibility 0s linear 0s;
+    visibility 0s linear 0s,
+    inset 350ms var(--nos-ease),
+    border-radius 350ms var(--nos-ease);
 }
+
 
 .nos-window[data-state="home"],
 .nos-window[data-state="switch"] {
@@ -204,25 +222,6 @@ body::before {
   50% { transform: scale(1.04); opacity: 1; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .nos-window,
-  .nos-window[data-state] {
-    transform: none;
-    transition: opacity 150ms ease, visibility 0s linear 0s;
-  }
-
-  .nos-window[data-state="home"],
-  .nos-window[data-state="switch"] {
-    transition: opacity 150ms ease, visibility 0s linear 150ms;
-  }
-
-  .nos-breathe,
-  .nos-led-warn,
-  .nos-modal {
-    animation: none;
-  }
-}
-
 /* apps fade out before they reach the dock. the mask needs the content to
    scroll inside a viewport-sized box, which the md layout provides; below md
    the page itself scrolls, so a fixed overlay does the fade there */
@@ -257,12 +256,6 @@ body::before {
 .nos-scroll-hint[data-direction='up'] svg {
   animation: nos-hint-bob 2.4s ease-in-out infinite reverse;
 }
-@media (prefers-reduced-motion: reduce) {
-  .nos-scroll-hint svg {
-    animation: none;
-  }
-}
-
 @keyframes nos-view-from-right {
   from { opacity: 0; translate: 1.5rem 0; }
 }
@@ -275,14 +268,8 @@ body::before {
 .nos-view-back {
   animation: nos-view-from-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-@media (prefers-reduced-motion: reduce) {
-  .nos-view-forward,
-  .nos-view-back {
-    animation: none;
-  }
-}
-
 .nos-nvme-pins {
   background-image: repeating-linear-gradient(90deg, rgb(199 154 58 / 0.85) 0 2px, transparent 2px 3.5px);
   box-shadow: inset 0 1px 0 rgb(0 0 0 / 0.4);
+}
 }

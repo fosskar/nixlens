@@ -6,6 +6,7 @@ import { DrivesWidget } from './storage'
 import { MachineSwitcher, SystemWidget, glass } from './widgets'
 
 const machineKey = 'nos.machine'
+const maximizedKey = 'nos.maximized'
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -53,6 +54,13 @@ export default function App() {
   const [origins, setOrigins] = useState<Record<string, string>>({})
   const [closing, setClosing] = useState<string[]>([])
   const closingRef = useRef(new Set<string>())
+  // where keyboard focus was before an app came to the front, to return there
+  const returnFocus = useRef<HTMLElement | null>(null)
+  const [maximized, setMaximized] = useState(() => localStorage.getItem(maximizedKey) === 'true')
+  const toggleMaximized = () => {
+    localStorage.setItem(maximizedKey, String(!maximized))
+    setMaximized(!maximized)
+  }
 
   const setOrigin = (url: string, rect?: DOMRect) => {
     if (rect) setOrigins((o) => ({ ...o, [url]: originOf(rect) }))
@@ -67,8 +75,13 @@ export default function App() {
     closingRef.current.delete(app.url)
     setClosing((c) => c.filter((u) => u !== app.url))
     setOpen((o) => (o.some((a) => a.url === app.url) ? o : [...o, app]))
+    if (active === null && document.activeElement instanceof HTMLElement) returnFocus.current = document.activeElement
     setActive(app.url)
   }
+
+  useEffect(() => {
+    if (active === null) returnFocus.current?.focus()
+  }, [active])
 
   const goHome = () => {
     if (active) setOrigin(active, dockRect(active))
@@ -103,9 +116,6 @@ export default function App() {
   }, [active])
 
   const self = machines.find((m) => m.self)
-  useEffect(() => {
-    if (self) document.title = self.name
-  }, [self])
 
   const online = machines.filter((m) => m.online).length
 
@@ -113,8 +123,9 @@ export default function App() {
     <div className="min-h-screen font-sans text-fg-base">
       <div
         className={`transition-opacity duration-300 ${active ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
-        aria-hidden={active !== null}
+        inert={active !== null}
       >
+        {self && <title>{self.name}</title>}
         {admin && (
           <aside
             className={`${glass} m-3 mt-[calc(0.75rem+var(--safe-top))] flex flex-col md:fixed md:top-[calc(0.75rem+var(--safe-top))] md:bottom-[calc(0.75rem+var(--safe-bottom))] md:left-[calc(0.75rem+var(--safe-left))] md:m-0 md:w-[22rem] md:overflow-hidden`}
@@ -169,6 +180,8 @@ export default function App() {
           app={app}
           state={active === app.url ? 'shown' : active === null ? 'home' : 'switch'}
           origin={origins[app.url]}
+          maximized={maximized}
+          onToggleMaximize={toggleMaximized}
           onMinimize={goHome}
           onClose={() => closeApp(app)}
         />

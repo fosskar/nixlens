@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react'
+import { type ReactNode, createContext, use, useEffect, useEffectEvent, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   type Dataset,
@@ -223,7 +223,7 @@ function Led({ health, small, asleep }: { health: Health; small?: boolean; aslee
   return (
     <span
       title={asleep ? 'asleep' : undefined}
-      className={`nos-led nos-led-${health} ${small ? '!h-1.5 !w-1.5' : ''} ${asleep ? 'nos-led-asleep' : ''}`}
+      className={`nos-led nos-led-${health} ${small ? 'h-1.5 w-1.5' : ''} ${asleep ? 'nos-led-asleep' : ''}`}
     />
   )
 }
@@ -391,8 +391,10 @@ function PoolRow({
 
 type Crumb = { label: string; onClick: () => void }
 
+// the open popup's title element, which names the dialog
+const ModalTitleId = createContext<string | undefined>(undefined)
+
 function Modal({
-  label,
   focusKey,
   direction,
   trail,
@@ -400,7 +402,6 @@ function Modal({
   onClose,
   children,
 }: {
-  label: string
   focusKey: string
   direction: 'forward' | 'back' | 'none'
   trail: Crumb[]
@@ -409,6 +410,7 @@ function Modal({
   children: ReactNode
 }) {
   const panel = useRef<HTMLDivElement>(null)
+  const titleId = useId()
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault()
@@ -464,7 +466,7 @@ function Modal({
         ref={panel}
         role="dialog"
         aria-modal="true"
-        aria-label={label}
+        aria-labelledby={titleId}
         tabIndex={-1}
         className="nos-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-3xl flex-col overflow-hidden rounded-[22px] font-sans text-fg-base outline-none"
       >
@@ -500,7 +502,7 @@ function Modal({
           </nav>
         )}
         <div key={focusKey} className={`flex min-h-0 flex-col nos-view-${direction}`}>
-          {children}
+          <ModalTitleId value={titleId}>{children}</ModalTitleId>
         </div>
       </div>
     </div>,
@@ -853,7 +855,9 @@ function PoolModal({
   return (
     <>
       <ModalHeader onClose={onClose}>
-        <span className="truncate font-mono text-lg font-semibold text-fg-inverse">{pool.name}</span>
+        <span id={use(ModalTitleId)} className="truncate font-mono text-lg font-semibold text-fg-inverse">
+          {pool.name}
+        </span>
         <TypeBadge>{poolType(pool)}</TypeBadge>
         <span className="ml-auto">
           <HealthPill pool={pool} />
@@ -921,7 +925,9 @@ function DriveModal({
       <ModalHeader onClose={onClose}>
         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
         <span className="min-w-0">
-          <span className="block truncate text-base font-semibold text-fg-inverse">{disk.model || disk.name}</span>
+          <span id={use(ModalTitleId)} className="block truncate text-base font-semibold text-fg-inverse">
+            {disk.model || disk.name}
+          </span>
           <span className="block truncate font-mono text-[11px] text-fg-muted">{disk.serial}</span>
           {memberships.length > 0 && (
             <span className="mt-1.5 flex flex-wrap gap-1.5">
@@ -1144,7 +1150,6 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
       </div>
       {(openPool || openDisk) && (
         <Modal
-          label={openPool ? `Pool ${openPool.name}` : `Drive ${openDisk?.serial || openDisk?.name}`}
           focusKey={`${stack.length}:${open?.kind}:${open?.name}`}
           direction={direction}
           trail={trail}
