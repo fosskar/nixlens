@@ -222,10 +222,21 @@ in
           "AF_INET"
           "AF_INET6"
           "AF_UNIX"
-          "AF_NETLINK"
         ];
         SystemCallArchitectures = "native";
+        SystemCallFilter = [
+          "@system-service"
+          "~@privileged @resources"
+        ];
+        SystemCallErrorNumber = "EPERM";
         CapabilityBoundingSet = "";
+        ProtectKernelTunables = true;
+        ProtectProc = "invisible";
+        # lsblk reads sysfs and the udev database; zpool and zfs need /dev/zfs
+        DevicePolicy = "closed";
+        DeviceAllow = lib.optional config.boot.zfs.enabled "/dev/zfs rw";
+        MemoryMax = "256M";
+        TasksMax = 64;
         UMask = "0077";
       };
     };
@@ -246,12 +257,25 @@ in
         RuntimeDirectoryPreserve = true;
         # smartctl needs CAP_SYS_RAWIO for ata passthrough and CAP_SYS_ADMIN
         # for nvme admin commands; everything else stays closed
-        CapabilityBoundingSet = [
-          "CAP_SYS_RAWIO"
-          "CAP_SYS_ADMIN"
-        ];
+        CapabilityBoundingSet = "CAP_SYS_RAWIO CAP_SYS_ADMIN";
         PrivateNetwork = true;
+        IPAddressDeny = "any";
         RestrictAddressFamilies = [ "AF_UNIX" ];
+        # read access to disks is enough for smart queries
+        DevicePolicy = "closed";
+        DeviceAllow = [
+          "block-sd r"
+          "block-blkext r"
+          "char-nvme r"
+        ];
+        SystemCallFilter = [
+          "@system-service"
+          "~@privileged @resources"
+        ];
+        SystemCallErrorNumber = "EPERM";
+        ProtectKernelTunables = true;
+        ProtectProc = "invisible";
+        UMask = "0022";
         ProtectSystem = "strict";
         ProtectHome = true;
         PrivateTmp = true;
