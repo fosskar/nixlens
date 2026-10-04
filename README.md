@@ -18,7 +18,7 @@ _A home screen and status overview for your NixOS machines_
 
 </div>
 
-nOS is a single place to open your self-hosted apps and see how your machines are doing _right now_: which ones are up, how busy they are, and whether every pool and drive is healthy. Think of a homepage-style launcher paired with the storage view of a NAS operating system, built for NixOS and configured entirely in Nix.
+nOS is a single place to open your self-hosted apps and see how your machines are doing _right now_: which ones are up, how busy they are, whether every pool and drive is healthy, and where each machine is reachable. Think of a homepage-style launcher paired with the storage view of a NAS operating system, built for NixOS and configured entirely in Nix.
 
 > [!NOTE]
 > nOS shows live state only. It keeps no history, draws no charts and sends no alerts. Pair it with a monitoring tool if you need those.
@@ -27,9 +27,11 @@ nOS is a single place to open your self-hosted apps and see how your machines ar
 
 - **App home screen.** Apps declared in Nix, grouped into collapsible categories, with icons from [dashboard-icons](https://github.com/homarr-labs/dashboard-icons), [selfh.st](https://selfh.st/icons/) or [Material Design Icons](https://pictogrammers.com/library/mdi/).
 - **App windows and a dock.** Apps open inside nOS and stay alive in the background, so switching is instant. Windows float or maximize above the dock. Apps that forbid framing are detected from their headers and open in a new tab instead.
-- **Machines at a glance.** CPU, installed and used memory, swap by kind, load, uptime, NixOS version and kernel for every machine.
-- **Storage that makes sense.** ZFS and md pools with their vdev layout, plain filesystems as volumes, and every physical drive drawn once. Hovering links pools and drives; popups show the vdev tree, datasets with quotas and snapshots, partition tables and SMART health.
+- **Machines at a glance.** A sidebar card per machine with CPU and memory rings, uptime, NixOS release and kernel, every pool with its drives, and anything that needs a look. Offline machines say why.
+- **Everything about a machine on one page.** System, network, every pool and every drive in one popup. A pool or drive clicked in the sidebar is scrolled to and marked. Every view has an address, so back, reload and bookmarks work, also with the back gesture of an installed app.
+- **Storage that makes sense.** ZFS and md pools, btrfs, ext4 and other file systems. Capacity is drawn over the raw space of the drives, so you see what redundancy takes, and each vdev shows how many failures it survives. Datasets with quotas and snapshots, partition tables, and a link to look up a replacement drive on geizhals.de.
 - **SMART without waking drives.** Health, temperature, wear and sector counts, collected by a separate privileged oneshot that never spins up a sleeping disk.
+- **Network.** Ethernet ports with their link and the speed they support, and every connection with its addresses: bonds, bridges, WireGuard and other tunnels. Click an address to copy it.
 - **Multi-machine.** One hub aggregates any number of agents over mutual TLS.
 - **Groups from your SSO.** Behind a forward-auth proxy, admins see machines and storage while everyone else gets the app grid.
 - **Read-only and small.** Agents never write to the system, run unprivileged under strict systemd hardening and do no work while nobody is looking.
@@ -37,11 +39,13 @@ nOS is a single place to open your self-hosted apps and see how your machines ar
 
 ## Screenshots
 
-| Pool details                                                                           | Drive details                                                                      |
-| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| ![ZFS pool popup with vdev tree, properties and datasets](./docs/screenshots/pool.png) | ![Drive popup with SMART values and partition table](./docs/screenshots/drive.png) |
-| **App window**                                                                         | **View for non-admins**                                                            |
-| ![An app open in an nOS window above the dock](./docs/screenshots/app-window.png)      | ![App grid without the admin sidebar](./docs/screenshots/user-view.png)            |
+| Machine details                                                                             | Pool                                                                                       |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| ![Machine popup with system, network ports and connections](./docs/screenshots/machine.png) | ![Pool with capacity dots, vdevs and their failure tolerance](./docs/screenshots/pool.png) |
+| **Drive**                                                                                   | **App window**                                                                             |
+| ![Drive with SMART values, partitions and a shop link](./docs/screenshots/drive.png)        | ![An app open in an nOS window above the dock](./docs/screenshots/app-window.png)          |
+| **View for non-admins**                                                                     |                                                                                            |
+| ![App grid without the admin sidebar](./docs/screenshots/user-view.png)                     |                                                                                            |
 
 <details>
 <summary>On a phone</summary>
@@ -66,7 +70,7 @@ flowchart LR
 
 nOS is one Go binary built from the standard library only, with the React UI embedded:
 
-- **Agent** (every machine): answers `/api/local/*` with system, storage and app data. It reads `/proc`, `/sys`, `lsblk`, `zpool` and `zfs` on request and keeps no state.
+- **Agent** (every machine): answers `/api/local/*` with system, storage, network and app data. It reads `/proc`, `/sys`, netlink, `lsblk`, `zpool`, `zfs` and `ethtool` on request and keeps no state.
 - **Hub** (one machine): serves the UI on loopback behind your reverse proxy, fetches its peers' data server-side and decides per app whether it may be framed. It reads the user's groups from the proxy's `Remote-*` headers.
 - **SMART collector**: a separate oneshot with raw disk access writes `/run/nos-smart/smart.json`, so the agent itself never needs privileges.
 
@@ -202,7 +206,7 @@ An app's `icon` can be a dashboard-icons file or name (`jellyfin.svg`), a selfh.
 
 ## Security
 
-- **Read-only agents.** The agent runs as a `DynamicUser` with an empty capability set, a read-only file system, a system call allow-list, closed device access apart from `/dev/zfs`, and memory and task limits. `systemd-analyze security` rates it 1.5.
+- **Read-only agents.** The agent runs as a `DynamicUser` with an empty capability set, a read-only file system, a system call allow-list, closed device access apart from `/dev/zfs`, only the `AF_INET`, `AF_INET6`, `AF_NETLINK` and `AF_UNIX` socket families, and memory and task limits. `systemd-analyze security` rates it 1.5.
 - **Privileged parts are isolated.** Reading installed memory from SMBIOS runs once in a privileged `ExecStartPre`. SMART runs in `nos-smart.service` with only `CAP_SYS_RAWIO` and `CAP_SYS_ADMIN`, read-only disk access and no network.
 - **Transport.** Mutual TLS 1.3 between hub and agents, with role-bound certificates. Keys reach the services through `LoadCredential` and may not live in the Nix store.
 - **Browser.** The UI is served with a strict Content Security Policy and `frame-ancestors 'none'`.
@@ -222,7 +226,7 @@ go build -o nos . && ./nos -hub
 # frontend with hot reload, proxying /api to a hub on 127.0.0.1:7480
 cd web && npm install && npm run dev
 
-# two-node NixOS VM test: mTLS, ZFS, SMART, groups and apps
+# two-node NixOS VM test: mTLS, ZFS, SMART, network, groups and apps
 nix build .#checks.x86_64-linux.nixos-test
 ```
 
