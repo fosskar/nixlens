@@ -22,6 +22,7 @@ export type NetInterface = {
   up: boolean
   state: string
   speedMbps?: number
+  maxSpeedMbps?: number
   mac?: string
   mtu: number
   driver?: string

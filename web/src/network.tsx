@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { NetInterface, Poll } from './api'
 import { Led } from './storage'
 import { SectionTitle, Unavailable, card } from './widgets'
@@ -38,6 +39,15 @@ function details(iface: NetInterface): string {
     .join('\n')
 }
 
+// the link speed, and the port's own when the link is slower; a port
+// without a link shows what it could do
+function portSpeed(iface: NetInterface): string {
+  const max = speedLabel(iface.maxSpeedMbps)
+  if (!iface.up || !iface.speedMbps) return max || '—'
+  const speed = speedLabel(iface.speedMbps)
+  return max && (iface.maxSpeedMbps ?? 0) > iface.speedMbps ? `${speed}/${max}` : speed
+}
+
 // an rj45 socket: the latch notch on top, gold contacts below it, the
 // speed on the body and the link led underneath
 function Port({ iface }: { iface: NetInterface }) {
@@ -47,14 +57,35 @@ function Port({ iface }: { iface: NetInterface }) {
         className={`relative flex h-11 w-14 flex-col items-center rounded-md bg-bg-elevated/90 pt-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-white/10 ${iface.up ? '' : 'opacity-45'}`}
       >
         <span className="h-1.5 w-5 rounded-b-sm bg-black/70" />
-        <span className="mt-0.5 font-mono text-[10px] font-semibold text-fg-inverse">
-          {speedLabel(iface.speedMbps) || '—'}
-        </span>
+        <span className="mt-0.5 font-mono text-[10px] font-semibold text-fg-inverse">{portSpeed(iface)}</span>
         <span className="nos-nvme-pins absolute bottom-1.5 h-1.5 w-9 rounded-[1px]" />
       </div>
       <Led health={iface.up ? 'ok' : 'unknown'} small />
       <span className="w-full truncate text-center font-mono text-[9px] text-fg-muted">{iface.name}</span>
     </div>
+  )
+}
+
+// an address chip that copies the bare address, without its prefix length
+function AddressChip({ address }: { address: string }) {
+  const [copied, setCopied] = useState(false)
+  // the clipboard api exists only on https and localhost
+  if (!window.isSecureContext) return <Chip>{address}</Chip>
+  const copy = () => {
+    void navigator.clipboard.writeText(address.split('/')[0]).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1200)
+    })
+  }
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title="Copy"
+      className={`rounded-md border px-1.5 py-0.5 font-mono text-[10px] outline-accent-cyan transition-colors focus-visible:outline-2 ${copied ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : 'border-white/[0.08] bg-white/[0.04] text-fg-base hover:border-white/20 hover:bg-white/[0.08]'}`}
+    >
+      {copied ? `✓ copied` : address}
+    </button>
   )
 }
 
@@ -88,14 +119,14 @@ function Connection({ iface, members }: { iface: NetInterface; members: NetInter
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2 text-[12px]">
-          <span className="font-medium text-fg-inverse">{kindLabels[iface.kind] ?? iface.kind}</span>
+          <span className="font-mono font-medium text-fg-inverse">{iface.name}</span>
+          <span className="text-[11px] text-fg-muted">{kindLabels[iface.kind] ?? iface.kind}</span>
           {!iface.up && <span className="text-[11px] text-fg-dim">{iface.state}</span>}
         </div>
         <div className="mt-1 flex flex-wrap gap-1">
-          <Chip>{iface.name}</Chip>
           {iface.speedMbps && <Chip dim>{speedLabel(iface.speedMbps)}</Chip>}
           {shown.map((a) => (
-            <Chip key={a}>{a}</Chip>
+            <AddressChip key={a} address={a} />
           ))}
           {hidden > 0 && <Chip dim>{`+${hidden}`}</Chip>}
           {members.length > 0 && <Chip dim>{`via ${members.map((m) => m.name).join(', ')}`}</Chip>}
