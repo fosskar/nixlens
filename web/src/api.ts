@@ -47,6 +47,17 @@ export type Disk = {
   rotational: boolean
   pool?: string
   group?: string
+  partitions: Partition[]
+}
+
+export type Partition = {
+  name: string
+  size: number
+  fstype: string
+  label: string
+  mount: string
+  pool: string
+  role: string
 }
 
 export type PoolMember = {
@@ -87,6 +98,37 @@ export type Pool = {
 export type Storage = {
   pools: Pool[]
   disks: Disk[]
+}
+
+export type PoolProperties = {
+  ashift: string
+  autotrim: string
+  fragmentation: string
+  dedupratio: string
+  compression: string
+  encryption: string
+  recordsize: string
+  atime: string
+}
+
+export type Dataset = {
+  name: string
+  type: 'filesystem' | 'volume' | string
+  used: number
+  available: number
+  referenced: number
+  quota: number
+  reservation: number
+  compressRatio: string
+  mountpoint: string
+  snapshots: number
+  snapshotsUsed: number
+  lastSnapshot: number
+}
+
+export type PoolDetail = {
+  properties: PoolProperties
+  datasets: Dataset[]
 }
 
 export type App = {

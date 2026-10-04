@@ -163,6 +163,22 @@ body::before {
 .nos-led-error { --nos-led: var(--color-error); }
 .nos-led-unknown { --nos-led: var(--color-fg-dim); box-shadow: none; }
 
+.nos-modal-backdrop {
+  animation: nos-fade 200ms ease-out;
+}
+
+.nos-modal {
+  animation: nos-modal-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes nos-fade {
+  from { opacity: 0; }
+}
+
+@keyframes nos-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+}
+
 @keyframes nos-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
@@ -186,7 +202,8 @@ body::before {
   }
 
   .nos-breathe,
-  .nos-led-warn {
+  .nos-led-warn,
+  .nos-modal {
     animation: none;
   }
 }
@@ -199,3 +216,4 @@ body::before {
     mask-image: linear-gradient(to bottom, transparent 0, black 2.5rem, black calc(100% - 11rem), transparent calc(100% - 4.5rem));
   }
 }
+

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { type App as AppEntry, type Machine, type Me, type Storage, type System, usePoll } from './api'
 import { AppGrid, AppWindow, Dock, windowMargin } from './apps'
-import { DrivesWidget, MachineSwitcher, SystemWidget, glass } from './widgets'
+import { DrivesWidget } from './storage'
+import { MachineSwitcher, SystemWidget, glass } from './widgets'
 
 const machineKey = 'nos.machine'
 
@@ -129,7 +130,7 @@ export default function App() {
             {selected && (
               <>
                 <SystemWidget poll={system} />
-                <DrivesWidget poll={storage} />
+                <DrivesWidget key={selected} poll={storage} machine={selected} />
               </>
             )}
           </aside>
