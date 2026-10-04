@@ -350,24 +350,6 @@ body::before {
     animation: nos-panel-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
   }
 
-  @keyframes nos-view-from-right {
-    from {
-      opacity: 0;
-      translate: 1.5rem 0;
-    }
-  }
-  @keyframes nos-view-from-left {
-    from {
-      opacity: 0;
-      translate: -1.5rem 0;
-    }
-  }
-  .nos-view-forward {
-    animation: nos-view-from-right 260ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .nos-view-back {
-    animation: nos-view-from-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
   .nos-nvme-pins {
     background-image: repeating-linear-gradient(90deg, rgb(199 154 58 / 0.85) 0 2px, transparent 2px 3.5px);
     box-shadow: inset 0 1px 0 rgb(0 0 0 / 0.4);

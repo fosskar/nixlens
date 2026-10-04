@@ -96,8 +96,3 @@ export function canGoBack(): boolean {
 export function goBack() {
   history.back()
 }
-
-// for view transitions: whether the current entry came after the previous one
-export function historyIndex(): number {
-  return state().idx
-}

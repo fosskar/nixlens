@@ -1,5 +1,5 @@
 // health and capacity rules shared by the storage views and the overview
-import type { Disk, Pool, PoolMember, Smart } from './api'
+import type { Disk, Pool, PoolMember, Smart, Storage } from './api'
 
 export type Health = 'ok' | 'warn' | 'error' | 'unknown'
 
@@ -85,4 +85,30 @@ export function driveHealth(disk: Disk, pools: Pool[]): Health {
     )
   const smart = smartHealth(disk.smart)
   return worst(smart ? [...members, smart] : members)
+}
+
+function poolDrives(pool: Pool, disks: Disk[]): Set<string> {
+  const names = new Set(pool.groups.flatMap((g) => g.members.map((m) => m.device)).filter((d) => d !== ''))
+  for (const disk of disks) {
+    if ((disk.partitions ?? []).some((p) => p.pool === pool.name)) names.add(disk.name)
+  }
+  return names
+}
+
+// drives grouped by the first pool they belong to, in vdev order; boot
+// partitions are left out, and drives in no other pool come last
+export function poolBays(storage: Storage): { bays: { pool: Pool; drives: Disk[] }[]; rest: Disk[] } {
+  const disks = storage.disks ?? []
+  const placed = new Set<string>()
+  const bays = (storage.pools ?? [])
+    .filter((pool) => pool.kind !== 'vfat')
+    .map((pool) => {
+      const names = poolDrives(pool, disks)
+      const order = pool.groups.flatMap((g) => g.members.map((m) => m.device))
+      const rank = (d: Disk) => (order.includes(d.name) ? order.indexOf(d.name) : order.length)
+      const drives = disks.filter((d) => names.has(d.name) && !placed.has(d.name)).sort((a, b) => rank(a) - rank(b))
+      drives.forEach((d) => placed.add(d.name))
+      return { pool, drives }
+    })
+  return { bays, rest: disks.filter((d) => !placed.has(d.name)) }
 }

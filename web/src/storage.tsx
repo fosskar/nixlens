@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, use, useEffect, useEffectEvent, useId, useRef, useState } from 'react'
+import { type ReactNode, createContext, use, useEffect, useEffectEvent, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   type Dataset,
@@ -18,6 +18,7 @@ import {
   driveHealth,
   formatCapacity,
   memberHealth,
+  poolBays,
   poolHealth,
   redundant,
   resilvering,
@@ -114,14 +115,6 @@ function poolType(pool: Pool): string {
       .filter((l) => l !== '' && l !== 'single'),
   )
   return layouts.size > 0 ? `${pool.kind} · ${[...layouts].join(' + ')}` : pool.kind
-}
-
-function poolDrives(pool: Pool, disks: Disk[]): Set<string> {
-  const names = new Set(pool.groups.flatMap((g) => g.members.map((m) => m.device)).filter((d) => d !== ''))
-  for (const disk of disks) {
-    if ((disk.partitions ?? []).some((p) => p.pool === pool.name)) names.add(disk.name)
-  }
-  return names
 }
 
 function trailingNumber(name: string): string | undefined {
@@ -283,29 +276,13 @@ export type Target = { kind: 'pool' | 'disk'; name: string }
 
 const linkTransition = 'transition-[opacity,background-color,border-color] duration-200 motion-reduce:transition-none'
 
-function PoolRow({
-  pool,
-  lit,
-  dim,
-  onHover,
-  onOpen,
-}: {
-  pool: Pool
-  lit: boolean
-  dim: boolean
-  onHover: (hovered: boolean) => void
-  onOpen: () => void
-}) {
+function PoolRow({ pool, onOpen }: { pool: Pool; onOpen: () => void }) {
   const mounted = redundant(pool) || pool.state === 'mounted'
   return (
     <button
       type="button"
       onClick={onOpen}
-      onMouseEnter={() => onHover(true)}
-      onMouseLeave={() => onHover(false)}
-      onFocus={() => onHover(true)}
-      onBlur={() => onHover(false)}
-      className={`glass-card w-full rounded-xl px-3 py-2.5 text-left outline-accent-cyan hover:bg-white/[0.07] focus-visible:outline-2 ${linkTransition} ${dim ? 'opacity-35' : ''} ${lit ? 'border-accent-cyan/30 bg-white/[0.07]' : ''}`}
+      className={`glass-card w-full rounded-xl px-3 py-2.5 text-left outline-accent-cyan hover:bg-white/[0.07] focus-visible:outline-2 ${linkTransition}`}
     >
       <div className="flex items-center gap-2">
         <Led health={poolHealth(pool)} />
@@ -316,7 +293,7 @@ function PoolRow({
       </div>
       <div className="mt-2 flex items-center gap-3">
         {mounted ? <UsageBar percent={usedPercent(pool)} className="h-1 flex-1" /> : <span className="flex-1" />}
-        <span className="min-w-[7.5rem] shrink-0 text-right font-mono text-[11px] text-fg-muted tabular-nums">
+        <span className="shrink-0 text-right font-mono text-[11px] text-fg-muted tabular-nums">
           {mounted ? formatUsage(pool.used, pool.usable) : 'not mounted'}
         </span>
       </div>
@@ -324,22 +301,16 @@ function PoolRow({
   )
 }
 
-export type Crumb = { label: string; onClick: () => void }
-
 // the open popup's title element, which names the dialog
 const ModalTitleId = createContext<string | undefined>(undefined)
 
 export function Modal({
   focusKey,
-  direction,
-  trail,
   onBack,
   onClose,
   children,
 }: {
   focusKey: string
-  direction: 'forward' | 'back' | 'none'
-  trail: Crumb[]
   onBack?: () => void
   onClose: () => void
   children: ReactNode
@@ -397,48 +368,30 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="nos-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-3xl flex-col overflow-hidden rounded-[22px] font-sans text-fg-base outline-none"
+        className="nos-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-5xl flex-col overflow-hidden rounded-[22px] font-sans text-fg-base outline-none"
       >
-        {(onBack || trail.length > 1) && (
+        {onBack && (
           <nav className="flex shrink-0 items-center gap-1 border-b border-white/[0.06] px-3 py-2 text-[11px]">
-            {onBack && (
-              <button
-                type="button"
-                onClick={onBack}
-                title="Back (Alt+←)"
-                className="mr-1 flex items-center gap-1 rounded-lg px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+            <button
+              type="button"
+              onClick={onBack}
+              title="Back (Alt+←)"
+              className="mr-1 flex items-center gap-1 rounded-lg px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5 fill-none stroke-current"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-3.5 w-3.5 fill-none stroke-current"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M15 6l-6 6 6 6" />
-                </svg>
-                Back
-              </button>
-            )}
-            {trail.map((crumb, i) => (
-              <span key={i} className="flex min-w-0 items-center gap-1">
-                {i > 0 && <span className="text-fg-dim">›</span>}
-                {i === trail.length - 1 ? (
-                  <span className="truncate px-1 font-mono text-fg-inverse">{crumb.label}</span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={crumb.onClick}
-                    className="truncate rounded-md px-1 font-mono text-fg-muted transition outline-accent-cyan hover:text-fg-inverse focus-visible:outline-2"
-                  >
-                    {crumb.label}
-                  </button>
-                )}
-              </span>
-            ))}
+                <path d="M15 6l-6 6 6 6" />
+              </svg>
+              Back
+            </button>
           </nav>
         )}
-        <div key={focusKey} className={`flex min-h-0 flex-col nos-view-${direction}`}>
+        <div key={focusKey} className="flex min-h-0 flex-col">
           <ModalTitleId value={titleId}>{children}</ModalTitleId>
         </div>
       </div>
@@ -803,63 +756,58 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
   )
 }
 
-export function PoolModal({
+// everything about one pool, as a block of the machine view
+export function PoolDetail({
   pool,
   disks,
   machine,
   onOpenDisk,
-  onClose,
 }: {
   pool: Pool
   disks: Disk[]
   machine: string
   onOpenDisk: (name: string) => void
-  onClose: () => void
 }) {
   const members = pool.groups.flatMap((g) => g.members)
   return (
     <>
-      <ModalHeader onClose={onClose}>
-        <span id={use(ModalTitleId)} className="truncate font-mono text-lg font-semibold text-fg-inverse">
-          {pool.name}
-        </span>
+      <div className="flex items-center gap-3">
+        <h3 className="truncate font-mono text-base font-semibold text-fg-inverse">{pool.name}</h3>
         <TypeBadge>{poolType(pool)}</TypeBadge>
         <span className="ml-auto">
           <HealthPill pool={pool} />
         </span>
-      </ModalHeader>
-      <ModalBody>
-        <UsageSummary pool={pool} />
-        {redundant(pool) ? (
-          <VdevTree pool={pool} disks={disks} onOpenDisk={onOpenDisk} />
-        ) : (
-          <>
-            <Facts
-              rows={[
-                ['Type', pool.kind],
-                ['Mount point', pool.mount || 'not mounted'],
-                ['Size', formatCapacity(pool.raw || pool.usable)],
-              ]}
-            />
-            <section>
-              <SectionTitle>Lives on</SectionTitle>
-              <div className={`${card} p-2`}>
-                {members.map((member, i) => (
-                  <MemberRow
-                    key={member.path || i}
-                    member={member}
-                    pool={pool}
-                    disk={disks.find((d) => d.name === member.device)}
-                    showState={false}
-                    onOpenDisk={onOpenDisk}
-                  />
-                ))}
-              </div>
-            </section>
-          </>
-        )}
-        {pool.kind === 'zfs' && <ZfsDetail machine={machine} pool={pool} />}
-      </ModalBody>
+      </div>
+      <UsageSummary pool={pool} />
+      {redundant(pool) ? (
+        <VdevTree pool={pool} disks={disks} onOpenDisk={onOpenDisk} />
+      ) : (
+        <>
+          <Facts
+            rows={[
+              ['Type', pool.kind],
+              ['Mount point', pool.mount || 'not mounted'],
+              ['Size', formatCapacity(pool.raw || pool.usable)],
+            ]}
+          />
+          <section>
+            <SectionTitle>Lives on</SectionTitle>
+            <div className={`${card} p-2`}>
+              {members.map((member, i) => (
+                <MemberRow
+                  key={member.path || i}
+                  member={member}
+                  pool={pool}
+                  disk={disks.find((d) => d.name === member.device)}
+                  showState={false}
+                  onOpenDisk={onOpenDisk}
+                />
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+      {pool.kind === 'zfs' && <ZfsDetail machine={machine} pool={pool} />}
     </>
   )
 }
@@ -870,16 +818,15 @@ function partitionHealth(partition: Partition, disk: Disk, pools: Pool[]): Healt
   return pool && members.length > 0 ? worst(members.map((m) => memberHealth(m, pool))) : undefined
 }
 
-export function DriveModal({
+// everything about one drive, as a block of the machine view
+export function DriveDetail({
   disk,
   pools,
   onOpenPool,
-  onClose,
 }: {
   disk: Disk
   pools: Pool[]
   onOpenPool: (name: string) => void
-  onClose: () => void
 }) {
   const partitions = disk.partitions ?? []
   const memberships = partitions
@@ -887,12 +834,10 @@ export function DriveModal({
     .filter((p, i, all) => all.findIndex((q) => q.pool === p.pool) === i)
   return (
     <>
-      <ModalHeader onClose={onClose}>
+      <div className="flex items-center gap-3">
         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
         <span className="min-w-0">
-          <span id={use(ModalTitleId)} className="block truncate text-base font-semibold text-fg-inverse">
-            {disk.model || disk.name}
-          </span>
+          <h3 className="truncate text-base font-semibold text-fg-inverse">{disk.model || disk.name}</h3>
           <span className="block truncate font-mono text-[11px] text-fg-muted">{disk.serial}</span>
           {memberships.length > 0 && (
             <span className="mt-1.5 flex flex-wrap gap-1.5">
@@ -913,187 +858,115 @@ export function DriveModal({
         </span>
         <span className="ml-auto">
           <TypeBadge>
-            {formatBytes(disk.size)} · {disk.rotational ? 'HDD' : 'SSD'}
+            {formatBytes(disk.size)} · {driveKind(disk).toUpperCase()}
           </TypeBadge>
         </span>
-      </ModalHeader>
-      <ModalBody>
-        <Facts
-          rows={[
-            ['Model', disk.model || '—'],
-            ['Serial', disk.serial || '—'],
-            ['By ID', disk.id ? `/dev/disk/by-id/${disk.id}` : '—'],
-            ['Device', `/dev/${disk.name}`],
-            ['Size', formatBytes(disk.size)],
-            ['Transport', disk.transport || '—'],
-            ['Type', disk.rotational ? 'HDD (rotational)' : 'SSD'],
-          ]}
-        />
-        {disk.smart && <SmartFacts smart={disk.smart} nvme={disk.transport === 'nvme'} />}
-        <section>
-          <SectionTitle aside={`${partitions.length} ${partitions.length === 1 ? 'partition' : 'partitions'}`}>
-            Partitions
-          </SectionTitle>
-          {partitions.length === 0 ? (
-            <div className={`${card} p-4 text-[12px] text-fg-muted`}>No partitions; the drive is unused.</div>
-          ) : (
-            <div className={`${card} overflow-x-auto`}>
-              <table className="w-full text-[12px] text-fg-base tabular-nums">
-                <thead>
-                  <tr className="border-b border-white/[0.07] text-[10px] tracking-[0.08em] text-fg-muted uppercase">
-                    <th className="py-2 pr-3 pl-4 text-left font-semibold">Partition</th>
-                    <th className="px-3 py-2 text-right font-semibold">Size</th>
-                    <th className="px-3 py-2 text-left font-semibold">Filesystem</th>
-                    <th className="px-3 py-2 text-left font-semibold">Mount</th>
-                    <th className="py-2 pr-4 pl-3 text-left font-semibold">Used by</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.05]">
-                  {partitions.map((partition) => {
-                    const target = pools.find((p) => p.name === partition.pool)
-                    const health = partitionHealth(partition, disk, pools)
-                    return (
-                      <tr key={partition.name} className={partition.pool ? '' : 'opacity-45'}>
-                        <td className="py-2 pr-3 pl-4 font-mono whitespace-nowrap text-fg-inverse">{partition.name}</td>
-                        <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
-                          {formatBytes(partition.size)}
-                        </td>
-                        <td className="px-3 py-2 font-mono whitespace-nowrap">
-                          {partition.fstype || <span className="text-fg-dim">—</span>}
-                          {partition.label && <span className="text-fg-muted"> · {partition.label}</span>}
-                        </td>
-                        <td className="px-3 py-2 font-mono whitespace-nowrap">
-                          {partition.mount || <span className="text-fg-dim">—</span>}
-                        </td>
-                        <td className="py-1.5 pr-3 pl-1.5 whitespace-nowrap">
-                          {target ? (
-                            <button
-                              type="button"
-                              onClick={() => onOpenPool(target.name)}
-                              className="flex items-center gap-2 rounded-lg px-1.5 py-0.5 text-left outline-accent-cyan transition-colors hover:bg-white/[0.06] focus-visible:outline-2"
-                            >
-                              {health && <Led health={health} small />}
-                              <span className="text-accent-cyan">→</span>
-                              <span className="font-mono text-fg-inverse">{target.name}</span>
-                              {partition.role && <span className="text-fg-muted">· {partition.role}</span>}
-                            </button>
-                          ) : (
-                            <span className="px-1.5 text-fg-dim">{partition.pool || 'unassigned'}</span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      </ModalBody>
+      </div>
+      <Facts
+        rows={[
+          ['Device', `/dev/${disk.name}`],
+          ['By ID', disk.id ? `/dev/disk/by-id/${disk.id}` : '—'],
+          ['Transport', disk.transport || '—'],
+        ]}
+      />
+      {disk.smart && <SmartFacts smart={disk.smart} nvme={disk.transport === 'nvme'} />}
+      <section>
+        <SectionTitle aside={`${partitions.length} ${partitions.length === 1 ? 'partition' : 'partitions'}`}>
+          Partitions
+        </SectionTitle>
+        {partitions.length === 0 ? (
+          <div className={`${card} p-4 text-[12px] text-fg-muted`}>No partitions; the drive is unused.</div>
+        ) : (
+          <div className={`${card} overflow-x-auto`}>
+            <table className="w-full text-[12px] text-fg-base tabular-nums">
+              <thead>
+                <tr className="border-b border-white/[0.07] text-[10px] tracking-[0.08em] text-fg-muted uppercase">
+                  <th className="py-2 pr-3 pl-4 text-left font-semibold">Partition</th>
+                  <th className="px-3 py-2 text-right font-semibold">Size</th>
+                  <th className="px-3 py-2 text-left font-semibold">Filesystem</th>
+                  <th className="px-3 py-2 text-left font-semibold">Mount</th>
+                  <th className="py-2 pr-4 pl-3 text-left font-semibold">Used by</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.05]">
+                {partitions.map((partition) => {
+                  const target = pools.find((p) => p.name === partition.pool)
+                  const health = partitionHealth(partition, disk, pools)
+                  return (
+                    <tr key={partition.name} className={partition.pool ? '' : 'opacity-45'}>
+                      <td className="py-2 pr-3 pl-4 font-mono whitespace-nowrap text-fg-inverse">{partition.name}</td>
+                      <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
+                        {formatBytes(partition.size)}
+                      </td>
+                      <td className="px-3 py-2 font-mono whitespace-nowrap">
+                        {partition.fstype || <span className="text-fg-dim">—</span>}
+                        {partition.label && <span className="text-fg-muted"> · {partition.label}</span>}
+                      </td>
+                      <td className="px-3 py-2 font-mono whitespace-nowrap">
+                        {partition.mount || <span className="text-fg-dim">—</span>}
+                      </td>
+                      <td className="py-1.5 pr-3 pl-1.5 whitespace-nowrap">
+                        {target ? (
+                          <button
+                            type="button"
+                            onClick={() => onOpenPool(target.name)}
+                            className="flex items-center gap-2 rounded-lg px-1.5 py-0.5 text-left outline-accent-cyan transition-colors hover:bg-white/[0.06] focus-visible:outline-2"
+                          >
+                            {health && <Led health={health} small />}
+                            <span className="text-accent-cyan">→</span>
+                            <span className="font-mono text-fg-inverse">{target.name}</span>
+                          </button>
+                        ) : (
+                          <span className="px-1.5 text-fg-dim">{partition.pool || 'unassigned'}</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </>
   )
 }
 
-function SubTitle({ children, aside }: { children: ReactNode; aside: string }) {
-  return (
-    <div className="mb-2 flex items-baseline gap-2 px-1 text-[10px] font-medium tracking-[0.1em] text-fg-dim uppercase">
-      {children}
-      <span className="tabular-nums">{aside}</span>
-      <span className="h-px flex-1 self-center bg-gradient-to-r from-white/[0.08] to-transparent" />
+// one bay per pool holding its drives, the pool's bar beneath
+export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (target: Target) => void }) {
+  const { bays, rest } = poolBays(storage)
+  const pools = storage.pools ?? []
+
+  const bay = (drives: Disk[]) => (
+    <div className="nos-bay grid grid-cols-4 justify-items-center gap-y-1 rounded-xl p-1">
+      {drives.map((disk) => (
+        <button
+          key={disk.name}
+          type="button"
+          title={driveTitle(disk)}
+          onClick={() => onOpen({ kind: 'disk', name: disk.name })}
+          className={`self-start rounded-lg py-1.5 outline-accent-cyan hover:bg-white/[0.05] focus-visible:outline-2 ${linkTransition}`}
+        >
+          <DriveSlot disk={disk} health={driveHealth(disk, pools)} />
+        </button>
+      ))}
     </div>
   )
-}
-
-export function StorageLists({
-  storage,
-  error,
-  onOpen,
-}: {
-  storage: Storage
-  error?: string
-  onOpen: (target: Target) => void
-}) {
-  const [hover, setHover] = useState<Target | null>(null)
-  const pools = storage.pools ?? []
-  const disks = storage.disks ?? []
-  const links = new Map(pools.map((p) => [p.name, poolDrives(p, disks)]))
-  // drives follow the pools list and, within a pool, its vdev order (data
-  // before log or cache); drives in no pool come last
-  const position = new Map<string, number>()
-  pools.forEach((p, pi) =>
-    p.groups.forEach((g, gi) =>
-      g.members.forEach((m) => {
-        if (!position.has(m.device)) position.set(m.device, pi * 1000 + gi)
-      }),
-    ),
-  )
-  const rank = (d: Disk) => position.get(d.name) ?? Number.MAX_SAFE_INTEGER
-  const drives = [...disks].sort(
-    (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, undefined, { numeric: true }),
-  )
-  const litDisks =
-    hover?.kind === 'pool'
-      ? (links.get(hover.name) ?? new Set<string>())
-      : hover?.kind === 'disk'
-        ? new Set([hover.name])
-        : null
-  const litPools =
-    hover?.kind === 'disk'
-      ? new Set(pools.filter((p) => links.get(p.name)?.has(hover.name)).map((p) => p.name))
-      : hover?.kind === 'pool'
-        ? new Set([hover.name])
-        : null
-  const hoverHandler = (target: Target) => (hovered: boolean) =>
-    setHover((h) => (hovered ? target : h?.kind === target.kind && h.name === target.name ? null : h))
 
   return (
-    <div>
-      <SectionTitle aside={`${disks.length} ${disks.length === 1 ? 'drive' : 'drives'}`}>Storage</SectionTitle>
-      <div className={`flex flex-col gap-4 ${error ? 'opacity-50' : ''}`} title={error}>
-        {disks.length > 0 && (
-          <div>
-            <SubTitle aside={String(disks.length)}>Drives</SubTitle>
-            <div className="nos-bay grid grid-cols-4 justify-items-center gap-y-1 rounded-xl p-1.5">
-              {drives.map((disk) => {
-                const lit = litDisks?.has(disk.name) ?? false
-                const onHover = hoverHandler({ kind: 'disk', name: disk.name })
-                return (
-                  <button
-                    key={disk.name}
-                    type="button"
-                    title={driveTitle(disk)}
-                    onClick={() => onOpen({ kind: 'disk', name: disk.name })}
-                    onMouseEnter={() => onHover(true)}
-                    onMouseLeave={() => onHover(false)}
-                    onFocus={() => onHover(true)}
-                    onBlur={() => onHover(false)}
-                    className={`self-start rounded-lg py-1.5 outline-accent-cyan hover:bg-white/[0.04] focus-visible:outline-2 ${linkTransition} ${litDisks !== null && !lit ? 'opacity-35' : ''}`}
-                  >
-                    <DriveSlot disk={disk} health={driveHealth(disk, pools)} lit={lit} />
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-        {pools.length > 0 && (
-          <div>
-            <SubTitle aside={String(pools.length)}>Pools</SubTitle>
-            <div className="flex flex-col gap-1.5">
-              {pools.map((pool) => (
-                <PoolRow
-                  key={`${pool.kind}:${pool.name}`}
-                  pool={pool}
-                  lit={litPools?.has(pool.name) ?? false}
-                  dim={litPools !== null && !litPools.has(pool.name)}
-                  onHover={hoverHandler({ kind: 'pool', name: pool.name })}
-                  onOpen={() => onOpen({ kind: 'pool', name: pool.name })}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+    <div className="flex flex-col gap-3">
+      {bays.map(({ pool, drives }) => (
+        <div key={`${pool.kind}:${pool.name}`} className="flex flex-col gap-1.5">
+          {drives.length > 0 && bay(drives)}
+          <PoolRow pool={pool} onOpen={() => onOpen({ kind: 'pool', name: pool.name })} />
+        </div>
+      ))}
+      {rest.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          {bay(rest)}
+          <div className="px-1 text-[10px] tracking-[0.1em] text-fg-dim uppercase">not in a pool</div>
+        </div>
+      )}
     </div>
   )
 }

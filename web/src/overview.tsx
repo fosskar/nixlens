@@ -1,7 +1,7 @@
 import type { Disk, Machine, Poll, Pool, Storage, System } from './api'
-import { type Health, driveHealth, formatCapacity, poolHealth } from './health'
+import { type Health, driveHealth, poolHealth } from './health'
 import { navigate } from './router'
-import { Led, type Target } from './storage'
+import { Led, PoolBays, type Target } from './storage'
 import { SectionTitle, Unavailable, card } from './widgets'
 
 export type MachineOverview = Machine & { system?: System; storage?: Storage }
@@ -100,11 +100,6 @@ function uptime(sec: number): string {
 
 function MachineCard({ m }: { m: MachineOverview }) {
   const s = m.system
-  // boot partitions are kept for the machine view
-  const pools = (m.storage?.pools ?? []).filter((p) => p.state !== 'unmounted' && p.kind !== 'vfat')
-  const disks = m.storage?.disks ?? []
-  const asleep = disks.filter((d) => d.smart?.standby).length
-  const temps = disks.map((d) => d.smart?.temperature ?? 0).filter((t) => t > 0)
   const items = problems(m)
   const health = m.online ? (items.some((i) => i.health === 'error') ? 'error' : items.length ? 'warn' : 'ok') : 'error'
 
@@ -152,29 +147,12 @@ function MachineCard({ m }: { m: MachineOverview }) {
               percent={(100 * (s.memTotal - s.memAvailable)) / s.memTotal}
               value={`${Math.round((s.memTotal - s.memAvailable) / gib)} / ${Math.round((s.memInstalled || s.memTotal) / gib)} GiB`}
             />
-            {pools.map((p) => (
-              <Meter
-                key={p.name}
-                label={p.name}
-                percent={usedPercent(p)}
-                value={`${formatCapacity(p.used)} / ${formatCapacity(p.usable)}`}
-              />
-            ))}
           </div>
         )}
 
-        {disks.length > 0 && (
-          <div className="flex items-center gap-1">
-            {disks.map((d) => (
-              <span key={d.name} title={d.serial || d.name}>
-                <Led health={driveHealth(d, m.storage?.pools ?? [])} asleep={d.smart?.standby} small />
-              </span>
-            ))}
-            <span className="ml-auto truncate pl-2 font-mono text-[10px] text-fg-muted">
-              {disks.length} {disks.length === 1 ? 'drive' : 'drives'}
-              {asleep > 0 && ` · ${asleep} asleep`}
-              {temps.length > 0 && ` · max ${Math.max(...temps)} °C`}
-            </span>
+        {m.storage && (
+          <div className="pointer-events-auto">
+            <PoolBays storage={m.storage} onOpen={(t) => navigate({ kind: t.kind, machine: m.name, name: t.name })} />
           </div>
         )}
 
