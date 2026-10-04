@@ -947,11 +947,11 @@ export function DriveDetail({
             <table className="w-full text-[12px] text-fg-base tabular-nums">
               <thead>
                 <tr className="border-b border-white/[0.07] text-[10px] tracking-[0.08em] text-fg-muted uppercase">
-                  <th className="py-2 pr-3 pl-4 text-left font-semibold">Partition</th>
-                  <th className="px-3 py-2 text-right font-semibold">Size</th>
-                  <th className="px-3 py-2 text-left font-semibold">Filesystem</th>
-                  <th className="px-3 py-2 text-left font-semibold">Mount</th>
-                  <th className="py-2 pr-4 pl-3 text-left font-semibold">Used by</th>
+                  <th className="py-2 pr-2 pl-4 text-left font-semibold">Partition</th>
+                  <th className="px-2 py-2 text-right font-semibold">Size</th>
+                  <th className="px-2 py-2 text-left font-semibold">Filesystem</th>
+
+                  <th className="py-2 pr-4 pl-2 text-left font-semibold">Used by</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.05]">
@@ -960,16 +960,15 @@ export function DriveDetail({
                   const health = partitionHealth(partition, disk, pools)
                   return (
                     <tr key={partition.name} className={partition.pool ? '' : 'opacity-45'}>
-                      <td className="py-2 pr-3 pl-4 font-mono whitespace-nowrap text-fg-inverse">{partition.name}</td>
-                      <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
+                      <td className="py-2 pr-2 pl-4 font-mono whitespace-nowrap text-fg-inverse">{partition.name}</td>
+                      <td className="px-2 py-2 text-right font-mono whitespace-nowrap">
                         {formatBytes(partition.size)}
                       </td>
-                      <td className="px-3 py-2 font-mono whitespace-nowrap">
+                      <td className="px-2 py-2 font-mono whitespace-nowrap">
                         {partition.fstype || <span className="text-fg-dim">—</span>}
-                        {partition.label && <span className="text-fg-muted"> · {partition.label}</span>}
-                      </td>
-                      <td className="px-3 py-2 font-mono whitespace-nowrap">
-                        {partition.mount || <span className="text-fg-dim">—</span>}
+                        {partition.label && partition.label !== partition.pool && (
+                          <span className="text-fg-muted"> · {partition.label}</span>
+                        )}
                       </td>
                       <td className="py-1.5 pr-3 pl-1.5 whitespace-nowrap">
                         {target ? (
