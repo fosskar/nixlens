@@ -1,9 +1,9 @@
 import { card, Led, Ring, SectionTitle, Unavailable } from '@/components/ui'
 import { PoolBays } from '@/features/overview/pool-bays'
-import { type Disk, type Machine, type Poll, type Pool, type Storage, type System } from '@/lib/api'
+import { type Disk, type Machine, type Poll, type Storage, type System } from '@/lib/api'
 import { driveHealth, type Health, poolHealth } from '@/lib/health'
 import { navigate } from '@/lib/router'
-import { type Target } from '@/lib/storage'
+import { type Target, usedPercent } from '@/lib/storage'
 
 export type MachineOverview = Machine & { system?: System; storage?: Storage }
 
@@ -11,10 +11,6 @@ type Problem = { health: Health; text: string; target?: Target }
 
 const fullAt = 90
 const gib = 1024 ** 3
-
-function usedPercent(pool: Pool): number {
-  return pool.usable > 0 ? (100 * pool.used) / pool.usable : 0
-}
 
 function driveProblem(disk: Disk): string {
   const s = disk.smart

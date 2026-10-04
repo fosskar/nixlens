@@ -148,7 +148,7 @@ export function poolLayout(pool: Pool): string {
   return layouts.length > 0 ? layouts.join(' + ') : pool.kind
 }
 
-export type DriveKind = 'hdd' | 'ssd' | 'nvme'
+type DriveKind = 'hdd' | 'ssd' | 'nvme'
 
 export function driveKind(disk: Disk): DriveKind {
   if (disk.transport === 'nvme') return 'nvme'
