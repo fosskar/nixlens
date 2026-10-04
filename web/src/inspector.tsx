@@ -36,7 +36,7 @@ export function Inspector({ route }: { route: Detail }) {
   const pools = storage?.pools ?? []
   const disks = storage?.disks ?? []
   // drives in the order of the sidebar's bays, then those it leaves out
-  const first = storage ? poolBays(storage).bays.flatMap((b) => b.groups.flatMap((g) => g.drives)) : []
+  const first = storage ? poolBays(storage).flatMap((b) => b.groups.flatMap((g) => g.drives)) : []
   const ordered = [...first, ...disks.filter((d) => !first.includes(d))]
 
   return (

@@ -1024,11 +1024,10 @@ export function DriveDetail({
   )
 }
 
-// one bay per pool holding its drives, the pool's bar beneath
 // one bay per pool: its name and bar on top, its drives below, split by
 // vdev when it has more than one kind
 export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (target: Target) => void }) {
-  const { bays, rest } = poolBays(storage)
+  const bays = poolBays(storage)
   const pools = storage.pools ?? []
 
   const drives = (list: Disk[]) => (
@@ -1067,12 +1066,6 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
           ))}
         </div>
       ))}
-      {rest.length > 0 && (
-        <div className="nos-bay flex flex-col gap-1 rounded-xl p-1">
-          {label('not in a pool')}
-          {drives(rest)}
-        </div>
-      )}
     </div>
   )
 }

@@ -92,8 +92,8 @@ export type Bay = { pool: Pool; groups: { label: string; drives: Disk[] }[] }
 // drives grouped by the pool that keeps its data on them, and within it by
 // vdev. a log, cache or spare on a drive does not make it part of a pool,
 // and boot partitions are left out, so drives with only those are not
-// shown; drives in no pool at all come last
-export function poolBays(storage: Storage): { bays: Bay[]; rest: Disk[] } {
+// shown, nor are unused drives
+export function poolBays(storage: Storage): Bay[] {
   const disks = storage.disks ?? []
   const placed = new Set<string>()
   const take = (keep: (d: Disk) => boolean) => {
@@ -101,7 +101,7 @@ export function poolBays(storage: Storage): { bays: Bay[]; rest: Disk[] } {
     drives.forEach((d) => placed.add(d.name))
     return drives
   }
-  const bays = (storage.pools ?? [])
+  return (storage.pools ?? [])
     .filter((pool) => pool.kind !== 'vfat')
     .map((pool) => {
       const data = pool.groups.filter((g) => g.class === '' || g.class === 'data')
@@ -114,6 +114,4 @@ export function poolBays(storage: Storage): { bays: Bay[]; rest: Disk[] } {
       })
       return { pool, groups: groups.filter((g) => g.drives.length > 0) }
     })
-  const rest = disks.filter((d) => !placed.has(d.name) && !(d.partitions ?? []).some((p) => p.pool))
-  return { bays, rest }
 }
