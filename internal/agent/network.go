@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/fosskar/nos/internal/command"
 )
@@ -79,11 +80,9 @@ func readInterface(iface net.Interface) (Interface, error) {
 		}
 	}
 	if i.Kind == "ethernet" {
-		out, err := command.Run("ethtool", iface.Name)
-		if err != nil {
+		if i.MaxSpeedMbps, err = supportedSpeed(iface.Name); err != nil {
 			return i, err
 		}
-		i.MaxSpeedMbps = maxLinkSpeed(string(out))
 	}
 	if driver, err := os.Readlink(filepath.Join(dir, "device", "driver")); err == nil {
 		i.Driver = filepath.Base(driver)
@@ -139,6 +138,28 @@ func interfaceKind(dir string) string {
 		return "usb"
 	}
 	return "ethernet"
+}
+
+// a port's supported link modes are fixed by its hardware, so ethtool runs
+// once per port
+var supportedSpeeds = struct {
+	sync.Mutex
+	byName map[string]int
+}{byName: map[string]int{}}
+
+func supportedSpeed(name string) (int, error) {
+	supportedSpeeds.Lock()
+	defer supportedSpeeds.Unlock()
+	if speed, ok := supportedSpeeds.byName[name]; ok {
+		return speed, nil
+	}
+	out, err := command.Run("ethtool", name)
+	if err != nil {
+		return 0, err
+	}
+	speed := maxLinkSpeed(string(out))
+	supportedSpeeds.byName[name] = speed
+	return speed, nil
 }
 
 // the highest speed among ethtool's "Supported link modes", which are

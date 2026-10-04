@@ -175,7 +175,8 @@ func readProcStat() (idle, total uint64, cpus int, err error) {
 }
 
 // threads sharing a core report the same package and core id
-func physicalCores() (int, error) {
+// the topology does not change at runtime
+var physicalCores = sync.OnceValues(func() (int, error) {
 	dirs, err := filepath.Glob("/sys/devices/system/cpu/cpu[0-9]*/topology")
 	if err != nil {
 		return 0, err
@@ -193,7 +194,7 @@ func physicalCores() (int, error) {
 		cores[[2]string{pkg, core}] = true
 	}
 	return len(cores), nil
-}
+})
 
 // /proc/swaps types are partition or file; zram devices report as partitions
 func readSwaps() ([]Swap, error) {
