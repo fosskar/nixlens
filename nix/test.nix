@@ -1,12 +1,16 @@
 { testers, nosModule }:
 let
-  tokenFile = builtins.toFile "nos-token" "test-token";
+  tokenFile = "/etc/nos-token";
+  token.environment.etc."nos-token".text = "test-token";
 in
 testers.runNixOSTest {
   name = "nos";
 
   nodes.hub = {
-    imports = [ nosModule ];
+    imports = [
+      nosModule
+      token
+    ];
     services.nos = {
       enable = true;
       inherit tokenFile;
@@ -24,7 +28,10 @@ testers.runNixOSTest {
   };
 
   nodes.agent = {
-    imports = [ nosModule ];
+    imports = [
+      nosModule
+      token
+    ];
     virtualisation.emptyDiskImages = [
       512
       512
