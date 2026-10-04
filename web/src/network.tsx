@@ -89,11 +89,9 @@ function AddressChip({ address }: { address: string }) {
   )
 }
 
-function Chip({ children, dim }: { children: string; dim?: boolean }) {
+function Chip({ children }: { children: string }) {
   return (
-    <span
-      className={`rounded-md border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] ${dim ? 'text-fg-muted' : 'text-fg-base'}`}
-    >
+    <span className="rounded-md border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-fg-base">
       {children}
     </span>
   )
@@ -101,17 +99,18 @@ function Chip({ children, dim }: { children: string; dim?: boolean }) {
 
 // every ipv4 address, but one ipv6 address per kind (global, unique
 // local): slaac hands out a new temporary one every day; all are on hover
-function chipAddresses(iface: NetInterface): { shown: string[]; hidden: number } {
+function chipAddresses(iface: NetInterface): { shown: string[]; hidden: string[] } {
   const all = shownAddresses(iface)
   const v4 = all.filter((a) => !a.includes(':'))
   const ula = all.find((a) => /^f[cd]/i.test(a))
   const global = all.find((a) => a.includes(':') && !/^f[cd]/i.test(a))
   const shown = [...v4, ...[global, ula].filter((a): a is string => a !== undefined)]
-  return { shown, hidden: all.length - shown.length }
+  return { shown, hidden: all.filter((a) => !shown.includes(a)) }
 }
 
 function Connection({ iface, members }: { iface: NetInterface; members: NetInterface[] }) {
   const { shown, hidden } = chipAddresses(iface)
+  const [expanded, setExpanded] = useState(false)
   return (
     <div className={`${card} flex items-start gap-3 px-3.5 py-2.5`} title={details(iface)}>
       <span className="pt-1">
@@ -122,14 +121,27 @@ function Connection({ iface, members }: { iface: NetInterface; members: NetInter
           <span className="font-mono font-medium text-fg-inverse">{iface.name}</span>
           <span className="text-[11px] text-fg-muted">{kindLabels[iface.kind] ?? iface.kind}</span>
           {!iface.up && <span className="text-[11px] text-fg-dim">{iface.state}</span>}
+          <span className="ml-auto flex min-w-0 items-baseline gap-2 font-mono text-[10px] text-fg-muted">
+            {members.length > 0 && <span className="truncate">via {members.map((m) => m.name).join(', ')}</span>}
+            {iface.speedMbps && <span className="shrink-0 text-fg-base">{speedLabel(iface.speedMbps)}</span>}
+          </span>
         </div>
         <div className="mt-1 flex flex-wrap gap-1">
-          {iface.speedMbps && <Chip dim>{speedLabel(iface.speedMbps)}</Chip>}
           {shown.map((a) => (
             <AddressChip key={a} address={a} />
           ))}
-          {hidden > 0 && <Chip dim>{`+${hidden}`}</Chip>}
-          {members.length > 0 && <Chip dim>{`via ${members.map((m) => m.name).join(', ')}`}</Chip>}
+          {expanded && hidden.map((a) => <AddressChip key={a} address={a} />)}
+          {hidden.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              aria-expanded={expanded}
+              title={expanded ? 'Show fewer addresses' : 'Show all addresses'}
+              className="rounded-md border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-fg-muted outline-accent-cyan transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+            >
+              {expanded ? 'less' : `+${hidden.length}`}
+            </button>
+          )}
         </div>
       </div>
     </div>
