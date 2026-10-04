@@ -89,8 +89,11 @@ export function SystemWidget({ poll }: { poll: Poll<System> }) {
     <div>
       <SectionTitle aside={system && `up ${formatUptime(system.uptimeSec)}`}>System</SectionTitle>
       {system ? (
-        <div className={`${card} p-4 ${poll.error ? 'opacity-50' : ''}`} title={poll.error}>
-          <div className="grid grid-cols-2 gap-3">
+        <div
+          className={`${card} grid items-center gap-4 p-4 md:grid-cols-2 md:gap-8 ${poll.error ? 'opacity-50' : ''}`}
+          title={poll.error}
+        >
+          <div className="grid grid-cols-2 gap-3 md:order-last">
             <Ring label="CPU" value={system.cpuPercent} detail={`${system.cores} cores / ${system.cpus} threads`} />
             <Ring
               label="Memory"
@@ -98,7 +101,7 @@ export function SystemWidget({ poll }: { poll: Poll<System> }) {
               detail={memoryDetail(system)}
             />
           </div>
-          <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 border-t border-white/[0.07] pt-3 text-[11px]">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 border-t border-white/[0.07] pt-3 text-[11px] md:border-t-0 md:pt-0">
             <dt className="text-fg-muted">NixOS</dt>
             <dd className="truncate text-right font-mono text-fg-base tabular-nums">{system.nixosVersion}</dd>
             <dt className="text-fg-muted">Kernel</dt>

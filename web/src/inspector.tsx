@@ -44,9 +44,7 @@ export function Inspector({ route }: { route: Detail }) {
       </ModalHeader>
       <ModalBody>
         <div ref={body} className="flex flex-col gap-8">
-          <div className="max-w-md">
-            <SystemWidget poll={system} />
-          </div>
+          <SystemWidget poll={system} />
           {!storage ? (
             <Unavailable error={storagePoll.error} className="h-48" />
           ) : (
