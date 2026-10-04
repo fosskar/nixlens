@@ -16,12 +16,12 @@ export type Prefs = {
   glow: number
   solid: boolean
   reduceMotion: boolean
-  maximized: boolean
+  floating: boolean
   collapsed: string[]
 }
 
 const key = 'nos.prefs'
-const defaults: Prefs = { accent: 'teal', glow: 1, solid: false, reduceMotion: false, maximized: false, collapsed: [] }
+const defaults: Prefs = { accent: 'teal', glow: 1, solid: false, reduceMotion: false, floating: false, collapsed: [] }
 
 // a value from another version or edited by hand must not break the page
 function load(): Prefs {
@@ -41,7 +41,7 @@ function load(): Prefs {
     glow: typeof p.glow === 'number' && p.glow >= 0 && p.glow <= 1 ? p.glow : defaults.glow,
     solid: p.solid === true,
     reduceMotion: p.reduceMotion === true,
-    maximized: p.maximized === true,
+    floating: p.floating === true,
     collapsed: Array.isArray(p.collapsed) ? p.collapsed.filter((c): c is string => typeof c === 'string') : [],
   }
 }

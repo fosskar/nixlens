@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useEffectEvent, useId, useRef, useState } from 'react'
 import type { Me } from './api'
-import { type Accent, accents, resetPrefs, setPrefs, usePrefs } from './prefs'
+import { type Accent, accents, reducedMotion, resetPrefs, setPrefs, usePrefs } from './prefs'
 
 function initials(name: string): string {
   return name
@@ -27,7 +27,12 @@ function MenuItem({ onClick, href, children }: { onClick?: () => void; href?: st
 
 export function UserMenu({ me }: { me?: Me }) {
   const [open, setOpen] = useState(false)
-  const [prefsOpen, setPrefsOpen] = useState(false)
+  // closing plays the panel's slide-in backwards before it unmounts
+  const [prefsState, setPrefsState] = useState<'closed' | 'open' | 'leaving'>('closed')
+  const closePrefs = () => {
+    setPrefsState('leaving')
+    setTimeout(() => setPrefsState('closed'), reducedMotion() ? 0 : 220)
+  }
   const root = useRef<HTMLDivElement>(null)
   const menuId = useId()
   const name = me?.name || me?.user || ''
@@ -85,7 +90,7 @@ export function UserMenu({ me }: { me?: Me }) {
               <MenuItem
                 onClick={() => {
                   setOpen(false)
-                  setPrefsOpen(true)
+                  setPrefsState('open')
                 }}
               >
                 Preferences…
@@ -99,7 +104,7 @@ export function UserMenu({ me }: { me?: Me }) {
           </div>
         )}
       </div>
-      {prefsOpen && <PreferencesPanel onClose={() => setPrefsOpen(false)} />}
+      {prefsState !== 'closed' && <PreferencesPanel leaving={prefsState === 'leaving'} onClose={closePrefs} />}
     </>
   )
 }
@@ -133,7 +138,7 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
   )
 }
 
-function PreferencesPanel({ onClose }: { onClose: () => void }) {
+function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () => void }) {
   const prefs = usePrefs()
   const panel = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -156,7 +161,7 @@ function PreferencesPanel({ onClose }: { onClose: () => void }) {
   return (
     <div
       // no dimming or blur: preferences preview live on the page behind
-      className="fixed inset-0 z-[70]"
+      className={`fixed inset-0 z-[70] ${leaving ? 'pointer-events-none' : ''}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -167,7 +172,7 @@ function PreferencesPanel({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="nos-panel glass-strong absolute top-[calc(0.75rem+var(--safe-top))] right-[calc(0.75rem+var(--safe-right))] bottom-[calc(0.75rem+var(--safe-bottom))] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col rounded-[22px] font-sans outline-none"
+        className={`${leaving ? 'nos-panel-out' : 'nos-panel'} glass-strong absolute top-[calc(0.75rem+var(--safe-top))] right-[calc(0.75rem+var(--safe-right))] bottom-[calc(0.75rem+var(--safe-bottom))] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col rounded-[22px] font-sans outline-none`}
       >
         <div className="flex items-center justify-between border-b border-white/[0.07] py-3.5 pr-3 pl-5">
           <h2 id={titleId} className="text-base font-semibold text-fg-inverse">
@@ -224,12 +229,8 @@ function PreferencesPanel({ onClose }: { onClose: () => void }) {
               onChange={(reduceMotion) => setPrefs({ reduceMotion })}
             />
           </Row>
-          <Row label="Open apps maximized">
-            <Toggle
-              label="Open apps maximized"
-              checked={prefs.maximized}
-              onChange={(maximized) => setPrefs({ maximized })}
-            />
+          <Row label="Floating windows" hint="Margins around apps, ending above the dock">
+            <Toggle label="Floating windows" checked={prefs.floating} onChange={(floating) => setPrefs({ floating })} />
           </Row>
           <Row label="Collapsed sections" hint={`${prefs.collapsed.length} collapsed`}>
             <button

@@ -340,6 +340,15 @@ body::before {
   .nos-panel {
     animation: nos-panel-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
   }
+  @keyframes nos-panel-out {
+    to {
+      opacity: 0;
+      translate: 1.5rem 0;
+    }
+  }
+  .nos-panel-out {
+    animation: nos-panel-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
 
   @keyframes nos-view-from-right {
     from {

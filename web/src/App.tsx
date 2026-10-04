@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { type App as AppEntry, type Machine, type Me, type Storage, type System, usePoll } from './api'
-import { AppGrid, AppWindow, Dock, windowMargin } from './apps'
+import { AppGrid, AppWindow, Dock, type Point } from './apps'
 import { reducedMotion, setPrefs, usePrefs } from './prefs'
 import { ScrollArea } from './scroll'
 import { UserMenu } from './user'
@@ -17,10 +17,10 @@ function greeting(): string {
   return 'Good evening'
 }
 
-function originOf(rect: DOMRect): string {
-  const x = rect.left + rect.width / 2 - windowMargin
-  const y = rect.top + rect.height / 2 - windowMargin
-  return `${x}px ${y}px`
+// viewport centre of an icon; the window turns it into its own transform
+// origin, since its position depends on the floating preference
+function originOf(rect: DOMRect): Point {
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
 }
 
 function dockRect(url: string): DOMRect | undefined {
@@ -48,13 +48,13 @@ export default function App() {
 
   const [open, setOpen] = useState<AppEntry[]>([])
   const [active, setActive] = useState<string | null>(null)
-  const [origins, setOrigins] = useState<Record<string, string>>({})
+  const [origins, setOrigins] = useState<Record<string, Point>>({})
   const [closing, setClosing] = useState<string[]>([])
   const closingRef = useRef(new Set<string>())
   // where keyboard focus was before an app came to the front, to return there
   const returnFocus = useRef<HTMLElement | null>(null)
-  const { maximized } = usePrefs()
-  const toggleMaximized = () => setPrefs({ maximized: !maximized })
+  const { floating } = usePrefs()
+  const toggleFloating = () => setPrefs({ floating: !floating })
 
   const setOrigin = (url: string, rect?: DOMRect) => {
     if (rect) setOrigins((o) => ({ ...o, [url]: originOf(rect) }))
@@ -179,15 +179,16 @@ export default function App() {
           app={app}
           state={active === app.url ? 'shown' : active === null ? 'home' : 'switch'}
           origin={origins[app.url]}
-          maximized={maximized}
-          onToggleMaximize={toggleMaximized}
+          floating={floating}
+          onToggleFloating={toggleFloating}
           onMinimize={goHome}
           onClose={() => closeApp(app)}
         />
       ))}
 
       <Dock
-        open={open.filter((a) => !closing.includes(a.url))}
+        open={open}
+        closing={closing}
         active={active}
         onHome={goHome}
         onSelect={(app) => openApp(app, dockRect(app.url))}

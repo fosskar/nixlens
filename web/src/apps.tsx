@@ -144,12 +144,14 @@ function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DO
 
 export function Dock({
   open,
+  closing,
   active,
   onHome,
   onSelect,
   onClose,
 }: {
   open: App[]
+  closing: string[]
   active: string | null
   onHome: () => void
   onSelect: (app: App) => void
@@ -170,7 +172,14 @@ export function Dock({
         </button>
         {open.length > 0 && <div className="mx-1 h-8 w-px bg-white/[0.12]" />}
         {open.map((app) => (
-          <div key={app.url} data-dock={app.url} className="group relative">
+          // a closing app stays until its window has shrunk into the icon,
+          // which fades with it, so the dock does not jump mid-animation
+          <div
+            key={app.url}
+            data-dock={app.url}
+            inert={closing.includes(app.url)}
+            className={`group relative transition-[opacity,scale] duration-300 ${closing.includes(app.url) ? 'scale-50 opacity-0' : ''}`}
+          >
             <button
               onClick={() => onSelect(app)}
               title={`${app.name} on ${app.machine}`}
@@ -197,7 +206,9 @@ export function Dock({
   )
 }
 
-export const windowMargin = 12
+export type Point = { x: number; y: number }
+
+const windowMargin = 12
 const windowBottom = 96
 
 type WindowState = 'shown' | 'home' | 'switch'
@@ -237,16 +248,16 @@ export function AppWindow({
   app,
   state,
   origin,
-  maximized,
-  onToggleMaximize,
+  floating,
+  onToggleFloating,
   onMinimize,
   onClose,
 }: {
   app: App
   state: WindowState
-  origin?: string
-  maximized: boolean
-  onToggleMaximize: () => void
+  origin?: Point
+  floating: boolean
+  onToggleFloating: () => void
   onMinimize: () => void
   onClose: () => void
 }) {
@@ -287,17 +298,21 @@ export function AppWindow({
       inert={!shown}
       data-state={entered ? state : 'home'}
       style={{
-        top: `calc(${maximized ? 0 : windowMargin}px + var(--safe-top))`,
-        left: `calc(${maximized ? 0 : windowMargin}px + var(--safe-left))`,
-        right: `calc(${maximized ? 0 : windowMargin}px + var(--safe-right))`,
-        bottom: `calc(${windowBottom}px + var(--safe-bottom))`,
-        transformOrigin: origin ?? '50% 100%',
+        // filling windows reach every edge and the dock floats above them;
+        // floating ones keep a margin and end above the dock
+        top: `calc(${floating ? windowMargin : 0}px + var(--safe-top))`,
+        left: `calc(${floating ? windowMargin : 0}px + var(--safe-left))`,
+        right: `calc(${floating ? windowMargin : 0}px + var(--safe-right))`,
+        bottom: floating ? `calc(${windowBottom}px + var(--safe-bottom))` : 'var(--safe-bottom)',
+        transformOrigin: origin
+          ? `${origin.x - (floating ? windowMargin : 0)}px ${origin.y - (floating ? windowMargin : 0)}px`
+          : '50% 100%',
       }}
-      className={`nos-window glass-strong fixed z-40 flex flex-col overflow-hidden outline-none ${maximized ? 'rounded-none border-x-0 border-t-0' : 'rounded-[22px]'}`}
+      className={`nos-window glass-strong fixed z-40 flex flex-col overflow-hidden outline-none ${floating ? 'rounded-[22px]' : 'rounded-none border-0'}`}
     >
       <div
         onDoubleClick={(e) => {
-          if (!(e.target instanceof Element && e.target.closest('button'))) onToggleMaximize()
+          if (!(e.target instanceof Element && e.target.closest('button'))) onToggleFloating()
         }}
         className="flex h-11 shrink-0 items-center gap-2.5 border-b border-white/[0.07] bg-white/[0.03] pr-2 pl-3.5 select-none"
       >
@@ -311,11 +326,11 @@ export function AppWindow({
           <TitleButton title="Open in new tab" onClick={() => window.open(app.url, '_blank', 'noopener')}>
             <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
           </TitleButton>
-          <TitleButton title={maximized ? 'Restore' : 'Maximize'} onClick={onToggleMaximize}>
-            {maximized ? (
-              <path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4" />
-            ) : (
+          <TitleButton title={floating ? 'Fill screen' : 'Float window'} onClick={onToggleFloating}>
+            {floating ? (
               <rect x="4" y="4" width="16" height="16" rx="2" />
+            ) : (
+              <path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4" />
             )}
           </TitleButton>
           <TitleButton title="Minimize" onClick={onMinimize}>
