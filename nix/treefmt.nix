@@ -30,6 +30,11 @@
         ];
         text = ''
           export CGO_ENABLED=0 GOTOOLCHAIN=local
+          # main.go embeds the frontend build, which is not in git
+          if [ ! -e web/dist ]; then
+            mkdir -p web/dist
+            : >web/dist/.placeholder
+          fi
           if [ ! -w "''${HOME:-/nonexistent}" ]; then
             HOME=$(mktemp -d)
             export HOME

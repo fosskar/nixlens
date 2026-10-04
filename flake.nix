@@ -54,10 +54,8 @@
       checks = forAllSystems (pkgs: {
         formatting = treefmtFor.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
         nixos-test = pkgs.callPackage ./nix/test.nix { nosModule = self.nixosModules.default; };
-        # the unit tests again under the race detector, which needs cgo
-        go-race = self.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs {
-          env.CGO_ENABLED = 1;
-          checkFlags = [ "-race" ];
+        go-race = pkgs.callPackage ./nix/race.nix {
+          nos = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
         };
       });
 
