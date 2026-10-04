@@ -161,7 +161,7 @@ export function Dock({
   onClose: (app: App) => void
 }) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--safe-bottom))] z-50 flex justify-center">
       <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-[26px] p-2.5">
         <button
           onClick={onHome}
@@ -261,10 +261,10 @@ export function AppWindow({
     <div
       data-state={entered ? state : 'home'}
       style={{
-        top: windowMargin,
-        left: windowMargin,
-        right: windowMargin,
-        bottom: windowBottom,
+        top: `calc(${windowMargin}px + var(--safe-top))`,
+        left: `calc(${windowMargin}px + var(--safe-left))`,
+        right: `calc(${windowMargin}px + var(--safe-right))`,
+        bottom: `calc(${windowBottom}px + var(--safe-bottom))`,
         transformOrigin: origin ?? '50% 100%',
       }}
       className="nos-window glass-strong fixed z-40 flex flex-col overflow-hidden rounded-[22px]"
