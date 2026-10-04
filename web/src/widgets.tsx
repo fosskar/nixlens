@@ -75,7 +75,10 @@ function Ring({ label, value, detail }: { label: string; value: number; detail: 
   return (
     <div className="flex min-w-0 flex-col items-center gap-2">
       <div className="relative h-16 w-16">
-        <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90 drop-shadow-[0_0_6px_rgb(26_188_156/0.35)]">
+        <svg
+          viewBox="0 0 64 64"
+          className="h-16 w-16 -rotate-90 drop-shadow-[0_0_6px_color-mix(in_srgb,var(--color-accent-cyan)_35%,transparent)]"
+        >
           <defs>
             <linearGradient id={gradient} x1="0" y1="1" x2="1" y2="0">
               <stop offset="0%" stopColor="var(--color-accent)" />

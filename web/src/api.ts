@@ -6,6 +6,7 @@ export type Me = {
   email: string
   groups: string[]
   admin: boolean
+  accountUrl?: string
 }
 
 export type Machine = {

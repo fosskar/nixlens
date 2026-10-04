@@ -1,5 +1,6 @@
 import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import type { App } from './api'
+import { setPrefs, usePrefs } from './prefs'
 
 const dashboardIcons = 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons'
 
@@ -63,29 +64,12 @@ function byCategory(apps: App[]): [string, App[]][] {
   return [...groups]
 }
 
-const collapsedKey = 'nos.collapsed'
-
-// a value from another version or edited by hand must not break the page
-function loadCollapsed(): string[] {
-  const stored = localStorage.getItem(collapsedKey)
-  if (!stored) return []
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(stored)
-  } catch (e) {
-    if (e instanceof SyntaxError) return []
-    throw e
-  }
-  return Array.isArray(parsed) ? parsed.filter((c): c is string => typeof c === 'string') : []
-}
-
 export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DOMRect) => void }) {
-  const [collapsed, setCollapsed] = useState(loadCollapsed)
-  const toggle = (category: string) => {
-    const next = collapsed.includes(category) ? collapsed.filter((c) => c !== category) : [...collapsed, category]
-    localStorage.setItem(collapsedKey, JSON.stringify(next))
-    setCollapsed(next)
-  }
+  const { collapsed } = usePrefs()
+  const toggle = (category: string) =>
+    setPrefs({
+      collapsed: collapsed.includes(category) ? collapsed.filter((c) => c !== category) : [...collapsed, category],
+    })
   return (
     <div className="grid items-start gap-x-10 gap-y-8 lg:grid-cols-2">
       {byCategory(apps).map(([category, list]) => {

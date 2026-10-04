@@ -64,6 +64,7 @@ func main() {
 	peersFile := flag.String("peers", "", "hub: path to a JSON object mapping peer names to base URLs")
 	categories := flag.String("categories", "", "hub: comma-separated categories listed first, in this order")
 	adminGroups := flag.String("admin-groups", "", "hub: comma-separated groups that see machines; empty allows everyone")
+	accountURL := flag.String("account-url", "", "hub: page where users manage their account, linked from the user menu")
 	categoryGroupsFile := flag.String("category-groups", "", "hub: path to a JSON object mapping categories to the groups that see them")
 	memFile := flag.String("installed-memory-file", "", "file holding the installed memory in bytes")
 	writeMem := flag.String("write-installed-memory", "", "write the installed memory from smbios to this file and exit; needs root")
@@ -140,7 +141,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		acc := access{categoryGroups: categoryGroups}
+		acc := access{categoryGroups: categoryGroups, accountURL: *accountURL}
 		for _, g := range strings.Split(*adminGroups, ",") {
 			if g != "" {
 				acc.adminGroups = append(acc.adminGroups, g)

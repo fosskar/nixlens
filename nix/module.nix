@@ -142,6 +142,13 @@ in
         description = "App categories listed first, in this order; the rest follow alphabetically.";
       };
 
+      accountUrl = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        example = "https://auth.example.com/settings";
+        description = "Page where users manage their account, linked from the user menu.";
+      };
+
       adminGroups = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [ ];
@@ -241,6 +248,10 @@ in
             (lib.concatStringsSep "," cfg.hub.adminGroups)
             "-category-groups"
             (pkgs.writeText "nos-category-groups.json" (builtins.toJSON cfg.hub.categoryGroups))
+          ]
+          ++ lib.optionals (cfg.hub.enable && cfg.hub.accountUrl != null) [
+            "-account-url"
+            cfg.hub.accountUrl
           ]
         );
         ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nos/installed-memory";

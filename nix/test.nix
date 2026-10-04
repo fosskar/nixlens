@@ -51,6 +51,7 @@ testers.runNixOSTest {
       hub.peers.agent = "https://agent:7480";
       hub.categories = [ "Monitoring" ];
       hub.adminGroups = [ "admin" ];
+      hub.accountUrl = "https://auth.example.com/settings";
       hub.categoryGroups.Monitoring = [ "admin" ];
     };
     services.nos.apps.Grafana = {
@@ -153,6 +154,7 @@ testers.runNixOSTest {
 
     me = get(hub, "/api/me", groups="user, admin")
     assert me["name"] == "Simon" and me["groups"] == ["user", "admin"] and me["admin"], me
+    assert me["accountUrl"] == "https://auth.example.com/settings", me
     assert not get(hub, "/api/me", groups="user")["admin"]
     hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/machines")
     assert [a["name"] for a in get(hub, "/api/apps", groups="user")] == ["Immich"]

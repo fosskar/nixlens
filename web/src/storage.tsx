@@ -262,7 +262,7 @@ function UsageBar({ percent, className }: { percent: number; className: string }
       className={`overflow-hidden rounded-full bg-white/[0.07] shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] ${className}`}
     >
       <div
-        className={`h-full rounded-full bg-gradient-to-r ${fill} shadow-[0_0_8px_rgb(26_188_156/0.4)] transition-[width] duration-700 motion-reduce:transition-none`}
+        className={`h-full rounded-full bg-gradient-to-r ${fill} shadow-[0_0_8px_color-mix(in_srgb,var(--color-accent-cyan)_40%,transparent)] transition-[width] duration-700 motion-reduce:transition-none`}
         style={{ width: `${Math.min(percent, 100)}%` }}
       />
     </div>
@@ -297,7 +297,7 @@ function DriveGlyph({
   const kind = driveKind(disk)
   const s = glyphSizes[size]
   const ring = lit
-    ? 'ring-accent-cyan/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_0_12px_-2px_rgb(26_188_156/0.55)]'
+    ? 'ring-accent-cyan/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_0_12px_-2px_color-mix(in_srgb,var(--color-accent-cyan)_55%,transparent)]'
     : 'ring-white/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]'
   const led = <Led health={health} asleep={disk.smart?.standby} small={size === 'sm'} />
   const body = `flex shrink-0 flex-col items-center bg-bg-elevated/90 ring-1 transition-[box-shadow] duration-200 motion-reduce:transition-none ${ring}`

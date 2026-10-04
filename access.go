@@ -24,11 +24,14 @@ type Me struct {
 	Email  string   `json:"email"`
 	Groups []string `json:"groups"`
 	Admin  bool     `json:"admin"`
+	// where the user manages their account at the identity provider
+	AccountURL string `json:"accountUrl,omitempty"`
 }
 
 type access struct {
 	adminGroups    []string
 	categoryGroups map[string][]string
+	accountURL     string
 }
 
 func readCategoryGroups(path string) (map[string][]string, error) {
@@ -82,6 +85,8 @@ func (a access) me(r *http.Request) Me {
 		Email:  r.Header.Get(headerEmail),
 		Groups: requestGroups(r),
 		Admin:  a.isAdmin(r),
+
+		AccountURL: a.accountURL,
 	}
 }
 

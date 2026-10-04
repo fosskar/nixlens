@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { reducedMotion } from './prefs'
 
 function ScrollHint({
   direction,
@@ -59,8 +60,7 @@ export function ScrollArea({ children }: { children: ReactNode }) {
   const scrollBy = (sign: 1 | -1) => {
     const el = ref.current
     if (!el) return
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    el.scrollBy({ top: sign * el.clientHeight * 0.8, behavior: reduce ? 'auto' : 'smooth' })
+    el.scrollBy({ top: sign * el.clientHeight * 0.8, behavior: reducedMotion() ? 'auto' : 'smooth' })
   }
 
   return (

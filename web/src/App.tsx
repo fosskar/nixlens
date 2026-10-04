@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { type App as AppEntry, type Machine, type Me, type Storage, type System, usePoll } from './api'
 import { AppGrid, AppWindow, Dock, windowMargin } from './apps'
+import { reducedMotion, setPrefs, usePrefs } from './prefs'
 import { ScrollArea } from './scroll'
+import { UserMenu } from './user'
 import { DrivesWidget } from './storage'
 import { MachineSwitcher, SystemWidget, glass } from './widgets'
 
 const machineKey = 'nos.machine'
-const maximizedKey = 'nos.maximized'
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -24,10 +25,6 @@ function originOf(rect: DOMRect): string {
 
 function dockRect(url: string): DOMRect | undefined {
   return document.querySelector(`[data-dock="${CSS.escape(url)}"]`)?.getBoundingClientRect()
-}
-
-function reducedMotion(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 export default function App() {
@@ -56,11 +53,8 @@ export default function App() {
   const closingRef = useRef(new Set<string>())
   // where keyboard focus was before an app came to the front, to return there
   const returnFocus = useRef<HTMLElement | null>(null)
-  const [maximized, setMaximized] = useState(() => localStorage.getItem(maximizedKey) === 'true')
-  const toggleMaximized = () => {
-    localStorage.setItem(maximizedKey, String(!maximized))
-    setMaximized(!maximized)
-  }
+  const { maximized } = usePrefs()
+  const toggleMaximized = () => setPrefs({ maximized: !maximized })
 
   const setOrigin = (url: string, rect?: DOMRect) => {
     if (rect) setOrigins((o) => ({ ...o, [url]: originOf(rect) }))
@@ -126,6 +120,7 @@ export default function App() {
         inert={active !== null}
       >
         {self && <title>{self.name}</title>}
+        <UserMenu me={me} />
         {admin && (
           <aside
             className={`${glass} m-3 mt-[calc(0.75rem+var(--safe-top))] flex flex-col md:fixed md:top-[calc(0.75rem+var(--safe-top))] md:bottom-[calc(0.75rem+var(--safe-bottom))] md:left-[calc(0.75rem+var(--safe-left))] md:m-0 md:w-[22rem] md:overflow-hidden`}
@@ -133,7 +128,11 @@ export default function App() {
             <ScrollArea>
               <div className="flex flex-col gap-7 p-4 md:pb-6">
                 <div className="flex items-center gap-2.5 px-1 pt-1">
-                  <img src="/favicon.svg" alt="" className="h-7 w-7 drop-shadow-[0_2px_8px_rgb(22_160_133/0.45)]" />
+                  <img
+                    src="/favicon.svg"
+                    alt=""
+                    className="h-7 w-7 drop-shadow-[0_2px_8px_color-mix(in_srgb,var(--color-accent)_45%,transparent)]"
+                  />
                   <span className="text-lg font-semibold tracking-tight text-fg-inverse">nOS</span>
                 </div>
                 {machinesPoll.data ? (
