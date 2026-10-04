@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { type App as AppEntry, type Machine, type Me, type Storage, type System, usePoll } from './api'
+import { type App as AppEntry, type Me, usePoll } from './api'
 import { AppGrid, AppWindow, Dock, type Point } from './apps'
+import { Inspector } from './inspector'
+import { type MachineOverview, OverviewWidget } from './overview'
 import { reducedMotion, setPrefs, usePrefs } from './prefs'
+import { closeLayer, navigate, useRoute } from './router'
 import { ScrollArea } from './scroll'
 import { UserMenu } from './user'
-import { type MachineOverview, OverviewWidget } from './overview'
-import { DrivesWidget, type Target } from './storage'
-import { MachineSwitcher, SystemWidget, glass } from './widgets'
-
-const machineKey = 'nos.machine'
-const allMachines = 'all'
+import { glass } from './widgets'
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -33,29 +31,26 @@ export default function App() {
   const me = usePoll<Me>('/api/me', 60000).data
   const admin = me?.admin ?? false
   const firstName = me?.name.split(' ')[0]
-  const machinesPoll = usePoll<Machine[]>(admin ? '/api/machines' : null, 10000)
-  const machines = machinesPoll.data ?? []
-  const apps = usePoll<AppEntry[]>('/api/apps', 30000).data ?? []
+  const overview = usePoll<MachineOverview[]>(admin ? '/api/overview' : null, 10000)
+  const machines = overview.data ?? []
+  const appsPoll = usePoll<AppEntry[]>('/api/apps', 30000)
+  const apps = appsPoll.data ?? []
 
-  // "all" shows every machine at once and is the default
-  const [stored, setStored] = useState(() => localStorage.getItem(machineKey) ?? allMachines)
-  const selected = machines.some((m) => m.name === stored) ? stored : allMachines
-  const machine = selected === allMachines ? null : selected
-  const base = machine ? `/api/machines/${encodeURIComponent(machine)}` : null
-  const system = usePoll<System>(base && `${base}/system`, 3000)
-  const storage = usePoll<Storage>(base && `${base}/storage`, 30000)
-  const overview = usePoll<MachineOverview[]>(admin && !machine ? '/api/overview' : null, 10000)
-  // a pool or drive to open when arriving from the overview's attention list
-  const [target, setTarget] = useState<Target>()
-
-  const selectMachine = (name: string, open?: Target) => {
-    localStorage.setItem(machineKey, name)
-    setStored(name)
-    setTarget(open)
-  }
+  // the address decides what is in front: an app window, a detail popup or
+  // nothing over the home view
+  const route = useRoute()
+  const detail = route.kind === 'machine' || route.kind === 'pool' || route.kind === 'disk' ? route : null
+  const routeApp =
+    route.kind === 'app'
+      ? apps.find((a) => a.machine === route.machine && a.name === route.name && a.frameable)
+      : undefined
+  const active = routeApp?.url ?? null
 
   const [open, setOpen] = useState<AppEntry[]>([])
-  const [active, setActive] = useState<string | null>(null)
+  // an app in the address joins the open windows, also after a reload or
+  // when the back gesture returns to it; adjusted while rendering, as react
+  // recommends for state that follows other values
+  if (routeApp && !open.some((a) => a.url === routeApp.url)) setOpen([...open, routeApp])
   const [origins, setOrigins] = useState<Record<string, Point>>({})
   const [closing, setClosing] = useState<string[]>([])
   const closingRef = useRef(new Set<string>())
@@ -76,23 +71,30 @@ export default function App() {
     setOrigin(app.url, from)
     closingRef.current.delete(app.url)
     setClosing((c) => c.filter((u) => u !== app.url))
-    setOpen((o) => (o.some((a) => a.url === app.url) ? o : [...o, app]))
     if (active === null && document.activeElement instanceof HTMLElement) returnFocus.current = document.activeElement
-    setActive(app.url)
+    navigate({ kind: 'app', machine: app.machine, name: app.name })
   }
+
+  // addresses that cannot be shown lead home: an app that does not exist
+  // (or cannot be framed), or details for someone who may not see them
+  useEffect(() => {
+    if (route.kind === 'app' && appsPoll.data && !routeApp) closeLayer()
+    if (detail && me && !admin) closeLayer()
+  }, [route, appsPoll.data, routeApp, detail, me, admin])
 
   useEffect(() => {
     if (active === null) returnFocus.current?.focus()
   }, [active])
 
   const goHome = () => {
-    if (active) setOrigin(active, dockRect(active))
-    setActive(null)
+    if (!active) return
+    setOrigin(active, dockRect(active))
+    closeLayer()
   }
 
   const closeApp = (app: AppEntry) => {
     setOrigin(app.url, dockRect(app.url))
-    setActive((a) => (a === app.url ? null : a))
+    if (active === app.url) closeLayer()
     closingRef.current.add(app.url)
     setClosing((c) => [...c, app.url])
     setTimeout(
@@ -111,7 +113,7 @@ export default function App() {
       if (e.key !== 'Escape') return
       const rect = dockRect(active)
       if (rect) setOrigins((o) => ({ ...o, [active]: originOf(rect) }))
-      setActive(null)
+      closeLayer()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -143,19 +145,7 @@ export default function App() {
                   />
                   <span className="text-lg font-semibold tracking-tight text-fg-inverse">nOS</span>
                 </div>
-                {machinesPoll.data ? (
-                  <MachineSwitcher machines={machines} selected={selected} all={allMachines} onSelect={selectMachine} />
-                ) : (
-                  <div className="px-1 text-xs text-fg-muted">{machinesPoll.error ?? 'Loading machines…'}</div>
-                )}
-                {machine ? (
-                  <>
-                    <SystemWidget poll={system} />
-                    <DrivesWidget key={machine} poll={storage} machine={machine} initial={target} />
-                  </>
-                ) : (
-                  machinesPoll.data && <OverviewWidget poll={overview} onSelect={selectMachine} />
-                )}
+                <OverviewWidget poll={overview} />
               </div>
             </ScrollArea>
           </aside>
@@ -170,7 +160,7 @@ export default function App() {
                 {greeting()}
                 {firstName && `, ${firstName}`}.
               </h1>
-              {machinesPoll.data && (
+              {overview.data && (
                 <p className="mt-3 text-sm text-fg-muted tabular-nums">
                   {online} of {machines.length} {machines.length === 1 ? 'machine' : 'machines'} online · {apps.length}{' '}
                   apps
@@ -195,6 +185,8 @@ export default function App() {
           onClose={() => closeApp(app)}
         />
       ))}
+
+      {admin && detail && <Inspector route={detail} />}
 
       <Dock
         open={open}

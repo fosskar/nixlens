@@ -4,7 +4,6 @@ import {
   type Dataset,
   type Disk,
   type Partition,
-  type Poll,
   type Pool,
   type PoolDetail,
   type PoolGroup,
@@ -27,7 +26,7 @@ import {
   worst,
 } from './health'
 import { ScrollArea } from './scroll'
-import { SectionTitle, Unavailable, card } from './widgets'
+import { SectionTitle, card } from './widgets'
 
 const pillStyles: Record<Health, string> = {
   ok: 'border-success/30 bg-success/10 text-success',
@@ -325,12 +324,12 @@ function PoolRow({
   )
 }
 
-type Crumb = { label: string; onClick: () => void }
+export type Crumb = { label: string; onClick: () => void }
 
 // the open popup's title element, which names the dialog
 const ModalTitleId = createContext<string | undefined>(undefined)
 
-function Modal({
+export function Modal({
   focusKey,
   direction,
   trail,
@@ -351,12 +350,6 @@ function Modal({
     if (e.key === 'Escape') {
       e.preventDefault()
       onClose()
-      return
-    }
-    const typing = e.target instanceof HTMLElement && e.target.matches('input, textarea, [contenteditable]')
-    if (onBack && ((e.altKey && e.key === 'ArrowLeft') || (e.key === 'Backspace' && !typing))) {
-      e.preventDefault()
-      onBack()
       return
     }
     if (e.key !== 'Tab' || !panel.current) return
@@ -406,25 +399,27 @@ function Modal({
         tabIndex={-1}
         className="nos-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-3xl flex-col overflow-hidden rounded-[22px] font-sans text-fg-base outline-none"
       >
-        {onBack && (
+        {(onBack || trail.length > 1) && (
           <nav className="flex shrink-0 items-center gap-1 border-b border-white/[0.06] px-3 py-2 text-[11px]">
-            <button
-              type="button"
-              onClick={onBack}
-              title="Back (Alt+←)"
-              className="mr-1 flex items-center gap-1 rounded-lg px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-3.5 w-3.5 fill-none stroke-current"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                title="Back (Alt+←)"
+                className="mr-1 flex items-center gap-1 rounded-lg px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
               >
-                <path d="M15 6l-6 6 6 6" />
-              </svg>
-              Back
-            </button>
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-3.5 w-3.5 fill-none stroke-current"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15 6l-6 6 6 6" />
+                </svg>
+                Back
+              </button>
+            )}
             {trail.map((crumb, i) => (
               <span key={i} className="flex min-w-0 items-center gap-1">
                 {i > 0 && <span className="text-fg-dim">›</span>}
@@ -452,7 +447,16 @@ function Modal({
   )
 }
 
-function ModalHeader({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+// the element that names the open popup
+export function ModalTitle({ className, children }: { className: string; children: ReactNode }) {
+  return (
+    <span id={use(ModalTitleId)} className={className}>
+      {children}
+    </span>
+  )
+}
+
+export function ModalHeader({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-white/[0.07] bg-white/[0.03] py-3.5 pr-3 pl-5">
       <div className="flex min-w-0 flex-1 items-center gap-3">{children}</div>
@@ -470,7 +474,7 @@ function ModalHeader({ children, onClose }: { children: ReactNode; onClose: () =
   )
 }
 
-function ModalBody({ children }: { children: ReactNode }) {
+export function ModalBody({ children }: { children: ReactNode }) {
   return (
     <ScrollArea>
       <div className="flex flex-col gap-6 p-5">{children}</div>
@@ -799,7 +803,7 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
   )
 }
 
-function PoolModal({
+export function PoolModal({
   pool,
   disks,
   machine,
@@ -866,7 +870,7 @@ function partitionHealth(partition: Partition, disk: Disk, pools: Pool[]): Healt
   return pool && members.length > 0 ? worst(members.map((m) => memberHealth(m, pool))) : undefined
 }
 
-function DriveModal({
+export function DriveModal({
   disk,
   pools,
   onOpenPool,
@@ -1000,34 +1004,16 @@ function SubTitle({ children, aside }: { children: ReactNode; aside: string }) {
   )
 }
 
-export function DrivesWidget({ poll, machine, initial }: { poll: Poll<Storage>; machine: string; initial?: Target }) {
+export function StorageLists({
+  storage,
+  error,
+  onOpen,
+}: {
+  storage: Storage
+  error?: string
+  onOpen: (target: Target) => void
+}) {
   const [hover, setHover] = useState<Target | null>(null)
-  // views opened inside the popup stack up, so back and breadcrumbs can
-  // return to where the user came from
-  const [stack, setStack] = useState<Target[]>(initial ? [initial] : [])
-  const [direction, setDirection] = useState<'forward' | 'back' | 'none'>('none')
-  const open = stack.at(-1) ?? null
-  const setOpen = (target: Target) => {
-    setDirection('none')
-    setStack([target])
-  }
-  const push = (target: Target) => {
-    setDirection('forward')
-    setStack((s) => [...s, target])
-  }
-  const backTo = (depth: number) => {
-    setDirection('back')
-    setStack((s) => s.slice(0, depth))
-  }
-  const storage = poll.data
-  if (!storage) {
-    return (
-      <div>
-        <SectionTitle>Storage</SectionTitle>
-        <Unavailable error={poll.error} className="h-28" />
-      </div>
-    )
-  }
   const pools = storage.pools ?? []
   const disks = storage.disks ?? []
   const links = new Map(pools.map((p) => [p.name, poolDrives(p, disks)]))
@@ -1060,17 +1046,10 @@ export function DrivesWidget({ poll, machine, initial }: { poll: Poll<Storage>; 
   const hoverHandler = (target: Target) => (hovered: boolean) =>
     setHover((h) => (hovered ? target : h?.kind === target.kind && h.name === target.name ? null : h))
 
-  const openPool = open?.kind === 'pool' ? pools.find((p) => p.name === open.name) : undefined
-  const openDisk = open?.kind === 'disk' ? disks.find((d) => d.name === open.name) : undefined
-  const close = () => setStack([])
-  const crumbLabel = (t: Target) =>
-    t.kind === 'pool' ? t.name : disks.find((d) => d.name === t.name)?.serial || t.name
-  const trail = stack.map((t, i) => ({ label: crumbLabel(t), onClick: () => backTo(i + 1) }))
-
   return (
     <div>
       <SectionTitle aside={`${disks.length} ${disks.length === 1 ? 'drive' : 'drives'}`}>Storage</SectionTitle>
-      <div className={`flex flex-col gap-4 ${poll.error ? 'opacity-50' : ''}`} title={poll.error}>
+      <div className={`flex flex-col gap-4 ${error ? 'opacity-50' : ''}`} title={error}>
         {disks.length > 0 && (
           <div>
             <SubTitle aside={String(disks.length)}>Drives</SubTitle>
@@ -1083,7 +1062,7 @@ export function DrivesWidget({ poll, machine, initial }: { poll: Poll<Storage>; 
                     key={disk.name}
                     type="button"
                     title={driveTitle(disk)}
-                    onClick={() => setOpen({ kind: 'disk', name: disk.name })}
+                    onClick={() => onOpen({ kind: 'disk', name: disk.name })}
                     onMouseEnter={() => onHover(true)}
                     onMouseLeave={() => onHover(false)}
                     onFocus={() => onHover(true)}
@@ -1108,40 +1087,13 @@ export function DrivesWidget({ poll, machine, initial }: { poll: Poll<Storage>; 
                   lit={litPools?.has(pool.name) ?? false}
                   dim={litPools !== null && !litPools.has(pool.name)}
                   onHover={hoverHandler({ kind: 'pool', name: pool.name })}
-                  onOpen={() => setOpen({ kind: 'pool', name: pool.name })}
+                  onOpen={() => onOpen({ kind: 'pool', name: pool.name })}
                 />
               ))}
             </div>
           </div>
         )}
       </div>
-      {(openPool || openDisk) && (
-        <Modal
-          focusKey={`${stack.length}:${open?.kind}:${open?.name}`}
-          direction={direction}
-          trail={trail}
-          onBack={stack.length > 1 ? () => backTo(stack.length - 1) : undefined}
-          onClose={close}
-        >
-          {openPool && (
-            <PoolModal
-              pool={openPool}
-              disks={disks}
-              machine={machine}
-              onOpenDisk={(name) => push({ kind: 'disk', name })}
-              onClose={close}
-            />
-          )}
-          {openDisk && (
-            <DriveModal
-              disk={openDisk}
-              pools={pools}
-              onOpenPool={(name) => push({ kind: 'pool', name })}
-              onClose={close}
-            />
-          )}
-        </Modal>
-      )}
     </div>
   )
 }
