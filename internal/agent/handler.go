@@ -4,6 +4,7 @@ package agent
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/fosskar/nos/internal/api"
 	"github.com/fosskar/nos/internal/smart"
@@ -19,13 +20,16 @@ type Options struct {
 // Handler serves /api/local/*
 func Handler(o Options) http.Handler {
 	cpu := newCPUSampler()
+	// the overview polls every machine's storage every few seconds per
+	// viewer; lsblk, zpool and zfs need not run that often
+	storage := &cached[Storage]{ttl: 5 * time.Second, read: func() (Storage, error) { return readStorage(o.SmartFile) }}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/local/system", func(w http.ResponseWriter, r *http.Request) {
 		s, err := readSystem(cpu, o.InstalledMemory)
 		api.WriteJSON(w, s, err)
 	})
 	mux.HandleFunc("GET /api/local/storage", func(w http.ResponseWriter, r *http.Request) {
-		s, err := readStorage(o.SmartFile)
+		s, err := storage.get()
 		api.WriteJSON(w, s, err)
 	})
 	mux.HandleFunc("GET /api/local/network", func(w http.ResponseWriter, r *http.Request) {
