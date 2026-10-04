@@ -260,23 +260,78 @@ function UsageBar({ percent, className }: { percent: number; className: string }
   )
 }
 
+type DriveKind = 'hdd' | 'ssd' | 'nvme'
+
+function driveKind(disk: Disk): DriveKind {
+  if (disk.transport === 'nvme') return 'nvme'
+  return disk.rotational ? 'hdd' : 'ssd'
+}
+
+const glyphSizes = {
+  lg: { hdd: 'h-14 w-9', ssd: 'h-11 w-9', nvme: 'h-14 w-[1.375rem]', pad: 'px-1.5 py-2', frame: 'h-14' },
+  sm: { hdd: 'h-10 w-6', ssd: 'h-8 w-6', nvme: 'h-10 w-4', pad: 'px-1 py-1.5', frame: 'h-10' },
+}
+
+// 3.5" bay with a grille for hdds, a shorter 2.5" body with a label for
+// sata ssds, an m.2 stick with chips and a gold edge connector for nvme
+function DriveGlyph({
+  disk,
+  health,
+  lit,
+  size = 'lg',
+}: {
+  disk: Disk
+  health: Health
+  lit?: boolean
+  size?: 'lg' | 'sm'
+}) {
+  const kind = driveKind(disk)
+  const s = glyphSizes[size]
+  const ring = lit
+    ? 'ring-accent-cyan/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_0_12px_-2px_rgb(26_188_156/0.55)]'
+    : 'ring-white/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]'
+  const led = <Led health={health} asleep={disk.smart?.standby} small={size === 'sm'} />
+  const body = `flex shrink-0 flex-col items-center bg-bg-elevated/90 ring-1 transition-[box-shadow] duration-200 motion-reduce:transition-none ${ring}`
+  return (
+    <span className={`flex items-end justify-center ${s.frame}`}>
+      {kind === 'hdd' && (
+        <span className={`${body} ${s.hdd} ${s.pad} justify-between rounded-md`}>
+          <span className="flex w-full flex-col gap-0.5">
+            <span className="h-px w-full bg-white/10" />
+            <span className="h-px w-full bg-white/10" />
+            <span className="h-px w-full bg-white/10" />
+          </span>
+          {led}
+        </span>
+      )}
+      {kind === 'ssd' && (
+        <span className={`${body} ${s.ssd} ${s.pad} justify-between rounded-md`}>
+          <span className="h-[30%] w-full rounded-[3px] bg-white/[0.07] ring-1 ring-white/[0.05]" />
+          {led}
+        </span>
+      )}
+      {kind === 'nvme' && (
+        <span className={`${body} ${s.nvme} justify-between rounded-[4px] pt-1.5`}>
+          {led}
+          <span className="flex w-full flex-col items-center gap-1">
+            <span className="h-[18%] w-[70%] min-h-1.5 rounded-[2px] bg-black/55 ring-1 ring-white/[0.08]" />
+            <span className="h-[18%] w-[70%] min-h-1.5 rounded-[2px] bg-black/55 ring-1 ring-white/[0.08]" />
+          </span>
+          <span className="nos-nvme-pins h-1.5 w-full rounded-b-[4px]" />
+        </span>
+      )}
+    </span>
+  )
+}
+
 function DriveSlot({ disk, health, lit }: { disk: Disk; health: Health; lit?: boolean }) {
   const label = disk.serial || disk.name
   const half = Math.ceil(label.length / 2)
   const lines = label.length > 10 ? [label.slice(0, half), label.slice(half)] : [label]
-  const kind = disk.transport || (disk.rotational ? 'hdd' : 'ssd')
+  const kind = driveKind(disk)
   return (
     <div className="flex w-[4.25rem] flex-col items-center gap-1.5">
-      <div
-        className={`flex h-14 w-9 flex-col items-center justify-between rounded-md bg-bg-elevated/90 px-1.5 py-2 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 transition-[box-shadow] duration-200 motion-reduce:transition-none ${lit ? 'ring-accent-cyan/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_0_12px_-2px_rgb(26_188_156/0.55)]' : 'ring-white/10'}`}
-      >
-        <div className="flex w-full flex-col gap-0.5">
-          <div className="h-px w-full bg-white/10" />
-          <div className="h-px w-full bg-white/10" />
-          <div className="h-px w-full bg-white/10" />
-        </div>
-        <Led health={health} asleep={disk.smart?.standby} />
-      </div>
+      <DriveGlyph disk={disk} health={health} lit={lit} />
       <div className="w-full text-center leading-tight">
         {lines.map((line, i) => (
           <div key={i} className="truncate font-mono text-[9px] text-fg-base">
@@ -864,14 +919,7 @@ function DriveModal({
   return (
     <>
       <ModalHeader onClose={onClose}>
-        <span className="flex h-10 w-6 shrink-0 flex-col items-center justify-between rounded-[5px] bg-bg-elevated/90 px-1 py-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-white/10">
-          <span className="flex w-full flex-col gap-0.5">
-            <span className="h-px w-full bg-white/10" />
-            <span className="h-px w-full bg-white/10" />
-            <span className="h-px w-full bg-white/10" />
-          </span>
-          <Led health={driveHealth(disk, pools)} small />
-        </span>
+        <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
         <span className="min-w-0">
           <span className="block truncate text-base font-semibold text-fg-inverse">{disk.model || disk.name}</span>
           <span className="block truncate font-mono text-[11px] text-fg-muted">{disk.serial}</span>
@@ -1014,13 +1062,19 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
   const pools = storage.pools ?? []
   const disks = storage.disks ?? []
   const links = new Map(pools.map((p) => [p.name, poolDrives(p, disks)]))
-  // drives follow the pools list: a pool's drives together, unused last
-  const firstPool = (d: Disk) => {
-    const i = pools.findIndex((p) => links.get(p.name)?.has(d.name))
-    return i < 0 ? pools.length : i
-  }
+  // drives follow the pools list and, within a pool, its vdev order (data
+  // before log or cache); drives in no pool come last
+  const position = new Map<string, number>()
+  pools.forEach((p, pi) =>
+    p.groups.forEach((g, gi) =>
+      g.members.forEach((m) => {
+        if (!position.has(m.device)) position.set(m.device, pi * 1000 + gi)
+      }),
+    ),
+  )
+  const rank = (d: Disk) => position.get(d.name) ?? Number.MAX_SAFE_INTEGER
   const drives = [...disks].sort(
-    (a, b) => firstPool(a) - firstPool(b) || a.name.localeCompare(b.name, undefined, { numeric: true }),
+    (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, undefined, { numeric: true }),
   )
   const litDisks =
     hover?.kind === 'pool' ? (links.get(hover.name) ?? new Set<string>()) : hover?.kind === 'disk' ? new Set([hover.name]) : null
