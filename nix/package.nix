@@ -48,5 +48,7 @@ buildGoModule {
   meta = {
     description = "Read-only web frontend for a NixOS host";
     mainProgram = "nos";
+    license = lib.licenses.mit;
+    platforms = lib.platforms.linux;
   };
 }
