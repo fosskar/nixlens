@@ -15,11 +15,11 @@ function MenuItem({ onClick, href, children }: { onClick?: () => void; href?: st
   const className =
     'flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-fg-base transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2'
   return href ? (
-    <a role="menuitem" href={href} target="_blank" rel="noreferrer" className={className}>
+    <a href={href} target="_blank" rel="noreferrer" className={className}>
       {children}
     </a>
   ) : (
-    <button role="menuitem" type="button" onClick={onClick} className={className}>
+    <button type="button" onClick={onClick} className={className}>
       {children}
     </button>
   )
@@ -59,7 +59,6 @@ export function UserMenu({ me }: { me?: Me }) {
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          aria-haspopup="menu"
           aria-expanded={open}
           aria-controls={menuId}
           aria-label={name ? `Account menu for ${name}` : 'Account menu'}
@@ -75,11 +74,7 @@ export function UserMenu({ me }: { me?: Me }) {
           )}
         </button>
         {open && (
-          <div
-            id={menuId}
-            role="menu"
-            className="glass-strong absolute top-12 right-0 w-64 rounded-2xl p-1.5 shadow-2xl"
-          >
+          <div id={menuId} className="glass-strong absolute top-12 right-0 w-64 rounded-2xl p-1.5 shadow-2xl">
             {name && (
               <div className="border-b border-white/[0.07] px-3 pt-2 pb-2.5">
                 <div className="truncate text-sm font-semibold text-fg-inverse">{name}</div>
@@ -169,7 +164,6 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
       <div
         ref={panel}
         role="dialog"
-        aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
         className={`${leaving ? 'nos-panel-out' : 'nos-panel'} glass-strong absolute top-[calc(0.75rem+var(--safe-top))] right-[calc(0.75rem+var(--safe-right))] bottom-[calc(0.75rem+var(--safe-bottom))] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col rounded-[22px] font-sans outline-none`}

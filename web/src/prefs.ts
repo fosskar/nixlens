@@ -11,7 +11,7 @@ export const accents = {
 
 export type Accent = keyof typeof accents
 
-export type Prefs = {
+type Prefs = {
   accent: Accent
   glow: number
   solid: boolean
