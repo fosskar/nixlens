@@ -30,7 +30,7 @@
         ];
         text = ''
           export CGO_ENABLED=0 GOTOOLCHAIN=local
-          # main.go embeds the frontend build, which is not in git
+          # web/embed.go embeds the frontend build, which is not in git
           if [ ! -e web/dist ]; then
             mkdir -p web/dist
             : >web/dist/.placeholder
@@ -39,7 +39,16 @@
             HOME=$(mktemp -d)
             export HOME
           fi
-          exec golangci-lint "$@"
+          # treefmt passes files, but files from several packages cannot be
+          # type-checked together; lint the packages instead
+          args=()
+          for arg in "$@"; do
+            case $arg in
+            *.go) ;;
+            *) args+=("$arg") ;;
+            esac
+          done
+          exec golangci-lint "''${args[@]}" ./...
         '';
       };
     };

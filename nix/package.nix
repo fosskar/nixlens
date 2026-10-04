@@ -37,11 +37,12 @@ buildGoModule {
     root = ../.;
     fileset = lib.fileset.unions [
       ../go.mod
-      ../testdata
+      ../internal/smart/testdata
       (lib.fileset.fileFilter (file: file.hasExt "go") ../.)
     ];
   };
   vendorHash = null;
+  subPackages = [ "cmd/nos" ];
   env.CGO_ENABLED = 0;
 
   preBuild = ''
