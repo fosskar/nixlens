@@ -71,6 +71,7 @@ export type Pool = {
   usable: number
   used: number
   available: number
+  mount?: string
   scan?: PoolScan
   groups: PoolGroup[]
 }

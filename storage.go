@@ -28,6 +28,7 @@ type Pool struct {
 	Usable    uint64  `json:"usable"`
 	Used      uint64  `json:"used"`
 	Available uint64  `json:"available"`
+	Mount     string  `json:"mount,omitempty"`
 	Scan      *Scan   `json:"scan,omitempty"`
 	Groups    []Group `json:"groups"`
 }

@@ -88,6 +88,7 @@ func readVolumes() ([]Pool, error) {
 		if p.Name == "" {
 			p.Name = "/dev/" + v.parts[0]
 		}
+		p.Mount = v.mount
 		if v.mount != "" {
 			var st syscall.Statfs_t
 			if err := syscall.Statfs(v.mount, &st); err != nil {

@@ -372,6 +372,60 @@ function PoolCard({ pool, disks }: { pool: Pool; disks: Disk[] }) {
   )
 }
 
+function usageBar(percent: number): string {
+  return percent >= 90 ? 'from-error/80 to-error' : percent >= 80 ? 'from-warning/80 to-warning' : 'from-accent to-accent-cyan'
+}
+
+// a filesystem on a partition of one disk; shown as a row of that disk
+function PartitionRow({ volume }: { volume: Pool }) {
+  const mounted = volume.state === 'mounted'
+  const partition = volume.groups[0]?.members[0]?.path
+  const percent = volume.usable > 0 ? (100 * volume.used) / volume.usable : 0
+  return (
+    <div className="px-0.5 py-2" title={partition}>
+      <div className="flex items-center gap-2 text-[11px]">
+        <span className="truncate font-mono font-semibold text-fg-inverse">{volume.name}</span>
+        <span className="rounded-md border border-white/10 bg-white/[0.05] px-1.5 py-px text-[9px] font-medium tracking-wide text-fg-muted uppercase">
+          {volume.kind}
+        </span>
+        {volume.mount && volume.mount !== volume.name && (
+          <span className="truncate font-mono text-[10px] text-fg-dim">{volume.mount}</span>
+        )}
+        <span className="ml-auto shrink-0 text-fg-muted tabular-nums">
+          {mounted ? (
+            <>
+              <span className="text-fg-base">{formatCapacity(volume.used)}</span> / {formatCapacity(volume.usable)}
+            </>
+          ) : (
+            'not mounted'
+          )}
+        </span>
+      </div>
+      {mounted && (
+        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/[0.07]">
+          <div
+            className={`h-full rounded-full bg-gradient-to-r ${usageBar(percent)} transition-[width] duration-700`}
+            style={{ width: `${Math.min(percent, 100)}%` }}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DiskCard({ disk, volumes }: { disk: Disk; volumes: Pool[] }) {
+  return (
+    <div className={`${card} flex gap-3 p-3`}>
+      <DriveSlot disk={disk} health="ok" />
+      <div className="min-w-0 flex-1 divide-y divide-white/[0.06]">
+        {volumes.map((v) => (
+          <PartitionRow key={`${v.kind}:${v.name}`} volume={v} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function DrivesWidget({ poll }: { poll: Poll<Storage> }) {
   const storage = poll.data
   if (!storage) {
@@ -382,9 +436,21 @@ export function DrivesWidget({ poll }: { poll: Poll<Storage> }) {
       </div>
     )
   }
-  const pools = storage.pools ?? []
   const disks = storage.disks ?? []
   const other = disks.filter((d) => !d.pool)
+  // zfs, md and multi-disk filesystems are pools; single-disk filesystems
+  // are partitions and group under their disk
+  const pools: Pool[] = []
+  const partitions = new Map<string, Pool[]>()
+  for (const p of storage.pools ?? []) {
+    const devices = new Set(p.groups.flatMap((g) => g.members.map((m) => m.device)))
+    if (p.kind === 'zfs' || p.kind === 'md' || devices.size !== 1) {
+      pools.push(p)
+      continue
+    }
+    const [device] = devices
+    partitions.set(device, [...(partitions.get(device) ?? []), p])
+  }
   return (
     <div>
       <SectionTitle aside={`${disks.length} ${disks.length === 1 ? 'disk' : 'disks'}`}>Storage</SectionTitle>
@@ -392,6 +458,10 @@ export function DrivesWidget({ poll }: { poll: Poll<Storage> }) {
         {pools.map((pool) => (
           <PoolCard key={`${pool.kind}:${pool.name}`} pool={pool} disks={disks} />
         ))}
+        {[...partitions].map(([device, volumes]) => {
+          const disk = disks.find((d) => d.name === device)
+          return disk && <DiskCard key={device} disk={disk} volumes={volumes} />
+        })}
         {other.length > 0 && (
           <div className={`${card} p-3`}>
             <div className="mb-2.5 px-0.5 text-sm font-semibold text-fg-inverse">unused</div>
