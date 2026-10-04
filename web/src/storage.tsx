@@ -14,10 +14,20 @@ import {
   usePoll,
   type Smart,
 } from './api'
+import {
+  type Health,
+  driveHealth,
+  formatCapacity,
+  memberHealth,
+  poolHealth,
+  redundant,
+  resilvering,
+  smartHealth,
+  stateHealth,
+  worst,
+} from './health'
 import { ScrollArea } from './scroll'
 import { SectionTitle, Unavailable, card } from './widgets'
-
-type Health = 'ok' | 'warn' | 'error' | 'unknown'
 
 const pillStyles: Record<Health, string> = {
   ok: 'border-success/30 bg-success/10 text-success',
@@ -31,47 +41,6 @@ const textStyles: Record<Health, string> = {
   warn: 'text-warning',
   error: 'text-error',
   unknown: 'text-fg-muted',
-}
-
-const healthRank: Record<Health, number> = { ok: 0, unknown: 1, warn: 2, error: 3 }
-
-const errorStates = ['faulted', 'offline', 'unavail', 'removed', 'faulty']
-const okPoolStates = ['online', 'clean', 'active', 'active-idle', 'read-auto', 'write-pending', 'mounted']
-
-function stateTokens(state: string): string[] {
-  return state
-    .toLowerCase()
-    .split(/[\s,]+/)
-    .filter((t) => t !== '')
-}
-
-function resilvering(pool: Pool): boolean {
-  return pool.scan?.function === 'RESILVER' && pool.scan.state === 'SCANNING'
-}
-
-function stateHealth(state: string): Health {
-  const tokens = stateTokens(state)
-  if (tokens.includes('unmounted')) return 'unknown'
-  if (tokens.includes('degraded') || tokens.includes('recovering') || tokens.includes('resyncing')) return 'warn'
-  if (tokens.length > 0 && tokens.every((t) => okPoolStates.includes(t))) return 'ok'
-  return 'error'
-}
-
-function poolHealth(pool: Pool): Health {
-  const health = stateHealth(pool.state)
-  return health === 'ok' && resilvering(pool) ? 'warn' : health
-}
-
-function memberHealth(member: PoolMember, pool: Pool): Health {
-  const tokens = stateTokens(member.state)
-  if (member.device === '' || tokens.some((t) => errorStates.includes(t))) return 'error'
-  if (tokens.includes('degraded') || resilvering(pool) || member.errors > 0) return 'warn'
-  if (tokens.includes('online') || tokens.includes('in_sync')) return 'ok'
-  return 'unknown'
-}
-
-function worst(healths: Health[]): Health {
-  return healths.reduce<Health>((a, b) => (healthRank[b] > healthRank[a] ? b : a), 'ok')
 }
 
 const relativeTime = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
@@ -119,17 +88,6 @@ function scanLine(pool: Pool): { text: string; health: Health } | null {
   return { text: `${resilver ? 'resilvered' : 'scrubbed'} ${timeAgo(scan.end)} · ${errors}`, health }
 }
 
-// one decimal below 100 so pool capacities like "11.5 TB" keep their precision
-function formatCapacity(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
-  let i = 0
-  while (bytes >= 1000 && i < units.length - 1) {
-    bytes /= 1000
-    i++
-  }
-  return `${bytes.toFixed(bytes < 100 && i > 0 ? 1 : 0)} ${units[i]}`
-}
-
 function formatUsage(used: number, total: number): string {
   const [usedValue, usedUnit] = formatCapacity(used).split(' ')
   const [totalValue, totalUnit] = formatCapacity(total).split(' ')
@@ -146,10 +104,6 @@ function formatRecordsize(value: string): string {
 
 function usedPercent(pool: Pool): number {
   return pool.usable > 0 ? (100 * pool.used) / pool.usable : 0
-}
-
-function redundant(pool: Pool): boolean {
-  return pool.kind === 'zfs' || pool.kind === 'md'
 }
 
 function poolType(pool: Pool): string {
@@ -169,33 +123,6 @@ function poolDrives(pool: Pool, disks: Disk[]): Set<string> {
     if ((disk.partitions ?? []).some((p) => p.pool === pool.name)) names.add(disk.name)
   }
   return names
-}
-
-// failed overall assessment is red; sector problems, nvme warnings and
-// heavy wear are early signs and orange
-function smartHealth(smart?: Smart): Health | null {
-  if (!smart || smart.passed === null) return null
-  if (!smart.passed) return 'error'
-  if (
-    smart.reallocated > 0 ||
-    smart.pending > 0 ||
-    smart.uncorrectable > 0 ||
-    smart.criticalWarning > 0 ||
-    smart.mediaErrors > 0 ||
-    smart.percentageUsed >= 90
-  )
-    return 'warn'
-  return 'ok'
-}
-
-function driveHealth(disk: Disk, pools: Pool[]): Health {
-  const members = pools
-    .filter(redundant)
-    .flatMap((p) =>
-      p.groups.flatMap((g) => g.members.filter((m) => m.device === disk.name).map((m) => memberHealth(m, p))),
-    )
-  const smart = smartHealth(disk.smart)
-  return worst(smart ? [...members, smart] : members)
 }
 
 function trailingNumber(name: string): string | undefined {
@@ -221,7 +148,7 @@ function driveTitle(disk: Disk): string {
     .join('\n')
 }
 
-function Led({ health, small, asleep }: { health: Health; small?: boolean; asleep?: boolean }) {
+export function Led({ health, small, asleep }: { health: Health; small?: boolean; asleep?: boolean }) {
   return (
     <span
       title={asleep ? 'asleep' : undefined}
@@ -353,7 +280,7 @@ function DriveSlot({ disk, health, lit }: { disk: Disk; health: Health; lit?: bo
   )
 }
 
-type Target = { kind: 'pool' | 'disk'; name: string }
+export type Target = { kind: 'pool' | 'disk'; name: string }
 
 const linkTransition = 'transition-[opacity,background-color,border-color] duration-200 motion-reduce:transition-none'
 
@@ -1073,11 +1000,11 @@ function SubTitle({ children, aside }: { children: ReactNode; aside: string }) {
   )
 }
 
-export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: string }) {
+export function DrivesWidget({ poll, machine, initial }: { poll: Poll<Storage>; machine: string; initial?: Target }) {
   const [hover, setHover] = useState<Target | null>(null)
   // views opened inside the popup stack up, so back and breadcrumbs can
   // return to where the user came from
-  const [stack, setStack] = useState<Target[]>([])
+  const [stack, setStack] = useState<Target[]>(initial ? [initial] : [])
   const [direction, setDirection] = useState<'forward' | 'back' | 'none'>('none')
   const open = stack.at(-1) ?? null
   const setOpen = (target: Target) => {

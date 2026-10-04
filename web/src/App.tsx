@@ -4,10 +4,12 @@ import { AppGrid, AppWindow, Dock, type Point } from './apps'
 import { reducedMotion, setPrefs, usePrefs } from './prefs'
 import { ScrollArea } from './scroll'
 import { UserMenu } from './user'
-import { DrivesWidget } from './storage'
+import { type MachineOverview, OverviewWidget } from './overview'
+import { DrivesWidget, type Target } from './storage'
 import { MachineSwitcher, SystemWidget, glass } from './widgets'
 
 const machineKey = 'nos.machine'
+const allMachines = 'all'
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -35,15 +37,21 @@ export default function App() {
   const machines = machinesPoll.data ?? []
   const apps = usePoll<AppEntry[]>('/api/apps', 30000).data ?? []
 
-  const [stored, setStored] = useState(() => localStorage.getItem(machineKey))
-  const selected = (machines.find((m) => m.name === stored) ?? machines.find((m) => m.self))?.name
-  const base = selected ? `/api/machines/${encodeURIComponent(selected)}` : null
+  // "all" shows every machine at once and is the default
+  const [stored, setStored] = useState(() => localStorage.getItem(machineKey) ?? allMachines)
+  const selected = machines.some((m) => m.name === stored) ? stored : allMachines
+  const machine = selected === allMachines ? null : selected
+  const base = machine ? `/api/machines/${encodeURIComponent(machine)}` : null
   const system = usePoll<System>(base && `${base}/system`, 3000)
   const storage = usePoll<Storage>(base && `${base}/storage`, 30000)
+  const overview = usePoll<MachineOverview[]>(admin && !machine ? '/api/overview' : null, 10000)
+  // a pool or drive to open when arriving from the overview's attention list
+  const [target, setTarget] = useState<Target>()
 
-  const selectMachine = (name: string) => {
+  const selectMachine = (name: string, open?: Target) => {
     localStorage.setItem(machineKey, name)
     setStored(name)
+    setTarget(open)
   }
 
   const [open, setOpen] = useState<AppEntry[]>([])
@@ -136,15 +144,17 @@ export default function App() {
                   <span className="text-lg font-semibold tracking-tight text-fg-inverse">nOS</span>
                 </div>
                 {machinesPoll.data ? (
-                  <MachineSwitcher machines={machines} selected={selected} onSelect={selectMachine} />
+                  <MachineSwitcher machines={machines} selected={selected} all={allMachines} onSelect={selectMachine} />
                 ) : (
                   <div className="px-1 text-xs text-fg-muted">{machinesPoll.error ?? 'Loading machines…'}</div>
                 )}
-                {selected && (
+                {machine ? (
                   <>
                     <SystemWidget poll={system} />
-                    <DrivesWidget key={selected} poll={storage} machine={selected} />
+                    <DrivesWidget key={machine} poll={storage} machine={machine} initial={target} />
                   </>
+                ) : (
+                  machinesPoll.data && <OverviewWidget poll={overview} onSelect={selectMachine} />
                 )}
               </div>
             </ScrollArea>

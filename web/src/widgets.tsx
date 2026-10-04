@@ -32,18 +32,34 @@ export function Unavailable({ error, className }: { error?: string; className: s
 export function MachineSwitcher({
   machines,
   selected,
+  all,
   onSelect,
 }: {
   machines: Machine[]
-  selected?: string
+  selected: string
+  all: string
   onSelect: (name: string) => void
 }) {
+  const allButton = (
+    <button
+      onClick={() => onSelect(all)}
+      className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-left text-sm transition ${selected === all ? 'glass-accent text-fg-inverse' : 'border-transparent text-fg-muted hover:bg-white/[0.06] hover:text-fg-inverse'}`}
+    >
+      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 fill-current">
+        <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v6H4zM14 15h6v6h-6z" />
+      </svg>
+      <span className="flex-1 truncate font-medium">All machines</span>
+    </button>
+  )
+  // the overview lists the machines itself, with their load
+  if (selected === all) return allButton
   return (
     <div>
       <SectionTitle aside={`${machines.filter((m) => m.online).length}/${machines.length} online`}>
         Machines
       </SectionTitle>
       <div className="flex flex-col gap-1">
+        {allButton}
         {machines.map((m) => (
           <button
             key={m.name}
