@@ -1104,23 +1104,6 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
     <div>
       <SectionTitle aside={`${disks.length} ${disks.length === 1 ? 'drive' : 'drives'}`}>Storage</SectionTitle>
       <div className={`flex flex-col gap-4 ${poll.error ? 'opacity-50' : ''}`} title={poll.error}>
-        {pools.length > 0 && (
-          <div>
-            <SubTitle aside={String(pools.length)}>Pools</SubTitle>
-            <div className="flex flex-col gap-1.5">
-              {pools.map((pool) => (
-                <PoolRow
-                  key={`${pool.kind}:${pool.name}`}
-                  pool={pool}
-                  lit={litPools?.has(pool.name) ?? false}
-                  dim={litPools !== null && !litPools.has(pool.name)}
-                  onHover={hoverHandler({ kind: 'pool', name: pool.name })}
-                  onOpen={() => setOpen({ kind: 'pool', name: pool.name })}
-                />
-              ))}
-            </div>
-          </div>
-        )}
         {disks.length > 0 && (
           <div>
             <SubTitle aside={String(disks.length)}>Drives</SubTitle>
@@ -1144,6 +1127,23 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
                   </button>
                 )
               })}
+            </div>
+          </div>
+        )}
+        {pools.length > 0 && (
+          <div>
+            <SubTitle aside={String(pools.length)}>Pools</SubTitle>
+            <div className="flex flex-col gap-1.5">
+              {pools.map((pool) => (
+                <PoolRow
+                  key={`${pool.kind}:${pool.name}`}
+                  pool={pool}
+                  lit={litPools?.has(pool.name) ?? false}
+                  dim={litPools !== null && !litPools.has(pool.name)}
+                  onHover={hoverHandler({ kind: 'pool', name: pool.name })}
+                  onOpen={() => setOpen({ kind: 'pool', name: pool.name })}
+                />
+              ))}
             </div>
           </div>
         )}
