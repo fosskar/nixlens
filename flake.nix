@@ -24,6 +24,10 @@
           services.nos.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.default;
         };
 
+      clan.modules."@fosskar/nos" = import ./nix/clan-service.nix {
+        nosModule = self.nixosModules.default;
+      };
+
       checks = forAllSystems (pkgs: {
         nixos-test = pkgs.callPackage ./nix/test.nix { nosModule = self.nixosModules.default; };
       });
