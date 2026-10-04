@@ -18,6 +18,7 @@ type System struct {
 	Load         [3]float64 `json:"load"`
 	CPUs         int        `json:"cpus"`
 	CPUPercent   float64    `json:"cpuPercent"`
+	MemInstalled uint64     `json:"memInstalled"`
 	MemTotal     uint64     `json:"memTotal"`
 	MemAvailable uint64     `json:"memAvailable"`
 	SwapTotal    uint64     `json:"swapTotal"`
@@ -29,8 +30,8 @@ func readTrimmed(path string) (string, error) {
 	return strings.TrimSpace(string(b)), err
 }
 
-func readSystem(cpu *cpuSampler) (System, error) {
-	var s System
+func readSystem(cpu *cpuSampler, memInstalled uint64) (System, error) {
+	s := System{MemInstalled: memInstalled}
 	var err error
 	if s.Hostname, err = os.Hostname(); err != nil {
 		return s, err

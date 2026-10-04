@@ -149,7 +149,7 @@ in
       description = "nOS dashboard";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
-      path = [ pkgs.util-linux ];
+      path = [ pkgs.util-linux ] ++ lib.optional config.boot.zfs.enabled config.boot.zfs.package;
       serviceConfig = {
         ExecStart = lib.escapeShellArgs (
           [
@@ -158,6 +158,8 @@ in
             "${cfg.listenAddress}:${toString cfg.port}"
             "-apps"
             appsFile
+            "-installed-memory-file"
+            "/run/nos/installed-memory"
           ]
           ++ lib.optionals (cfg.tokenFile != null) [
             "-token-file"
@@ -169,6 +171,8 @@ in
             (pkgs.writeText "nos-peers.json" (builtins.toJSON cfg.hub.peers))
           ]
         );
+        ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nos/installed-memory";
+        RuntimeDirectory = "nos";
         LoadCredential = lib.mkIf (cfg.tokenFile != null) "token:${cfg.tokenFile}";
         DynamicUser = true;
         Restart = "on-failure";

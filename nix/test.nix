@@ -21,6 +21,12 @@ testers.runNixOSTest {
 
   nodes.agent = {
     imports = [ nosModule ];
+    virtualisation.emptyDiskImages = [
+      512
+      512
+    ];
+    boot.supportedFilesystems = [ "zfs" ];
+    networking.hostId = "8425e349";
     services.nos = {
       enable = true;
       listenAddress = "0.0.0.0";
@@ -52,8 +58,8 @@ testers.runNixOSTest {
         return json.loads(node.succeed(f"curl -sf http://127.0.0.1:8090{path}"))
 
     start_all()
-    agent.wait_for_open_port(8090)
-    hub.wait_for_open_port(8090)
+    agent.wait_for_open_port(8090, timeout=60)
+    hub.wait_for_open_port(8090, timeout=60)
 
     hub.fail("curl -sf http://agent:8090/api/local/system")
     hub.succeed("curl -sf -H 'Authorization: Bearer test-token' http://agent:8090/api/local/system")
@@ -69,8 +75,17 @@ testers.runNixOSTest {
     assert system["hostname"] == "agent", system
     assert system["memTotal"] > 0 and "swapTotal" in system, system
 
-    disks = get(hub, "/api/machines/agent/disks")
-    assert any(d["name"] == "vda" for d in disks), disks
+    assert system["memInstalled"] == 1024 * 2**20, system
+
+    agent.succeed("zpool create -f testpool mirror /dev/vdb /dev/vdc")
+    storage = get(hub, "/api/machines/agent/storage")
+    [pool] = storage["pools"]
+    assert pool["name"] == "testpool" and pool["state"] == "ONLINE" and pool["usable"] > 0, pool
+    [group] = pool["groups"]
+    assert group["layout"] == "mirror", group
+    assert sorted(m["device"] for m in group["members"]) == ["vdb", "vdc"], group
+    pooled = {d["name"]: d.get("pool") for d in storage["disks"]}
+    assert pooled["vdb"] == "testpool" and pooled["vda"] is None, pooled
 
     apps = get(hub, "/api/apps")
     assert [(a["name"], a["machine"], a["url"]) for a in apps] == [

@@ -20,6 +20,8 @@ type Disk struct {
 	Serial     string `json:"serial"`
 	Transport  string `json:"transport"`
 	Rotational bool   `json:"rotational"`
+	Pool       string `json:"pool,omitempty"`
+	Group      string `json:"group,omitempty"`
 }
 
 type lsblkOutput struct {

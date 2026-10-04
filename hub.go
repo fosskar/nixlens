@@ -22,7 +22,7 @@ type Machine struct {
 
 type hub struct {
 	self     string
-	cpu      *cpuSampler
+	system   func() (System, error)
 	appsFile string
 	token    string
 	peers    map[string]string
@@ -45,7 +45,7 @@ func readPeers(path string) (map[string]string, error) {
 	return peers, nil
 }
 
-func newHub(cpu *cpuSampler, appsFile, token string, peers map[string]string) (*hub, error) {
+func newHub(system func() (System, error), appsFile, token string, peers map[string]string) (*hub, error) {
 	self, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func newHub(cpu *cpuSampler, appsFile, token string, peers map[string]string) (*
 	delete(peers, self)
 	return &hub{
 		self:     self,
-		cpu:      cpu,
+		system:   system,
 		appsFile: appsFile,
 		token:    token,
 		peers:    peers,
@@ -123,17 +123,21 @@ func (h *hub) machines(w http.ResponseWriter, r *http.Request) {
 
 func (h *hub) machineData(w http.ResponseWriter, r *http.Request) {
 	name, kind := r.PathValue("name"), r.PathValue("kind")
-	if kind != "system" && kind != "disks" {
+	if kind != "system" && kind != "disks" && kind != "storage" {
 		http.NotFound(w, r)
 		return
 	}
 	if name == h.self {
-		if kind == "system" {
-			s, err := readSystem(h.cpu)
+		switch kind {
+		case "system":
+			s, err := h.system()
 			writeJSON(w, s, err)
-		} else {
+		case "disks":
 			d, err := readDisks()
 			writeJSON(w, d, err)
+		case "storage":
+			s, err := readStorage()
+			writeJSON(w, s, err)
 		}
 		return
 	}
