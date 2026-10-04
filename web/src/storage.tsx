@@ -202,24 +202,11 @@ const glyphSizes = {
 
 // 3.5" bay with a grille for hdds, a shorter 2.5" body with a label for
 // sata ssds, an m.2 stick with chips and a gold edge connector for nvme
-function DriveGlyph({
-  disk,
-  health,
-  lit,
-  size = 'lg',
-}: {
-  disk: Disk
-  health: Health
-  lit?: boolean
-  size?: 'lg' | 'sm'
-}) {
+function DriveGlyph({ disk, health, size = 'lg' }: { disk: Disk; health: Health; size?: 'lg' | 'sm' }) {
   const kind = driveKind(disk)
   const s = glyphSizes[size]
-  const ring = lit
-    ? 'ring-accent-cyan/60 shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_0_12px_-2px_color-mix(in_srgb,var(--color-accent-cyan)_55%,transparent)]'
-    : 'ring-white/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]'
   const led = <Led health={health} asleep={disk.smart?.standby} small={size === 'sm'} />
-  const body = `flex shrink-0 flex-col items-center bg-bg-elevated/90 ring-1 transition-[box-shadow] duration-200 motion-reduce:transition-none ${ring}`
+  const body = `flex shrink-0 flex-col items-center bg-bg-elevated/90 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-white/10`
   return (
     <span className={`flex items-end justify-center ${s.frame}`}>
       {kind === 'hdd' && (
@@ -249,26 +236,6 @@ function DriveGlyph({
         </span>
       )}
     </span>
-  )
-}
-
-function DriveSlot({ disk, health, lit }: { disk: Disk; health: Health; lit?: boolean }) {
-  const label = disk.serial || disk.name
-  const half = Math.ceil(label.length / 2)
-  const lines = label.length > 10 ? [label.slice(0, half), label.slice(half)] : [label]
-  const kind = driveKind(disk)
-  return (
-    <div className="flex w-[4.25rem] flex-col items-center gap-1.5">
-      <DriveGlyph disk={disk} health={health} lit={lit} />
-      <div className="w-full text-center leading-tight">
-        {lines.map((line, i) => (
-          <div key={i} className="truncate font-mono text-[9px] text-fg-base">
-            {line}
-          </div>
-        ))}
-        <div className="text-[8px] tracking-wider text-fg-dim uppercase">{kind}</div>
-      </div>
-    </div>
   )
 }
 
@@ -941,16 +908,17 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
   const pools = storage.pools ?? []
 
   const drives = (list: Disk[]) => (
-    <div className="grid grid-cols-4 justify-items-center gap-y-1">
+    <div className="flex flex-wrap gap-0.5 px-1 pb-1">
       {list.map((disk) => (
         <button
           key={disk.name}
           type="button"
           title={driveTitle(disk)}
           onClick={() => onOpen({ kind: 'disk', name: disk.name })}
-          className={`self-start rounded-lg py-1.5 outline-accent-cyan hover:bg-white/[0.05] focus-visible:outline-2 ${linkTransition}`}
+          aria-label={`${disk.model || 'drive'} ${disk.serial || disk.name}`}
+          className={`rounded-lg px-1.5 py-1.5 outline-accent-cyan hover:bg-white/[0.05] focus-visible:outline-2 ${linkTransition}`}
         >
-          <DriveSlot disk={disk} health={driveHealth(disk, pools)} />
+          <DriveGlyph disk={disk} health={driveHealth(disk, pools)} />
         </button>
       ))}
     </div>

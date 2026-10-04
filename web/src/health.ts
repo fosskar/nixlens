@@ -87,19 +87,12 @@ export function driveHealth(disk: Disk, pools: Pool[]): Health {
   return worst(smart ? [...members, smart] : members)
 }
 
-function poolDrives(pool: Pool, disks: Disk[]): Set<string> {
-  const names = new Set(pool.groups.flatMap((g) => g.members.map((m) => m.device)).filter((d) => d !== ''))
-  for (const disk of disks) {
-    if ((disk.partitions ?? []).some((p) => p.pool === pool.name)) names.add(disk.name)
-  }
-  return names
-}
-
 export type Bay = { pool: Pool; groups: { label: string; drives: Disk[] }[] }
 
-// drives grouped by the first pool they belong to, and within it by vdev
-// (data before log or cache); boot partitions are left out, and drives in
-// no other pool come last
+// drives grouped by the pool that keeps its data on them, and within it by
+// vdev. a log, cache or spare on a drive does not make it part of a pool,
+// and boot partitions are left out, so drives with only those are not
+// shown; drives in no pool at all come last
 export function poolBays(storage: Storage): { bays: Bay[]; rest: Disk[] } {
   const disks = storage.disks ?? []
   const placed = new Set<string>()
@@ -111,18 +104,16 @@ export function poolBays(storage: Storage): { bays: Bay[]; rest: Disk[] } {
   const bays = (storage.pools ?? [])
     .filter((pool) => pool.kind !== 'vfat')
     .map((pool) => {
-      const groups = pool.groups.map((g) => {
+      const data = pool.groups.filter((g) => g.class === '' || g.class === 'data')
+      const groups = data.map((g) => {
         const members = g.members.map((m) => m.device)
         const drives = take((d) => members.includes(d.name)).sort(
           (a, b) => members.indexOf(a.name) - members.indexOf(b.name),
         )
-        const layout = g.layout && g.layout !== 'single' ? g.layout : ''
-        const label = g.class && g.class !== 'data' ? [g.class, layout].filter(Boolean).join(' · ') : layout
-        return { label, drives }
+        return { label: g.layout && g.layout !== 'single' ? g.layout : g.name, drives }
       })
-      const names = poolDrives(pool, disks)
-      groups.push({ label: '', drives: take((d) => names.has(d.name)) })
       return { pool, groups: groups.filter((g) => g.drives.length > 0) }
     })
-  return { bays, rest: disks.filter((d) => !placed.has(d.name)) }
+  const rest = disks.filter((d) => !placed.has(d.name) && !(d.partitions ?? []).some((p) => p.pool))
+  return { bays, rest }
 }

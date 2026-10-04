@@ -33,9 +33,9 @@ export function Inspector({ route }: { route: Detail }) {
     key === target ? 'border-accent-cyan/40 bg-accent/[0.06]' : 'border-white/[0.06] bg-white/[0.02]'
   const pools = storage?.pools ?? []
   const disks = storage?.disks ?? []
-  // drives in the same order as the sidebar's bays
-  const bays = storage && poolBays(storage)
-  const ordered = bays ? [...bays.bays.flatMap((b) => b.groups.flatMap((g) => g.drives)), ...bays.rest] : []
+  // drives in the order of the sidebar's bays, then those it leaves out
+  const first = storage ? poolBays(storage).bays.flatMap((b) => b.groups.flatMap((g) => g.drives)) : []
+  const ordered = [...first, ...disks.filter((d) => !first.includes(d))]
 
   return (
     <Modal focusKey={machine} onBack={canGoBack() ? goBack : undefined} onClose={closeLayer}>
