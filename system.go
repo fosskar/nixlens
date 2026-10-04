@@ -76,7 +76,9 @@ func readSystem(cpu *cpuSampler, memInstalled uint64) (System, error) {
 	if s.Swaps, err = readSwaps(); err != nil {
 		return s, err
 	}
-	s.CPUs, s.CPUPercent = cpu.get()
+	if s.CPUs, s.CPUPercent, err = cpu.get(); err != nil {
+		return s, err
+	}
 	if s.Cores, err = physicalCores(); err != nil {
 		return s, err
 	}
@@ -109,43 +111,39 @@ func readMeminfo() (map[string]uint64, error) {
 	return mem, sc.Err()
 }
 
-// cpu usage needs two /proc/stat samples, so a goroutine keeps the latest delta
+// cpu usage is the delta between two /proc/stat samples. sampling on
+// request instead of on a ticker keeps an unwatched agent idle; requests
+// closer than minCPUInterval reuse the last value to avoid noisy deltas
+const minCPUInterval = time.Second
+
 type cpuSampler struct {
 	mu      sync.Mutex
+	idle    uint64
+	total   uint64
+	at      time.Time
 	cpus    int
 	percent float64
 }
 
 func newCPUSampler() *cpuSampler {
-	idle, total, cpus, err := readProcStat()
-	if err != nil {
-		panic(err)
-	}
-	c := &cpuSampler{cpus: cpus}
-	go c.run(idle, total)
-	return c
+	return &cpuSampler{}
 }
 
-func (c *cpuSampler) get() (int, float64) {
+func (c *cpuSampler) get() (int, float64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.cpus, c.percent
-}
-
-func (c *cpuSampler) run(prevIdle, prevTotal uint64) {
-	for range time.Tick(2 * time.Second) {
-		idle, total, cpus, err := readProcStat()
-		if err != nil {
-			panic(err)
-		}
-		c.mu.Lock()
-		c.cpus = cpus
-		if total > prevTotal {
-			c.percent = 100 * (1 - float64(idle-prevIdle)/float64(total-prevTotal))
-		}
-		c.mu.Unlock()
-		prevIdle, prevTotal = idle, total
+	if !c.at.IsZero() && time.Since(c.at) < minCPUInterval {
+		return c.cpus, c.percent, nil
 	}
+	idle, total, cpus, err := readProcStat()
+	if err != nil {
+		return 0, 0, err
+	}
+	if !c.at.IsZero() && total > c.total {
+		c.percent = 100 * (1 - float64(idle-c.idle)/float64(total-c.total))
+	}
+	c.idle, c.total, c.at, c.cpus = idle, total, time.Now(), cpus
+	return c.cpus, c.percent, nil
 }
 
 func readProcStat() (idle, total uint64, cpus int, err error) {
