@@ -111,6 +111,25 @@ in
         ];
         description = "App categories listed first, in this order; the rest follow alphabetically.";
       };
+
+      adminGroups = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        example = [ "admin" ];
+        description = ''
+          Groups, from the reverse proxy's `Remote-Groups` header, that see
+          machines, system and storage. Empty allows every request.
+        '';
+      };
+
+      categoryGroups = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+        default = { };
+        example = {
+          admin = [ "admin" ];
+        };
+        description = "Categories listed only for the given groups; unlisted categories are visible to everyone.";
+      };
     };
   };
 
@@ -143,6 +162,10 @@ in
             (pkgs.writeText "nos-peers.json" (builtins.toJSON cfg.hub.peers))
             "-categories"
             (lib.concatStringsSep "," cfg.hub.categories)
+            "-admin-groups"
+            (lib.concatStringsSep "," cfg.hub.adminGroups)
+            "-category-groups"
+            (pkgs.writeText "nos-category-groups.json" (builtins.toJSON cfg.hub.categoryGroups))
           ]
         );
         ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nos/installed-memory";

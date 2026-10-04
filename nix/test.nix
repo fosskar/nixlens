@@ -13,6 +13,8 @@ testers.runNixOSTest {
       hub.enable = true;
       hub.peers.agent = "http://agent:7480";
       hub.categories = [ "Monitoring" ];
+      hub.adminGroups = [ "admin" ];
+      hub.categoryGroups.Monitoring = [ "admin" ];
     };
     services.nos.apps.Grafana = {
       url = "http://grafana.example.com:3000";
@@ -45,8 +47,8 @@ testers.runNixOSTest {
   testScript = ''
     import json
 
-    def get(node, path):
-        return json.loads(node.succeed(f"curl -sf http://127.0.0.1:7480{path}"))
+    def get(node, path, groups="admin"):
+        return json.loads(node.succeed(f"curl -sf -H 'Remote-Groups: {groups}' -H 'Remote-Name: Simon' http://127.0.0.1:7480{path}"))
 
     start_all()
     agent.wait_for_open_port(7480, timeout=60)
@@ -89,9 +91,15 @@ testers.runNixOSTest {
 
     hub.succeed("curl -sf http://127.0.0.1:7480/ | grep -q '<title>nOS</title>'")
 
+    me = get(hub, "/api/me", groups="user, admin")
+    assert me["name"] == "Simon" and me["groups"] == ["user", "admin"] and me["admin"], me
+    assert not get(hub, "/api/me", groups="user")["admin"]
+    hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/machines")
+    assert [a["name"] for a in get(hub, "/api/apps", groups="user")] == ["Immich"]
+
     agent.stop_job("nos.service")
     machines = get(hub, "/api/machines")
     assert not machines[1]["online"], machines
-    hub.fail("curl -sf http://127.0.0.1:7480/api/machines/agent/system")
+    hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/machines/agent/system")
   '';
 }

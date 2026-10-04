@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { type App as AppEntry, type Machine, type Storage, type System, usePoll } from './api'
+import { type App as AppEntry, type Machine, type Me, type Storage, type System, usePoll } from './api'
 import { AppGrid, AppWindow, Dock, windowMargin } from './apps'
 import { DrivesWidget, MachineSwitcher, SystemWidget, glass } from './widgets'
 
@@ -28,7 +28,10 @@ function reducedMotion(): boolean {
 }
 
 export default function App() {
-  const machinesPoll = usePoll<Machine[]>('/api/machines', 10000)
+  const me = usePoll<Me>('/api/me', 60000).data
+  const admin = me?.admin ?? false
+  const firstName = me?.name.split(' ')[0]
+  const machinesPoll = usePoll<Machine[]>(admin ? '/api/machines' : null, 10000)
   const machines = machinesPoll.data ?? []
   const apps = usePoll<AppEntry[]>('/api/apps', 30000).data ?? []
 
@@ -110,33 +113,36 @@ export default function App() {
         className={`transition-opacity duration-300 ${active ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
         aria-hidden={active !== null}
       >
-        <aside
-          className={`${glass} m-3 flex flex-col gap-7 p-4 md:fixed md:inset-y-3 md:left-3 md:m-0 md:w-[22rem] md:overflow-y-auto md:pb-6`}
-        >
-          <div className="flex items-center gap-2.5 px-1 pt-1">
-            <img src="/favicon.svg" alt="" className="h-7 w-7 drop-shadow-[0_2px_8px_rgb(22_160_133/0.45)]" />
-            <span className="text-lg font-semibold tracking-tight text-fg-inverse">nOS</span>
-          </div>
-          {machinesPoll.data ? (
-            <MachineSwitcher machines={machines} selected={selected} onSelect={selectMachine} />
-          ) : (
-            <div className="px-1 text-xs text-fg-muted">{machinesPoll.error ?? 'Loading machines…'}</div>
-          )}
-          {selected && (
-            <>
-              <SystemWidget poll={system} />
-              <DrivesWidget poll={storage} />
-            </>
-          )}
-        </aside>
+        {admin && (
+          <aside
+            className={`${glass} m-3 flex flex-col gap-7 p-4 md:fixed md:inset-y-3 md:left-3 md:m-0 md:w-[22rem] md:overflow-y-auto md:pb-6`}
+          >
+            <div className="flex items-center gap-2.5 px-1 pt-1">
+              <img src="/favicon.svg" alt="" className="h-7 w-7 drop-shadow-[0_2px_8px_rgb(22_160_133/0.45)]" />
+              <span className="text-lg font-semibold tracking-tight text-fg-inverse">nOS</span>
+            </div>
+            {machinesPoll.data ? (
+              <MachineSwitcher machines={machines} selected={selected} onSelect={selectMachine} />
+            ) : (
+              <div className="px-1 text-xs text-fg-muted">{machinesPoll.error ?? 'Loading machines…'}</div>
+            )}
+            {selected && (
+              <>
+                <SystemWidget poll={system} />
+                <DrivesWidget poll={storage} />
+              </>
+            )}
+          </aside>
+        )}
 
         <main
-          className={`nos-dock-fade px-6 pt-10 pb-32 transition-transform duration-300 md:fixed md:inset-y-0 md:right-0 md:left-[23.5rem] md:overflow-y-auto md:pt-16 ${active ? 'scale-[0.985]' : ''}`}
+          className={`nos-dock-fade px-6 pt-10 pb-32 transition-transform duration-300 md:fixed md:inset-y-0 md:right-0 md:overflow-y-auto ${admin ? 'md:left-[23.5rem]' : 'md:left-0'} md:pt-16 ${active ? 'scale-[0.985]' : ''}`}
         >
           <div className="mx-auto max-w-5xl">
             <header className="mb-10 text-center">
               <h1 className="bg-gradient-to-b from-fg-inverse to-fg-base bg-clip-text text-4xl font-semibold tracking-tight text-transparent md:text-5xl">
-                {greeting()}.
+                {greeting()}
+                {firstName && `, ${firstName}`}.
               </h1>
               {machinesPoll.data && (
                 <p className="mt-3 text-sm text-fg-muted tabular-nums">

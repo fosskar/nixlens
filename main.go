@@ -88,6 +88,8 @@ func main() {
 	hub := flag.Bool("hub", false, "serve the web UI and aggregate this machine with its peers")
 	peersFile := flag.String("peers", "", "hub: path to a JSON object mapping peer names to base URLs")
 	categories := flag.String("categories", "", "hub: comma-separated categories listed first, in this order")
+	adminGroups := flag.String("admin-groups", "", "hub: comma-separated groups that see machines; empty allows everyone")
+	categoryGroupsFile := flag.String("category-groups", "", "hub: path to a JSON object mapping categories to the groups that see them")
 	memFile := flag.String("installed-memory-file", "", "file holding the installed memory in bytes")
 	writeMem := flag.String("write-installed-memory", "", "write the installed memory from smbios to this file and exit; needs root")
 	flag.Parse()
@@ -132,7 +134,17 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		h, err := newHub(system, *appsFile, token, peers, strings.Split(*categories, ","))
+		categoryGroups, err := readCategoryGroups(*categoryGroupsFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		acc := access{categoryGroups: categoryGroups}
+		for _, g := range strings.Split(*adminGroups, ",") {
+			if g != "" {
+				acc.adminGroups = append(acc.adminGroups, g)
+			}
+		}
+		h, err := newHub(system, *appsFile, token, peers, strings.Split(*categories, ","), acc)
 		if err != nil {
 			log.Fatal(err)
 		}

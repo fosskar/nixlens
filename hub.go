@@ -27,6 +27,7 @@ type hub struct {
 	token    string
 	peers    map[string]string
 	order    map[string]int
+	access   access
 	client   *http.Client
 	frames   *frameChecker
 }
@@ -46,7 +47,7 @@ func readPeers(path string) (map[string]string, error) {
 	return peers, nil
 }
 
-func newHub(system func() (System, error), appsFile, token string, peers map[string]string, categories []string) (*hub, error) {
+func newHub(system func() (System, error), appsFile, token string, peers map[string]string, categories []string, acc access) (*hub, error) {
 	self, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -65,15 +66,19 @@ func newHub(system func() (System, error), appsFile, token string, peers map[str
 		token:    token,
 		peers:    peers,
 		order:    order,
+		access:   acc,
 		client:   &http.Client{Timeout: 5 * time.Second},
 		frames:   newFrameChecker(),
 	}, nil
 }
 
 func (h *hub) register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/machines", h.machines)
-	mux.HandleFunc("GET /api/machines/{name}/{kind}", h.machineData)
+	mux.HandleFunc("GET /api/machines", h.access.adminOnly(h.machines))
+	mux.HandleFunc("GET /api/machines/{name}/{kind}", h.access.adminOnly(h.machineData))
 	mux.HandleFunc("GET /api/apps", h.apps)
+	mux.HandleFunc("GET /api/me", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, h.access.me(r), nil)
+	})
 }
 
 // names sorted, self first
@@ -221,6 +226,9 @@ func (h *hub) apps(w http.ResponseWriter, r *http.Request) {
 	seen := map[string]bool{}
 	apps := make([]App, 0, len(all))
 	for _, a := range all {
+		if !h.access.seesCategory(r, a.Category) {
+			continue
+		}
 		if !seen[a.URL] {
 			seen[a.URL] = true
 			apps = append(apps, a)

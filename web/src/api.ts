@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
 
+export type Me = {
+  user: string
+  name: string
+  email: string
+  groups: string[]
+  admin: boolean
+}
+
 export type Machine = {
   name: string
   self: boolean
