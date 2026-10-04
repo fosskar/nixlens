@@ -125,7 +125,9 @@ in
           [
             (lib.getExe cfg.package)
             "-listen"
-            "${cfg.listenAddress}:${toString cfg.port}"
+            "${
+              if lib.hasInfix ":" cfg.listenAddress then "[${cfg.listenAddress}]" else cfg.listenAddress
+            }:${toString cfg.port}"
             "-apps"
             appsFile
             "-installed-memory-file"

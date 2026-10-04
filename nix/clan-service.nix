@@ -32,7 +32,8 @@
         nixosModule = {
           services.nos = {
             enable = true;
-            listenAddress = "0.0.0.0";
+            # dual-stack; mesh networks such as yggdrasil are ipv6-only
+            listenAddress = "::";
             inherit (settings) port openFirewall;
           };
         };

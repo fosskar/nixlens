@@ -31,7 +31,7 @@ testers.runNixOSTest {
     networking.hostId = "8425e349";
     services.nos = {
       enable = true;
-      listenAddress = "0.0.0.0";
+      listenAddress = "::";
       openFirewall = true;
       inherit tokenFile;
     };
