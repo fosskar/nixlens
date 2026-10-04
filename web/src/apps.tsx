@@ -21,7 +21,7 @@ const iconSizes = {
   xs: { box: 'h-6 w-6 rounded-md', img: 'h-4 w-4', letter: 'text-[11px]' },
 }
 
-export function AppIcon({ app, size = 'lg' }: { app: App; size?: keyof typeof iconSizes }) {
+function AppIcon({ app, size = 'lg' }: { app: App; size?: keyof typeof iconSizes }) {
   const source = iconSource(app.icon)
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const s = iconSizes[size]
@@ -202,7 +202,7 @@ export function Dock({
 export const windowMargin = 12
 const windowBottom = 96
 
-export type WindowState = 'shown' | 'home' | 'switch'
+type WindowState = 'shown' | 'home' | 'switch'
 
 function TitleButton({ title, onClick, danger, children }: {
   title: string

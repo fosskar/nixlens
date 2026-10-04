@@ -1,10 +1,6 @@
 package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"path/filepath"
-)
+import "path/filepath"
 
 type Partition struct {
 	Name   string `json:"name"`
@@ -18,33 +14,9 @@ type Partition struct {
 }
 
 // partitions of each whole disk, by disk kernel name
-func readPartitions() (map[string][]Partition, error) {
-	out, err := run("lsblk", "--json", "--bytes", "--output", "NAME,TYPE,SIZE,FSTYPE,LABEL,MOUNTPOINTS")
-	if err != nil {
-		return nil, err
-	}
-	var parsed struct {
-		Blockdevices []struct {
-			Name     string `json:"name"`
-			Type     string `json:"type"`
-			Children []struct {
-				Name        string   `json:"name"`
-				Type        string   `json:"type"`
-				Size        uint64   `json:"size"`
-				Fstype      string   `json:"fstype"`
-				Label       string   `json:"label"`
-				Mountpoints []string `json:"mountpoints"`
-			} `json:"children"`
-		} `json:"blockdevices"`
-	}
-	if err := json.Unmarshal(out, &parsed); err != nil {
-		return nil, fmt.Errorf("parse lsblk: %w", err)
-	}
+func readPartitions(devs []blockDevice) map[string][]Partition {
 	parts := map[string][]Partition{}
-	for _, d := range parsed.Blockdevices {
-		if d.Type != "disk" {
-			continue
-		}
+	for _, d := range devs {
 		for _, c := range d.Children {
 			if c.Type != "part" {
 				continue
@@ -57,8 +29,19 @@ func readPartitions() (map[string][]Partition, error) {
 				Mount:  mainMount(c.Mountpoints),
 			})
 		}
+		// a filesystem or array member on the whole disk, without a
+		// partition table, is listed as the disk's only entry
+		if len(parts[d.Name]) == 0 && d.Fstype != "" {
+			parts[d.Name] = []Partition{{
+				Name:   d.Name,
+				Size:   d.Size,
+				Fstype: d.Fstype,
+				Label:  d.Label,
+				Mount:  mainMount(d.Mountpoints),
+			}}
+		}
 	}
-	return parts, nil
+	return parts
 }
 
 // kernel name of the block device a member path points at (sdd1, nvme0n1p2)

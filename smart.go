@@ -120,7 +120,11 @@ func smartKey(d Disk) string {
 // runs as a separate privileged oneshot; the agent only reads the result.
 // -n standby keeps sleeping drives asleep, which keep their last values
 func collectSmart(path string) error {
-	disks, err := readDisks()
+	devs, err := readBlockDevices()
+	if err != nil {
+		return err
+	}
+	disks, err := readDisks(devs)
 	if err != nil {
 		return err
 	}

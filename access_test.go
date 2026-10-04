@@ -78,7 +78,9 @@ func TestRequireToken(t *testing.T) {
 			t.Errorf("Authorization %q: status %d, want %d", header, rec.Code, want)
 		}
 	}
-	if requireToken("", ok) == nil {
-		t.Error("no token must pass requests through")
+	rec := httptest.NewRecorder()
+	requireToken("", ok).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/local/system", nil))
+	if rec.Code != http.StatusOK {
+		t.Errorf("without a token configured: status %d, want %d", rec.Code, http.StatusOK)
 	}
 }

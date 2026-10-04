@@ -90,7 +90,7 @@ export type PoolGroup = {
   members: PoolMember[]
 }
 
-export type PoolScan = {
+type PoolScan = {
   function: string
   state: string
   end: number
@@ -115,7 +115,7 @@ export type Storage = {
   disks: Disk[]
 }
 
-export type PoolProperties = {
+type PoolProperties = {
   ashift: string
   autotrim: string
   fragmentation: string
@@ -131,7 +131,6 @@ export type Dataset = {
   type: 'filesystem' | 'volume' | string
   used: number
   available: number
-  referenced: number
   quota: number
   reservation: number
   compressRatio: string

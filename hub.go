@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -29,8 +28,7 @@ type Machine struct {
 
 type hub struct {
 	self     string
-	system   func() (System, error)
-	storage  func() (Storage, error)
+	local    http.Handler
 	appsFile string
 	token    string
 	peers    map[string]string
@@ -55,7 +53,7 @@ func readPeers(path string) (map[string]string, error) {
 	return peers, nil
 }
 
-func newHub(system func() (System, error), storage func() (Storage, error), appsFile, token string, peers map[string]string, categories []string, acc access) (*hub, error) {
+func newHub(local http.Handler, appsFile, token string, peers map[string]string, categories []string, acc access) (*hub, error) {
 	self, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -69,8 +67,7 @@ func newHub(system func() (System, error), storage func() (Storage, error), apps
 	}
 	return &hub{
 		self:     self,
-		system:   system,
-		storage:  storage,
+		local:    local,
 		appsFile: appsFile,
 		token:    token,
 		peers:    peers,
@@ -148,27 +145,38 @@ func (h *hub) machines(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *hub) machineData(w http.ResponseWriter, r *http.Request) {
-	name, kind := r.PathValue("name"), r.PathValue("kind")
+	kind := r.PathValue("kind")
 	if kind != "system" && kind != "storage" {
 		http.NotFound(w, r)
 		return
 	}
+	h.proxy(w, r, r.PathValue("name"), kind)
+}
+
+func (h *hub) poolDetail(w http.ResponseWriter, r *http.Request) {
+	h.proxy(w, r, r.PathValue("name"), "pool/"+url.PathEscape(r.PathValue("pool")))
+}
+
+// serves /api/local/<path> of a machine: the hub's own through its local
+// handlers, peers through their agents
+func (h *hub) proxy(w http.ResponseWriter, r *http.Request, name, path string) {
 	if name == h.self {
-		switch kind {
-		case "system":
-			s, err := h.system()
-			writeJSON(w, s, err)
-		case "storage":
-			s, err := h.storage()
-			writeJSON(w, s, err)
+		local := r.Clone(r.Context())
+		local.URL.RawPath = "/api/local/" + path
+		p, err := url.PathUnescape(local.URL.RawPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
+		local.URL.Path = p
+		h.local.ServeHTTP(w, local)
 		return
 	}
 	if _, ok := h.peers[name]; !ok {
 		http.NotFound(w, r)
 		return
 	}
-	body, err := h.fetchPeer(r.Context(), name, kind)
+	body, err := h.fetchPeer(r.Context(), name, path)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, err.Error(), http.StatusBadGateway)
@@ -263,29 +271,4 @@ func (h *hub) categoryRank(category string) int {
 		return len(h.order) + 1
 	}
 	return len(h.order)
-}
-
-func (h *hub) poolDetail(w http.ResponseWriter, r *http.Request) {
-	name, pool := r.PathValue("name"), r.PathValue("pool")
-	if name == h.self {
-		d, err := poolDetail(pool)
-		if errors.Is(err, errUnknownPool) {
-			http.NotFound(w, r)
-			return
-		}
-		writeJSON(w, d, err)
-		return
-	}
-	if _, ok := h.peers[name]; !ok {
-		http.NotFound(w, r)
-		return
-	}
-	body, err := h.fetchPeer(r.Context(), name, "pool/"+url.PathEscape(pool))
-	if err != nil {
-		log.Print(err)
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
 }

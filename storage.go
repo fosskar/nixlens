@@ -57,7 +57,11 @@ type Member struct {
 }
 
 func readStorage(smartFile string) (Storage, error) {
-	disks, err := readDisks()
+	devs, err := readBlockDevices()
+	if err != nil {
+		return Storage{}, err
+	}
+	disks, err := readDisks(devs)
 	if err != nil {
 		return Storage{}, err
 	}
@@ -79,16 +83,13 @@ func readStorage(smartFile string) (Storage, error) {
 		return Storage{}, err
 	}
 	pools = append(pools, md...)
-	volumes, err := readVolumes()
+	volumes, err := readVolumes(devs)
 	if err != nil {
 		return Storage{}, err
 	}
 	pools = append(pools, volumes...)
 
-	parts, err := readPartitions()
-	if err != nil {
-		return Storage{}, err
-	}
+	parts := readPartitions(devs)
 	// which pool or volume each partition belongs to, keyed by kernel name
 	owners := map[string][2]string{}
 	for _, p := range pools {
@@ -108,24 +109,13 @@ func readStorage(smartFile string) (Storage, error) {
 		}
 	}
 
-	byName := map[string]*Disk{}
 	for i := range disks {
-		byName[disks[i].Name] = &disks[i]
 		disks[i].Partitions = []Partition{}
 		for _, part := range parts[disks[i].Name] {
 			if o, ok := owners[part.Name]; ok {
 				part.Pool, part.Role = o[0], o[1]
 			}
 			disks[i].Partitions = append(disks[i].Partitions, part)
-		}
-	}
-	for _, p := range pools {
-		for _, g := range p.Groups {
-			for _, m := range g.Members {
-				if d, ok := byName[m.Device]; ok && d.Pool == "" {
-					d.Pool, d.Group = p.Name, g.Name
-				}
-			}
 		}
 	}
 	return Storage{Pools: pools, Disks: disks}, nil

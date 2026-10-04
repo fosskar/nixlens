@@ -88,8 +88,8 @@ testers.runNixOSTest {
     assert sorted(m["device"] for m in group["members"]) == ["vdb", "vdc"], group
     root = [p for p in storage["pools"] if p["state"] == "mounted" and any(m["device"] == "vda" for g in p["groups"] for m in g["members"])]
     assert root and root[0]["usable"] > 0, storage["pools"]
-    pooled = {d["name"]: d.get("pool") for d in storage["disks"]}
-    assert pooled["vdb"] == "testpool" and pooled["vda"] == root[0]["name"], pooled
+    vda = next(d for d in storage["disks"] if d["name"] == "vda")
+    assert any(p["pool"] == root[0]["name"] for p in vda["partitions"]), vda
     vdb = next(d for d in storage["disks"] if d["name"] == "vdb")
     assert any(p["pool"] == "testpool" and p["role"] == "mirror" for p in vdb["partitions"]), vdb
 

@@ -120,16 +120,14 @@ func main() {
 		log.Fatal(err)
 	}
 	cpu := newCPUSampler()
-	system := func() (System, error) { return readSystem(cpu, memInstalled) }
-	storage := func() (Storage, error) { return readStorage(*smartFile) }
 
 	local := http.NewServeMux()
 	local.HandleFunc("GET /api/local/system", func(w http.ResponseWriter, r *http.Request) {
-		s, err := system()
+		s, err := readSystem(cpu, memInstalled)
 		writeJSON(w, s, err)
 	})
 	local.HandleFunc("GET /api/local/storage", func(w http.ResponseWriter, r *http.Request) {
-		s, err := storage()
+		s, err := readStorage(*smartFile)
 		writeJSON(w, s, err)
 	})
 	local.HandleFunc("GET /api/local/pool/{pool}", func(w http.ResponseWriter, r *http.Request) {
@@ -163,7 +161,7 @@ func main() {
 				acc.adminGroups = append(acc.adminGroups, g)
 			}
 		}
-		h, err := newHub(system, storage, *appsFile, token, peers, strings.Split(*categories, ","), acc)
+		h, err := newHub(local, *appsFile, token, peers, strings.Split(*categories, ","), acc)
 		if err != nil {
 			log.Fatal(err)
 		}

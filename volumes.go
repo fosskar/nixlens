@@ -1,23 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"slices"
 	"sort"
-	"strings"
 	"syscall"
 )
-
-type lsblkNode struct {
-	Name        string      `json:"name"`
-	Type        string      `json:"type"`
-	Fstype      string      `json:"fstype"`
-	Label       string      `json:"label"`
-	UUID        string      `json:"uuid"`
-	Mountpoints []string    `json:"mountpoints"`
-	Children    []lsblkNode `json:"children"`
-}
 
 // containers whose contents are reported elsewhere (zfs and md pools,
 // swap) or by their child devices (luks, lvm)
@@ -32,22 +20,11 @@ type volume struct {
 
 // reads plain filesystems (btrfs, ext4, xfs, vfat, ...) as volumes, one per
 // filesystem uuid so multi-device btrfs groups its disks
-func readVolumes() ([]Pool, error) {
-	out, err := run("lsblk", "--json", "--output", "NAME,TYPE,FSTYPE,LABEL,UUID,MOUNTPOINTS")
-	if err != nil {
-		return nil, err
-	}
-	var parsed struct {
-		Blockdevices []lsblkNode `json:"blockdevices"`
-	}
-	if err := json.Unmarshal(out, &parsed); err != nil {
-		return nil, fmt.Errorf("parse lsblk: %w", err)
-	}
-
+func readVolumes(devs []blockDevice) ([]Pool, error) {
 	byID := map[string]*volume{}
 	var order []string
-	var walk func(n lsblkNode, disk string)
-	walk = func(n lsblkNode, disk string) {
+	var walk func(n blockDevice, disk string)
+	walk = func(n blockDevice, disk string) {
 		if !slices.Contains(skipFstypes, n.Fstype) {
 			id := n.UUID
 			if id == "" {
@@ -70,10 +47,7 @@ func readVolumes() ([]Pool, error) {
 			walk(c, disk)
 		}
 	}
-	for _, d := range parsed.Blockdevices {
-		if d.Type != "disk" || strings.HasPrefix(d.Name, "zram") {
-			continue
-		}
+	for _, d := range devs {
 		walk(d, d.Name)
 	}
 
