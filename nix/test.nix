@@ -157,6 +157,12 @@ testers.runNixOSTest {
     assert me["accountUrl"] == "https://auth.example.com/settings", me
     assert not get(hub, "/api/me", groups="user")["admin"]
     hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/machines")
+    hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/overview")
+    overview = get(hub, "/api/overview")
+    assert [(m["name"], m["online"], "system" in m, "storage" in m) for m in overview] == [
+      ("hub", True, True, True),
+      ("agent", True, True, True),
+    ], overview
     assert [a["name"] for a in get(hub, "/api/apps", groups="user")] == ["Immich"]
 
     agent.stop_job("nos.service")

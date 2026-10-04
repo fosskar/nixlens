@@ -29,6 +29,9 @@ func TestHubConcurrentRequests(t *testing.T) {
 		mux.HandleFunc("GET /api/local/apps", func(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, apps, nil)
 		})
+		mux.HandleFunc("GET /api/local/storage", func(w http.ResponseWriter, r *http.Request) {
+			writeJSON(w, Storage{Pools: []Pool{}, Disks: []Disk{}}, nil)
+		})
 		return httptest.NewServer(mux)
 	}
 	a1 := agent([]App{{Name: "Framed", URL: framed.URL, Category: "apps"}})
@@ -44,6 +47,9 @@ func TestHubConcurrentRequests(t *testing.T) {
 	local.HandleFunc("GET /api/local/system", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, System{Hostname: "hub"}, nil)
 	})
+	local.HandleFunc("GET /api/local/storage", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, Storage{Pools: []Pool{}, Disks: []Disk{}}, nil)
+	})
 
 	h, err := newHub(local, appsFile, &http.Client{Timeout: 5 * time.Second},
 		map[string]string{"one": a1.URL, "two": a2.URL}, []string{"apps"}, access{})
@@ -53,7 +59,7 @@ func TestHubConcurrentRequests(t *testing.T) {
 	mux := http.NewServeMux()
 	h.register(mux)
 
-	paths := []string{"/api/apps", "/api/machines", "/api/machines/one/system", "/api/machines/" + h.self + "/system"}
+	paths := []string{"/api/apps", "/api/machines", "/api/overview", "/api/machines/one/system", "/api/machines/" + h.self + "/system"}
 	var wg sync.WaitGroup
 	for range 50 {
 		wg.Go(func() {
@@ -83,5 +89,20 @@ func TestHubConcurrentRequests(t *testing.T) {
 	}
 	if apps[0].Category != "apps" {
 		t.Errorf("listed category first: %+v", apps)
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/overview", nil))
+	var overview []MachineOverview
+	if err := json.Unmarshal(rec.Body.Bytes(), &overview); err != nil {
+		t.Fatal(err)
+	}
+	if len(overview) != 3 {
+		t.Fatalf("overview: %+v", overview)
+	}
+	for _, m := range overview {
+		if !m.Online || m.Error != "" || len(m.System) == 0 || len(m.Storage) == 0 {
+			t.Errorf("overview %s: %+v", m.Name, m)
+		}
 	}
 }

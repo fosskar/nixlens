@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -77,6 +80,7 @@ func newHub(local http.Handler, appsFile string, client *http.Client, peers map[
 
 func (h *hub) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/machines", h.access.adminOnly(h.machines))
+	mux.HandleFunc("GET /api/overview", h.access.adminOnly(h.overview))
 	mux.HandleFunc("GET /api/machines/{name}/{kind}", h.access.adminOnly(h.machineData))
 	mux.HandleFunc("GET /api/machines/{name}/pool/{pool}", h.access.adminOnly(h.poolDetail))
 	mux.HandleFunc("GET /api/apps", h.apps)
@@ -95,8 +99,54 @@ func (h *hub) names() []string {
 	return append([]string{h.self}, names...)
 }
 
-func (h *hub) fetchPeer(ctx context.Context, name, kind string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.peers[name]+"/api/local/"+kind, nil)
+// statusError keeps an upstream status, so a missing pool stays a 404
+type statusError struct {
+	status int
+	msg    string
+}
+
+func (e statusError) Error() string { return e.msg }
+
+// buffers a local handler's response
+type capture struct {
+	header http.Header
+	status int
+	body   bytes.Buffer
+}
+
+func (c *capture) Header() http.Header { return c.header }
+
+func (c *capture) WriteHeader(status int) {
+	if c.status == 0 {
+		c.status = status
+	}
+}
+
+func (c *capture) Write(b []byte) (int, error) {
+	c.WriteHeader(http.StatusOK)
+	return c.body.Write(b)
+}
+
+// /api/local/<path> of a machine: the hub's own through its local handlers,
+// peers through their agents
+func (h *hub) fetch(ctx context.Context, name, path string) ([]byte, error) {
+	if name == h.self {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/api/local/"+path, nil)
+		if err != nil {
+			return nil, err
+		}
+		c := &capture{header: http.Header{}}
+		h.local.ServeHTTP(c, req)
+		if c.status != http.StatusOK {
+			return nil, statusError{c.status, strings.TrimSpace(c.body.String())}
+		}
+		return c.body.Bytes(), nil
+	}
+	base, ok := h.peers[name]
+	if !ok {
+		return nil, statusError{http.StatusNotFound, "unknown machine " + name}
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/api/local/"+path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +160,7 @@ func (h *hub) fetchPeer(ctx context.Context, name, kind string) ([]byte, error) 
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s: %s", name, res.Status)
+		return nil, statusError{res.StatusCode, fmt.Sprintf("%s: %s", name, res.Status)}
 	}
 	if len(body) > maxPeerResponse {
 		return nil, fmt.Errorf("%s: response larger than %d bytes", name, maxPeerResponse)
@@ -128,7 +178,7 @@ func (h *hub) machines(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		wg.Go(func() {
-			if _, err := h.fetchPeer(r.Context(), n, "system"); err != nil {
+			if _, err := h.fetch(r.Context(), n, "system"); err != nil {
 				out[i].Online = false
 				out[i].Error = err.Error()
 			}
@@ -151,35 +201,52 @@ func (h *hub) poolDetail(w http.ResponseWriter, r *http.Request) {
 	h.proxy(w, r, r.PathValue("name"), "pool/"+url.PathEscape(r.PathValue("pool")))
 }
 
-// serves /api/local/<path> of a machine: the hub's own through its local
-// handlers, peers through their agents
 func (h *hub) proxy(w http.ResponseWriter, r *http.Request, name, path string) {
-	if name == h.self {
-		local := r.Clone(r.Context())
-		local.URL.RawPath = "/api/local/" + path
-		p, err := url.PathUnescape(local.URL.RawPath)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		local.URL.Path = p
-		h.local.ServeHTTP(w, local)
-		return
-	}
-	if _, ok := h.peers[name]; !ok {
-		http.NotFound(w, r)
-		return
-	}
-	body, err := h.fetchPeer(r.Context(), name, path)
+	body, err := h.fetch(r.Context(), name, path)
 	if err != nil {
+		status := http.StatusBadGateway
+		var se statusError
+		if errors.As(err, &se) {
+			status = se.status
+		}
 		log.Print(err)
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, err.Error(), status)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(body); err != nil {
 		log.Printf("%s: write response: %v", name, err)
 	}
+}
+
+// MachineOverview is one machine's state in the all-machines view
+type MachineOverview struct {
+	Machine
+	System  json.RawMessage `json:"system,omitempty"`
+	Storage json.RawMessage `json:"storage,omitempty"`
+}
+
+// system and storage of every machine in one response, fetched in parallel
+func (h *hub) overview(w http.ResponseWriter, r *http.Request) {
+	names := h.names()
+	out := make([]MachineOverview, len(names))
+	var wg sync.WaitGroup
+	for i, n := range names {
+		out[i].Machine = Machine{Name: n, Self: n == h.self, Online: true}
+		var sysErr, storErr error
+		var inner sync.WaitGroup
+		wg.Go(func() {
+			inner.Go(func() { out[i].System, sysErr = h.fetch(r.Context(), n, "system") })
+			inner.Go(func() { out[i].Storage, storErr = h.fetch(r.Context(), n, "storage") })
+			inner.Wait()
+			if err := errors.Join(sysErr, storErr); err != nil {
+				out[i].Online = sysErr == nil
+				out[i].Error = err.Error()
+			}
+		})
+	}
+	wg.Wait()
+	writeJSON(w, out, nil)
 }
 
 func (h *hub) apps(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +263,7 @@ func (h *hub) apps(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 	for name := range h.peers {
 		wg.Go(func() {
-			body, err := h.fetchPeer(r.Context(), name, "apps")
+			body, err := h.fetch(r.Context(), name, "apps")
 			if err != nil {
 				log.Print(err)
 				return
