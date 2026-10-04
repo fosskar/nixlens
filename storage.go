@@ -184,9 +184,9 @@ func readZpools() ([]Pool, error) {
 	if _, err := exec.LookPath("zpool"); err != nil {
 		return nil, nil
 	}
-	out, err := exec.Command("zpool", "status", "-j", "--json-int", "-P").Output()
+	out, err := run("zpool", "status", "-j", "--json-int", "-P")
 	if err != nil {
-		return nil, fmt.Errorf("zpool status: %w", err)
+		return nil, err
 	}
 	var status struct {
 		Pools map[string]zPool `json:"pools"`
@@ -285,9 +285,9 @@ func zfsGroups(class string, vdevs map[string]zVdev) ([]Group, error) {
 // used and available bytes of each pool's root dataset; unlike zpool's raw
 // size these account for parity and reservations
 func readZfsSpace() (map[string][2]uint64, error) {
-	out, err := exec.Command("zfs", "list", "-H", "-p", "-d", "0", "-o", "name,used,avail").Output()
+	out, err := run("zfs", "list", "-H", "-p", "-d", "0", "-o", "name,used,avail")
 	if err != nil {
-		return nil, fmt.Errorf("zfs list: %w", err)
+		return nil, err
 	}
 	space := map[string][2]uint64{}
 	sc := bufio.NewScanner(bytes.NewReader(out))

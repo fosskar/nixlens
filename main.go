@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 //go:embed all:web/dist
@@ -193,5 +194,16 @@ func main() {
 	mux.Handle("GET /api/local/", localHandler)
 
 	log.Printf("listening on %s (hub: %t)", *listen, *hub)
-	log.Fatal(http.ListenAndServe(*listen, mux))
+	server := &http.Server{
+		Addr:    *listen,
+		Handler: mux,
+		// agents listen on the network; without these a client could hold
+		// connections open indefinitely without ever sending a token
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      2 * time.Minute,
+		IdleTimeout:       2 * time.Minute,
+		MaxHeaderBytes:    64 << 10,
+	}
+	log.Fatal(server.ListenAndServe())
 }

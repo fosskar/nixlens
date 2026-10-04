@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,9 +32,9 @@ type Dataset struct {
 
 // tab-separated, parseable (-Hp) zfs/zpool output as rows of fields
 func zfsRows(args ...string) ([][]string, error) {
-	out, err := exec.Command(args[0], args[1:]...).Output()
+	out, err := run(args[0], args[1:]...)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", strings.Join(args[:2], " "), err)
+		return nil, err
 	}
 	var rows [][]string
 	sc := bufio.NewScanner(bytes.NewReader(out))

@@ -37,3 +37,16 @@ func TestParseSmartctl(t *testing.T) {
 		}
 	}
 }
+
+func FuzzParseSmartctl(f *testing.F) {
+	for _, file := range []string{"testdata/smart-sdd.json", "testdata/smart-nvme1n1.json", "testdata/smart-standby.json"} {
+		out, err := os.ReadFile(file)
+		if err != nil {
+			f.Fatal(err)
+		}
+		f.Add(out)
+	}
+	f.Fuzz(func(t *testing.T, out []byte) {
+		parseSmartctl(out)
+	})
+}

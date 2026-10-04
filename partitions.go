@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"path/filepath"
 )
 
@@ -20,9 +19,9 @@ type Partition struct {
 
 // partitions of each whole disk, by disk kernel name
 func readPartitions() (map[string][]Partition, error) {
-	out, err := exec.Command("lsblk", "--json", "--bytes", "--output", "NAME,TYPE,SIZE,FSTYPE,LABEL,MOUNTPOINTS").Output()
+	out, err := run("lsblk", "--json", "--bytes", "--output", "NAME,TYPE,SIZE,FSTYPE,LABEL,MOUNTPOINTS")
 	if err != nil {
-		return nil, fmt.Errorf("lsblk: %w", err)
+		return nil, err
 	}
 	var parsed struct {
 		Blockdevices []struct {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -39,10 +38,9 @@ type lsblkOutput struct {
 }
 
 func readDisks() ([]Disk, error) {
-	out, err := exec.Command("lsblk", "--json", "--bytes", "--nodeps",
-		"--output", "NAME,TYPE,SIZE,MODEL,SERIAL,TRAN,ROTA").Output()
+	out, err := run("lsblk", "--json", "--bytes", "--nodeps", "--output", "NAME,TYPE,SIZE,MODEL,SERIAL,TRAN,ROTA")
 	if err != nil {
-		return nil, fmt.Errorf("lsblk: %w", err)
+		return nil, err
 	}
 	var parsed lsblkOutput
 	if err := json.Unmarshal(out, &parsed); err != nil {

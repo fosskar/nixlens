@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"slices"
 	"sort"
 	"strings"
@@ -34,9 +33,9 @@ type volume struct {
 // reads plain filesystems (btrfs, ext4, xfs, vfat, ...) as volumes, one per
 // filesystem uuid so multi-device btrfs groups its disks
 func readVolumes() ([]Pool, error) {
-	out, err := exec.Command("lsblk", "--json", "--output", "NAME,TYPE,FSTYPE,LABEL,UUID,MOUNTPOINTS").Output()
+	out, err := run("lsblk", "--json", "--output", "NAME,TYPE,FSTYPE,LABEL,UUID,MOUNTPOINTS")
 	if err != nil {
-		return nil, fmt.Errorf("lsblk: %w", err)
+		return nil, err
 	}
 	var parsed struct {
 		Blockdevices []lsblkNode `json:"blockdevices"`

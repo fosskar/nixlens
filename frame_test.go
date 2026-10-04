@@ -37,3 +37,14 @@ func TestAllowsFraming(t *testing.T) {
 		}
 	}
 }
+
+func FuzzAllowsFraming(f *testing.F) {
+	f.Add("DENY", "frame-ancestors 'self' https://*.nx3.eu", "https://home.nx3.eu")
+	f.Add("", "default-src 'none'; frame-ancestors *", "http://127.0.0.1:7480")
+	f.Fuzz(func(t *testing.T, xfo, csp, origin string) {
+		h := http.Header{}
+		h.Set("X-Frame-Options", xfo)
+		h.Set("Content-Security-Policy", csp)
+		allowsFraming(h, origin)
+	})
+}
