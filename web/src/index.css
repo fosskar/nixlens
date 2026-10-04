@@ -190,3 +190,12 @@ body::before {
     animation: none;
   }
 }
+
+/* apps fade out before they reach the dock. the mask needs the content to
+   scroll inside a viewport-sized box, which the md layout provides; below md
+   the page itself scrolls, so a fixed overlay does the fade there */
+@media (min-width: 48rem) {
+  .nos-dock-fade {
+    mask-image: linear-gradient(to bottom, transparent 0, black 2.5rem, black calc(100% - 11rem), transparent calc(100% - 4.5rem));
+  }
+}

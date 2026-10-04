@@ -131,7 +131,7 @@ export default function App() {
         </aside>
 
         <main
-          className={`px-6 pt-10 pb-32 transition-transform duration-300 md:ml-[23.5rem] md:pt-16 ${active ? 'scale-[0.985]' : ''}`}
+          className={`nos-dock-fade px-6 pt-10 pb-32 transition-transform duration-300 md:fixed md:inset-y-0 md:right-0 md:left-[23.5rem] md:overflow-y-auto md:pt-16 ${active ? 'scale-[0.985]' : ''}`}
         >
           <div className="mx-auto max-w-5xl">
             <header className="mb-10 text-center">
@@ -148,6 +148,7 @@ export default function App() {
             <AppGrid apps={apps} onOpen={openApp} />
           </div>
         </main>
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-36 bg-gradient-to-t from-bg-elevated via-bg-elevated/80 to-transparent md:hidden" />
       </div>
 
       {open.map((app) => (
