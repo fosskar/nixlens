@@ -14,6 +14,7 @@ import {
   usePoll,
   type Smart,
 } from './api'
+import { ScrollArea } from './scroll'
 import { SectionTitle, Unavailable, card } from './widgets'
 
 type Health = 'ok' | 'warn' | 'error' | 'unknown'
@@ -333,12 +334,36 @@ function PoolRow({
   )
 }
 
-function Modal({ label, focusKey, onClose, children }: { label: string; focusKey: string; onClose: () => void; children: ReactNode }) {
+type Crumb = { label: string; onClick: () => void }
+
+function Modal({
+  label,
+  focusKey,
+  direction,
+  trail,
+  onBack,
+  onClose,
+  children,
+}: {
+  label: string
+  focusKey: string
+  direction: 'forward' | 'back' | 'none'
+  trail: Crumb[]
+  onBack?: () => void
+  onClose: () => void
+  children: ReactNode
+}) {
   const panel = useRef<HTMLDivElement>(null)
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault()
       onClose()
+      return
+    }
+    const typing = e.target instanceof HTMLElement && e.target.matches('input, textarea, [contenteditable]')
+    if (onBack && ((e.altKey && e.key === 'ArrowLeft') || (e.key === 'Backspace' && !typing))) {
+      e.preventDefault()
+      onBack()
       return
     }
     if (e.key !== 'Tab' || !panel.current) return
@@ -370,7 +395,7 @@ function Modal({ label, focusKey, onClose, children }: { label: string; focusKey
 
   useEffect(() => {
     panel.current?.focus()
-    panel.current?.querySelector('[data-modal-body]')?.scrollTo({ top: 0 })
+    panel.current?.querySelector('.nos-scroll')?.scrollTo({ top: 0 })
   }, [focusKey])
 
   return createPortal(
@@ -386,9 +411,42 @@ function Modal({ label, focusKey, onClose, children }: { label: string; focusKey
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className="nos-modal glass-strong flex max-h-[min(52rem,calc(100vh-4rem))] w-full max-w-3xl flex-col overflow-hidden rounded-[22px] font-sans text-fg-base outline-none"
+        className="nos-modal glass-strong flex max-h-[calc(100vh-4rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[22px] font-sans text-fg-base outline-none"
       >
-        {children}
+        {onBack && (
+          <nav className="flex shrink-0 items-center gap-1 border-b border-white/[0.06] px-3 py-2 text-[11px]">
+            <button
+              type="button"
+              onClick={onBack}
+              title="Back (Alt+←)"
+              className="mr-1 flex items-center gap-1 rounded-lg px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+            >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 6l-6 6 6 6" />
+              </svg>
+              Back
+            </button>
+            {trail.map((crumb, i) => (
+              <span key={i} className="flex min-w-0 items-center gap-1">
+                {i > 0 && <span className="text-fg-dim">›</span>}
+                {i === trail.length - 1 ? (
+                  <span className="truncate px-1 font-mono text-fg-inverse">{crumb.label}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={crumb.onClick}
+                    className="truncate rounded-md px-1 font-mono text-fg-muted transition outline-accent-cyan hover:text-fg-inverse focus-visible:outline-2"
+                  >
+                    {crumb.label}
+                  </button>
+                )}
+              </span>
+            ))}
+          </nav>
+        )}
+        <div key={focusKey} className={`flex min-h-0 flex-col nos-view-${direction}`}>
+          {children}
+        </div>
       </div>
     </div>,
     document.body,
@@ -415,9 +473,9 @@ function ModalHeader({ children, onClose }: { children: ReactNode; onClose: () =
 
 function ModalBody({ children }: { children: ReactNode }) {
   return (
-    <div data-modal-body className="flex min-h-0 flex-col gap-6 overflow-y-auto p-5">
-      {children}
-    </div>
+    <ScrollArea>
+      <div className="flex flex-col gap-6 p-5">{children}</div>
+    </ScrollArea>
   )
 }
 
@@ -800,6 +858,9 @@ function DriveModal({
   onClose: () => void
 }) {
   const partitions = disk.partitions ?? []
+  const memberships = partitions
+    .filter((p) => p.pool && pools.some((pool) => pool.name === p.pool))
+    .filter((p, i, all) => all.findIndex((q) => q.pool === p.pool) === i)
   return (
     <>
       <ModalHeader onClose={onClose}>
@@ -814,6 +875,22 @@ function DriveModal({
         <span className="min-w-0">
           <span className="block truncate text-base font-semibold text-fg-inverse">{disk.model || disk.name}</span>
           <span className="block truncate font-mono text-[11px] text-fg-muted">{disk.serial}</span>
+          {memberships.length > 0 && (
+            <span className="mt-1.5 flex flex-wrap gap-1.5">
+              {memberships.map((m) => (
+                <button
+                  key={m.pool}
+                  type="button"
+                  onClick={() => onOpenPool(m.pool)}
+                  className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-fg-inverse transition outline-accent-cyan hover:bg-accent/20 focus-visible:outline-2"
+                >
+                  {m.pool}
+                  <span className="text-fg-muted">· {m.role}</span>
+                  <span className="text-accent-cyan">→</span>
+                </button>
+              ))}
+            </span>
+          )}
         </span>
         <span className="ml-auto">
           <TypeBadge>
@@ -908,7 +985,23 @@ function SubTitle({ children, aside }: { children: ReactNode; aside: string }) {
 
 export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: string }) {
   const [hover, setHover] = useState<Target | null>(null)
-  const [open, setOpen] = useState<Target | null>(null)
+  // views opened inside the popup stack up, so back and breadcrumbs can
+  // return to where the user came from
+  const [stack, setStack] = useState<Target[]>([])
+  const [direction, setDirection] = useState<'forward' | 'back' | 'none'>('none')
+  const open = stack.at(-1) ?? null
+  const setOpen = (target: Target) => {
+    setDirection('none')
+    setStack([target])
+  }
+  const push = (target: Target) => {
+    setDirection('forward')
+    setStack((s) => [...s, target])
+  }
+  const backTo = (depth: number) => {
+    setDirection('back')
+    setStack((s) => s.slice(0, depth))
+  }
   const storage = poll.data
   if (!storage) {
     return (
@@ -921,6 +1014,14 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
   const pools = storage.pools ?? []
   const disks = storage.disks ?? []
   const links = new Map(pools.map((p) => [p.name, poolDrives(p, disks)]))
+  // drives follow the pools list: a pool's drives together, unused last
+  const firstPool = (d: Disk) => {
+    const i = pools.findIndex((p) => links.get(p.name)?.has(d.name))
+    return i < 0 ? pools.length : i
+  }
+  const drives = [...disks].sort(
+    (a, b) => firstPool(a) - firstPool(b) || a.name.localeCompare(b.name, undefined, { numeric: true }),
+  )
   const litDisks =
     hover?.kind === 'pool' ? (links.get(hover.name) ?? new Set<string>()) : hover?.kind === 'disk' ? new Set([hover.name]) : null
   const litPools =
@@ -934,7 +1035,10 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
 
   const openPool = open?.kind === 'pool' ? pools.find((p) => p.name === open.name) : undefined
   const openDisk = open?.kind === 'disk' ? disks.find((d) => d.name === open.name) : undefined
-  const close = () => setOpen(null)
+  const close = () => setStack([])
+  const crumbLabel = (t: Target) =>
+    t.kind === 'pool' ? t.name : (disks.find((d) => d.name === t.name)?.serial || t.name)
+  const trail = stack.map((t, i) => ({ label: crumbLabel(t), onClick: () => backTo(i + 1) }))
 
   return (
     <div>
@@ -961,7 +1065,7 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
           <div>
             <SubTitle aside={String(disks.length)}>Drives</SubTitle>
             <div className="nos-bay grid grid-cols-4 justify-items-center gap-y-1 rounded-xl p-1.5">
-              {disks.map((disk) => {
+              {drives.map((disk) => {
                 const lit = litDisks?.has(disk.name) ?? false
                 const onHover = hoverHandler({ kind: 'disk', name: disk.name })
                 return (
@@ -987,7 +1091,10 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
       {(openPool || openDisk) && (
         <Modal
           label={openPool ? `Pool ${openPool.name}` : `Drive ${openDisk?.serial || openDisk?.name}`}
-          focusKey={`${open?.kind}:${open?.name}`}
+          focusKey={`${stack.length}:${open?.kind}:${open?.name}`}
+          direction={direction}
+          trail={trail}
+          onBack={stack.length > 1 ? () => backTo(stack.length - 1) : undefined}
           onClose={close}
         >
           {openPool && (
@@ -995,7 +1102,7 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
               pool={openPool}
               disks={disks}
               machine={machine}
-              onOpenDisk={(name) => setOpen({ kind: 'disk', name })}
+              onOpenDisk={(name) => push({ kind: 'disk', name })}
               onClose={close}
             />
           )}
@@ -1003,7 +1110,7 @@ export function DrivesWidget({ poll, machine }: { poll: Poll<Storage>; machine: 
             <DriveModal
               disk={openDisk}
               pools={pools}
-              onOpenPool={(name) => setOpen({ kind: 'pool', name })}
+              onOpenPool={(name) => push({ kind: 'pool', name })}
               onClose={close}
             />
           )}

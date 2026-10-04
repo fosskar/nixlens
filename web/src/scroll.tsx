@@ -48,10 +48,10 @@ export function ScrollArea({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="relative min-h-0 flex-1">
+    <div className="relative flex min-h-0 flex-col">
       <div
         ref={ref}
-        className="nos-scroll h-full overflow-y-auto"
+        className="nos-scroll min-h-0 overflow-y-auto"
         data-fade-top={edges.top || undefined}
         data-fade-bottom={edges.bottom || undefined}
       >

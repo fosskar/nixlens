@@ -253,3 +253,22 @@ body::before {
     animation: none;
   }
 }
+
+@keyframes nos-view-from-right {
+  from { opacity: 0; translate: 1.5rem 0; }
+}
+@keyframes nos-view-from-left {
+  from { opacity: 0; translate: -1.5rem 0; }
+}
+.nos-view-forward {
+  animation: nos-view-from-right 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nos-view-back {
+  animation: nos-view-from-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nos-view-forward,
+  .nos-view-back {
+    animation: none;
+  }
+}
