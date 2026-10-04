@@ -71,13 +71,15 @@ testers.runNixOSTest {
 
     agent.succeed("zpool create -f testpool mirror /dev/vdb /dev/vdc")
     storage = get(hub, "/api/machines/agent/storage")
-    [pool] = storage["pools"]
+    [pool] = [p for p in storage["pools"] if p["kind"] == "zfs"]
     assert pool["name"] == "testpool" and pool["state"] == "ONLINE" and pool["usable"] > 0, pool
     [group] = pool["groups"]
     assert group["layout"] == "mirror", group
     assert sorted(m["device"] for m in group["members"]) == ["vdb", "vdc"], group
+    root = [p for p in storage["pools"] if p["state"] == "mounted" and any(m["device"] == "vda" for g in p["groups"] for m in g["members"])]
+    assert root and root[0]["usable"] > 0, storage["pools"]
     pooled = {d["name"]: d.get("pool") for d in storage["disks"]}
-    assert pooled["vdb"] == "testpool" and pooled["vda"] is None, pooled
+    assert pooled["vdb"] == "testpool" and pooled["vda"] == root[0]["name"], pooled
 
     apps = get(hub, "/api/apps")
     assert [(a["name"], a["machine"], a["category"], a["icon"]) for a in apps] == [

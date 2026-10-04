@@ -151,7 +151,8 @@ in
         DynamicUser = true;
         Restart = "on-failure";
         ProtectSystem = "strict";
-        ProtectHome = true;
+        # statfs on filesystems mounted below /home; home directories stay 0700
+        ProtectHome = "read-only";
         PrivateTmp = true;
         NoNewPrivileges = true;
         ProtectControlGroups = true;

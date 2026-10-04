@@ -184,7 +184,7 @@ const textStyles: Record<Health, string> = {
 }
 
 const errorStates = ['faulted', 'offline', 'unavail', 'removed', 'faulty']
-const okPoolStates = ['online', 'clean', 'active', 'active-idle', 'read-auto', 'write-pending']
+const okPoolStates = ['online', 'clean', 'active', 'active-idle', 'read-auto', 'write-pending', 'mounted']
 
 function stateTokens(state: string): string[] {
   return state
@@ -199,6 +199,7 @@ function resilvering(pool: Pool): boolean {
 
 function stateHealth(state: string): Health {
   const tokens = stateTokens(state)
+  if (tokens.includes('unmounted')) return 'unknown'
   if (tokens.includes('degraded') || tokens.includes('recovering') || tokens.includes('resyncing')) return 'warn'
   if (tokens.length > 0 && tokens.every((t) => okPoolStates.includes(t))) return 'ok'
   return 'error'
@@ -389,14 +390,11 @@ export function DrivesWidget({ poll }: { poll: Poll<Storage> }) {
       <SectionTitle aside={`${disks.length} ${disks.length === 1 ? 'disk' : 'disks'}`}>Storage</SectionTitle>
       <div className={`flex flex-col gap-3 ${poll.error ? 'opacity-50' : ''}`} title={poll.error}>
         {pools.map((pool) => (
-          <PoolCard key={pool.name} pool={pool} disks={disks} />
+          <PoolCard key={`${pool.kind}:${pool.name}`} pool={pool} disks={disks} />
         ))}
         {other.length > 0 && (
           <div className={`${card} p-3`}>
-            <div className="mb-2.5 flex items-center justify-between px-0.5">
-              <span className="text-sm font-semibold text-fg-inverse">Other disks</span>
-              <span className="text-[10px] font-medium tracking-wide text-fg-muted">not in a pool</span>
-            </div>
+            <div className="mb-2.5 px-0.5 text-sm font-semibold text-fg-inverse">unused</div>
             <div className={bay}>
               {other.map((d) => (
                 <DriveSlot key={d.name} disk={d} health="ok" />

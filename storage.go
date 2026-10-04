@@ -69,6 +69,11 @@ func readStorage() (Storage, error) {
 		return Storage{}, err
 	}
 	pools = append(pools, md...)
+	volumes, err := readVolumes()
+	if err != nil {
+		return Storage{}, err
+	}
+	pools = append(pools, volumes...)
 
 	byName := map[string]*Disk{}
 	for i := range disks {
