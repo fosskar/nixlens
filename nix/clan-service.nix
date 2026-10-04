@@ -16,7 +16,7 @@
       options = {
         port = lib.mkOption {
           type = lib.types.port;
-          default = 8090;
+          default = 7480;
           description = "Port the agent listens on.";
         };
         openFirewall = lib.mkOption {
@@ -44,7 +44,7 @@
     interface = {
       options.port = lib.mkOption {
         type = lib.types.port;
-        default = 8090;
+        default = 7480;
         description = "Loopback port the hub listens on.";
       };
     };
@@ -56,6 +56,9 @@
           {
             services.nos = {
               enable = true;
+              # explicit, so a machine that is also an agent (0.0.0.0) fails
+              # evaluation instead of exposing the unauthenticated ui
+              listenAddress = "127.0.0.1";
               inherit (settings) port;
               hub.enable = true;
               hub.peers = lib.mapAttrs (

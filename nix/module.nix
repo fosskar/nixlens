@@ -36,7 +36,7 @@ in
 
     port = lib.mkOption {
       type = lib.types.port;
-      default = 8090;
+      default = 7480;
       description = "Port nOS listens on.";
     };
 
@@ -97,7 +97,7 @@ in
         type = lib.types.attrsOf lib.types.str;
         default = { };
         example = {
-          nixbox = "http://nixbox.example.lan:8090";
+          nixbox = "http://nixbox.example.lan:7480";
         };
         description = "Agents shown by this hub, by machine name and base URL.";
       };

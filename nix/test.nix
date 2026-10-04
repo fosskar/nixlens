@@ -11,7 +11,7 @@ testers.runNixOSTest {
       enable = true;
       inherit tokenFile;
       hub.enable = true;
-      hub.peers.agent = "http://agent:8090";
+      hub.peers.agent = "http://agent:7480";
       hub.categories = [ "Monitoring" ];
     };
     services.nos.apps.Grafana = {
@@ -46,15 +46,15 @@ testers.runNixOSTest {
     import json
 
     def get(node, path):
-        return json.loads(node.succeed(f"curl -sf http://127.0.0.1:8090{path}"))
+        return json.loads(node.succeed(f"curl -sf http://127.0.0.1:7480{path}"))
 
     start_all()
-    agent.wait_for_open_port(8090, timeout=60)
-    hub.wait_for_open_port(8090, timeout=60)
+    agent.wait_for_open_port(7480, timeout=60)
+    hub.wait_for_open_port(7480, timeout=60)
 
-    hub.fail("curl -sf http://agent:8090/api/local/system")
-    hub.succeed("curl -sf -H 'Authorization: Bearer test-token' http://agent:8090/api/local/system")
-    agent.fail("curl -sf http://127.0.0.1:8090/")
+    hub.fail("curl -sf http://agent:7480/api/local/system")
+    hub.succeed("curl -sf -H 'Authorization: Bearer test-token' http://agent:7480/api/local/system")
+    agent.fail("curl -sf http://127.0.0.1:7480/")
 
     machines = get(hub, "/api/machines")
     assert [(m["name"], m["self"], m["online"]) for m in machines] == [
@@ -85,11 +85,11 @@ testers.runNixOSTest {
       ("Immich", "agent", "Media", ""),
     ], apps
 
-    hub.succeed("curl -sf http://127.0.0.1:8090/ | grep -q '<title>nOS</title>'")
+    hub.succeed("curl -sf http://127.0.0.1:7480/ | grep -q '<title>nOS</title>'")
 
     agent.stop_job("nos.service")
     machines = get(hub, "/api/machines")
     assert not machines[1]["online"], machines
-    hub.fail("curl -sf http://127.0.0.1:8090/api/machines/agent/system")
+    hub.fail("curl -sf http://127.0.0.1:7480/api/machines/agent/system")
   '';
 }

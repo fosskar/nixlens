@@ -82,7 +82,7 @@ func requireToken(token string, next http.Handler) http.Handler {
 }
 
 func main() {
-	listen := flag.String("listen", "127.0.0.1:8090", "listen address")
+	listen := flag.String("listen", "127.0.0.1:7480", "listen address")
 	appsFile := flag.String("apps", "", "path to this machine's apps JSON file")
 	tokenFile := flag.String("token-file", "", "bearer token required on /api/local/ and sent to peers")
 	hub := flag.Bool("hub", false, "serve the web UI and aggregate this machine with its peers")
