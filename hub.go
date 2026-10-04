@@ -26,6 +26,7 @@ type hub struct {
 	appsFile string
 	token    string
 	peers    map[string]string
+	order    map[string]int
 	client   *http.Client
 	frames   *frameChecker
 }
@@ -45,18 +46,25 @@ func readPeers(path string) (map[string]string, error) {
 	return peers, nil
 }
 
-func newHub(system func() (System, error), appsFile, token string, peers map[string]string) (*hub, error) {
+func newHub(system func() (System, error), appsFile, token string, peers map[string]string, categories []string) (*hub, error) {
 	self, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 	delete(peers, self)
+	order := map[string]int{}
+	for i, c := range categories {
+		if c != "" {
+			order[c] = i
+		}
+	}
 	return &hub{
 		self:     self,
 		system:   system,
 		appsFile: appsFile,
 		token:    token,
 		peers:    peers,
+		order:    order,
 		client:   &http.Client{Timeout: 5 * time.Second},
 		frames:   newFrameChecker(),
 	}, nil
@@ -196,6 +204,12 @@ func (h *hub) apps(w http.ResponseWriter, r *http.Request) {
 
 	// self sorts first among equal urls, so dedup keeps the hub's own entry
 	sort.SliceStable(all, func(i, j int) bool {
+		if ci, cj := h.categoryRank(all[i].Category), h.categoryRank(all[j].Category); ci != cj {
+			return ci < cj
+		}
+		if all[i].Category != all[j].Category {
+			return all[i].Category < all[j].Category
+		}
 		if all[i].Name != all[j].Name {
 			return all[i].Name < all[j].Name
 		}
@@ -213,4 +227,15 @@ func (h *hub) apps(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, apps, nil)
+}
+
+// listed categories first in their order, then the rest, uncategorized last
+func (h *hub) categoryRank(category string) int {
+	if rank, ok := h.order[category]; ok {
+		return rank
+	}
+	if category == "" {
+		return len(h.order) + 1
+	}
+	return len(h.order)
 }

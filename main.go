@@ -87,6 +87,7 @@ func main() {
 	tokenFile := flag.String("token-file", "", "bearer token required on /api/local/ and sent to peers")
 	hub := flag.Bool("hub", false, "serve the web UI and aggregate this machine with its peers")
 	peersFile := flag.String("peers", "", "hub: path to a JSON object mapping peer names to base URLs")
+	categories := flag.String("categories", "", "hub: comma-separated categories listed first, in this order")
 	memFile := flag.String("installed-memory-file", "", "file holding the installed memory in bytes")
 	writeMem := flag.String("write-installed-memory", "", "write the installed memory from smbios to this file and exit; needs root")
 	flag.Parse()
@@ -131,7 +132,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		h, err := newHub(system, *appsFile, token, peers)
+		h, err := newHub(system, *appsFile, token, peers, strings.Split(*categories, ","))
 		if err != nil {
 			log.Fatal(err)
 		}

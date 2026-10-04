@@ -109,7 +109,7 @@ function Ring({ label, value, detail }: { label: string; value: number; detail: 
       </div>
       <div className="text-center">
         <div className="text-xs font-medium text-fg-base">{label}</div>
-        <div className="text-[11px] text-balance text-fg-muted tabular-nums">{detail}</div>
+        <div className="text-[11px] whitespace-nowrap text-fg-muted tabular-nums">{detail}</div>
       </div>
     </div>
   )

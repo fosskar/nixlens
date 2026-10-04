@@ -12,6 +12,7 @@ testers.runNixOSTest {
       inherit tokenFile;
       hub.enable = true;
       hub.peers.agent = "http://agent:8090";
+      hub.categories = [ "Monitoring" ];
     };
     services.nos.apps.Grafana = {
       url = "http://grafana.example.com:3000";

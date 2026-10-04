@@ -101,6 +101,16 @@ in
         };
         description = "Agents shown by this hub, by machine name and base URL.";
       };
+
+      categories = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        example = [
+          "Media"
+          "Tools"
+        ];
+        description = "App categories listed first, in this order; the rest follow alphabetically.";
+      };
     };
   };
 
@@ -129,6 +139,8 @@ in
             "-hub"
             "-peers"
             (pkgs.writeText "nos-peers.json" (builtins.toJSON cfg.hub.peers))
+            "-categories"
+            (lib.concatStringsSep "," cfg.hub.categories)
           ]
         );
         ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nos/installed-memory";

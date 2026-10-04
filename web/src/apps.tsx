@@ -60,7 +60,7 @@ function byCategory(apps: App[]): [string, App[]][] {
     if (list) list.push(app)
     else groups.set(app.category, [app])
   }
-  return [...groups].sort(([a], [b]) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)))
+  return [...groups]
 }
 
 const collapsedKey = 'nos.collapsed'
