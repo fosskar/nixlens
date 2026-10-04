@@ -1,34 +1,77 @@
 { testers, nosModule }:
+let
+  tokenFile = builtins.toFile "nos-token" "test-token";
+in
 testers.runNixOSTest {
   name = "nos";
 
-  nodes.machine = {
+  nodes.hub = {
     imports = [ nosModule ];
-    services.nos.enable = true;
+    services.nos = {
+      enable = true;
+      inherit tokenFile;
+      hub.enable = true;
+      hub.peers.agent = "http://agent:8090";
+    };
     services.caddy = {
       enable = true;
       virtualHosts."jellyfin.example.com, http://grafana.example.com:3000".extraConfig = "respond ok";
     };
   };
 
+  nodes.agent = {
+    imports = [ nosModule ];
+    services.nos = {
+      enable = true;
+      listenAddress = "0.0.0.0";
+      openFirewall = true;
+      inherit tokenFile;
+    };
+    services.nginx = {
+      enable = true;
+      virtualHosts."immich.example.com" = { };
+    };
+  };
+
   testScript = ''
     import json
 
-    machine.wait_for_unit("nos.service")
-    machine.wait_for_open_port(8090)
+    def get(node, path):
+        return json.loads(node.succeed(f"curl -sf http://127.0.0.1:8090{path}"))
 
-    system = json.loads(machine.succeed("curl -sf http://127.0.0.1:8090/api/system"))
-    assert system["hostname"] == "machine", system
+    start_all()
+    agent.wait_for_open_port(8090)
+    hub.wait_for_open_port(8090)
 
-    disks = json.loads(machine.succeed("curl -sf http://127.0.0.1:8090/api/disks"))
+    hub.fail("curl -sf http://agent:8090/api/local/system")
+    hub.succeed("curl -sf -H 'Authorization: Bearer test-token' http://agent:8090/api/local/system")
+    agent.fail("curl -sf http://127.0.0.1:8090/")
+
+    machines = get(hub, "/api/machines")
+    assert [(m["name"], m["self"], m["online"]) for m in machines] == [
+      ("hub", True, True),
+      ("agent", False, True),
+    ], machines
+
+    system = get(hub, "/api/machines/agent/system")
+    assert system["hostname"] == "agent", system
+    assert system["memTotal"] > 0 and "swapTotal" in system, system
+
+    disks = get(hub, "/api/machines/agent/disks")
     assert any(d["name"] == "vda" for d in disks), disks
 
-    apps = json.loads(machine.succeed("curl -sf http://127.0.0.1:8090/api/apps"))
-    assert apps == [
-      {"name": "grafana", "url": "http://grafana.example.com:3000"},
-      {"name": "jellyfin", "url": "https://jellyfin.example.com"},
+    apps = get(hub, "/api/apps")
+    assert [(a["name"], a["machine"], a["url"]) for a in apps] == [
+      ("grafana", "hub", "http://grafana.example.com:3000"),
+      ("immich", "agent", "http://immich.example.com"),
+      ("jellyfin", "hub", "https://jellyfin.example.com"),
     ], apps
 
-    machine.succeed("curl -sf http://127.0.0.1:8090/ | grep -q '<title>nOS</title>'")
+    hub.succeed("curl -sf http://127.0.0.1:8090/ | grep -q '<title>nOS</title>'")
+
+    agent.stop_job("nos.service")
+    machines = get(hub, "/api/machines")
+    assert not machines[1]["online"], machines
+    hub.fail("curl -sf http://127.0.0.1:8090/api/machines/agent/system")
   '';
 }

@@ -20,6 +20,8 @@ type System struct {
 	CPUPercent   float64    `json:"cpuPercent"`
 	MemTotal     uint64     `json:"memTotal"`
 	MemAvailable uint64     `json:"memAvailable"`
+	SwapTotal    uint64     `json:"swapTotal"`
+	SwapFree     uint64     `json:"swapFree"`
 }
 
 func readTrimmed(path string) (string, error) {
@@ -56,37 +58,42 @@ func readSystem(cpu *cpuSampler) (System, error) {
 		return s, fmt.Errorf("parse /proc/loadavg: %w", err)
 	}
 
-	if s.MemTotal, s.MemAvailable, err = readMeminfo(); err != nil {
+	mem, err := readMeminfo()
+	if err != nil {
 		return s, err
 	}
+	s.MemTotal = mem["MemTotal"]
+	s.MemAvailable = mem["MemAvailable"]
+	s.SwapTotal = mem["SwapTotal"]
+	s.SwapFree = mem["SwapFree"]
 	s.CPUs, s.CPUPercent = cpu.get()
 	return s, nil
 }
 
-func readMeminfo() (total, available uint64, err error) {
+// values in bytes; the kernel's "kB" unit is KiB
+func readMeminfo() (map[string]uint64, error) {
 	f, err := os.Open("/proc/meminfo")
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 	defer f.Close()
+	mem := map[string]uint64{}
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		fields := strings.Fields(sc.Text())
 		if len(fields) < 2 {
 			continue
 		}
-		kb, err := strconv.ParseUint(fields[1], 10, 64)
+		v, err := strconv.ParseUint(fields[1], 10, 64)
 		if err != nil {
-			return 0, 0, fmt.Errorf("parse /proc/meminfo: %w", err)
+			return nil, fmt.Errorf("parse /proc/meminfo: %w", err)
 		}
-		switch fields[0] {
-		case "MemTotal:":
-			total = kb * 1024
-		case "MemAvailable:":
-			available = kb * 1024
+		if len(fields) == 3 && fields[2] == "kB" {
+			v *= 1024
 		}
+		mem[strings.TrimSuffix(fields[0], ":")] = v
 	}
-	return total, available, sc.Err()
+	return mem, sc.Err()
 }
 
 // cpu usage needs two /proc/stat samples, so a goroutine keeps the latest delta

@@ -84,7 +84,7 @@ let
 in
 {
   options.services.nos = {
-    enable = lib.mkEnableOption "nOS, a read-only NixOS web dashboard";
+    enable = lib.mkEnableOption "the nOS agent, which reports this machine's state";
 
     package = lib.mkOption {
       type = lib.types.package;
@@ -94,13 +94,38 @@ in
     listenAddress = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
-      description = "Address the dashboard listens on.";
+      description = "Address nOS listens on. A hub should stay on loopback behind an authenticating reverse proxy.";
     };
 
     port = lib.mkOption {
       type = lib.types.port;
       default = 8090;
-      description = "Port the dashboard listens on.";
+      description = "Port nOS listens on.";
+    };
+
+    openFirewall = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Open {option}`services.nos.port` in the firewall.";
+    };
+
+    tokenFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "File with a bearer token that agents require and the hub sends to its peers.";
+    };
+
+    hub = {
+      enable = lib.mkEnableOption "the nOS web UI, aggregating this machine with its peers";
+
+      peers = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        default = { };
+        example = {
+          nixbox = "http://nixbox.example.lan:8090";
+        };
+        description = "Agents shown by this hub, by machine name and base URL.";
+      };
     };
   };
 
@@ -111,7 +136,25 @@ in
       after = [ "network.target" ];
       path = [ pkgs.util-linux ];
       serviceConfig = {
-        ExecStart = "${lib.getExe cfg.package} -listen ${cfg.listenAddress}:${toString cfg.port} -apps ${appsFile}";
+        ExecStart = lib.escapeShellArgs (
+          [
+            (lib.getExe cfg.package)
+            "-listen"
+            "${cfg.listenAddress}:${toString cfg.port}"
+            "-apps"
+            appsFile
+          ]
+          ++ lib.optionals (cfg.tokenFile != null) [
+            "-token-file"
+            "%d/token"
+          ]
+          ++ lib.optionals cfg.hub.enable [
+            "-hub"
+            "-peers"
+            (pkgs.writeText "nos-peers.json" (builtins.toJSON cfg.hub.peers))
+          ]
+        );
+        LoadCredential = lib.mkIf (cfg.tokenFile != null) "token:${cfg.tokenFile}";
         DynamicUser = true;
         Restart = "on-failure";
         ProtectSystem = "strict";
@@ -139,5 +182,7 @@ in
         UMask = "0077";
       };
     };
+
+    networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [ cfg.port ];
   };
 }
