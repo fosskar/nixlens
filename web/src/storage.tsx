@@ -884,6 +884,13 @@ function partitionHealth(partition: Partition, disk: Disk, pools: Pool[]): Healt
   return pool && members.length > 0 ? worst(members.map((m) => memberHealth(m, pool))) : undefined
 }
 
+// what shops list a drive as: without the vendor prefix the kernel shows
+// for wd drives ("WDC "), and without the oem suffix wd and seagate add
+// to a model number ("WD60EFPX-68C5ZN0", "ST8000VN004-2M2101")
+function shopQuery(model: string): string {
+  return model.replace(/^(WDC|ATA)\s+/i, '').replace(/^(\w+)-\w+$/, '$1')
+}
+
 // everything about one drive, as a block of the machine view
 export function DriveDetail({
   disk,
@@ -922,7 +929,28 @@ export function DriveDetail({
             </span>
           )}
         </span>
-        <span className="ml-auto">
+        <span className="ml-auto flex items-center gap-1.5">
+          {disk.model && (
+            <a
+              href={`https://geizhals.de/?fs=${encodeURIComponent(shopQuery(disk.model))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Search ${shopQuery(disk.model)} on geizhals.de`}
+              className="grid h-6 w-6 place-items-center rounded-md text-fg-muted outline-accent-cyan transition hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5 fill-none stroke-current"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 4h2l2.4 11h10.2L20 8H6.2" />
+                <circle cx="9" cy="19.5" r="1.3" />
+                <circle cx="17" cy="19.5" r="1.3" />
+              </svg>
+            </a>
+          )}
           <TypeBadge>
             {formatBytes(disk.size)} · {driveKind(disk).toUpperCase()}
           </TypeBadge>
@@ -982,7 +1010,7 @@ export function DriveDetail({
                             <span className="font-mono text-fg-inverse">{target.name}</span>
                           </button>
                         ) : (
-                          <span className="px-1.5 text-fg-dim">{partition.pool || 'unassigned'}</span>
+                          <span className="px-1.5 text-fg-dim">{partition.pool || partition.role || 'unassigned'}</span>
                         )}
                       </td>
                     </tr>
@@ -1030,13 +1058,13 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
               aria-label={`Open pool ${pool.name}`}
               className={`absolute inset-0 rounded-[inherit] outline-accent-cyan hover:bg-white/[0.04] focus-visible:outline-2 ${linkTransition}`}
             />
-            <div className="pointer-events-none relative flex items-end gap-2">
-              <div className="flex min-w-0 flex-1 items-center gap-2 self-center">
+            <div className="pointer-events-none relative flex items-end gap-3">
+              <div className="flex max-w-[55%] min-w-0 shrink-0 items-center gap-2 self-center">
                 <Led health={poolHealth(pool)} />
                 <span className="truncate font-mono text-[13px] font-semibold text-fg-inverse">{pool.name}</span>
                 <span className="shrink-0 text-[10px] text-fg-muted">{poolLayout(pool)}</span>
               </div>
-              <div className="pointer-events-auto flex flex-wrap items-end justify-end gap-x-1.5">
+              <div className="pointer-events-auto ml-auto flex min-w-0 flex-wrap items-end justify-end gap-x-1.5 gap-y-1">
                 {groups.map((group, i) => (
                   <div
                     key={i}
@@ -1050,7 +1078,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
                         title={driveTitle(disk)}
                         onClick={() => onOpen({ kind: 'disk', name: disk.name })}
                         aria-label={`${disk.model || 'drive'} ${disk.serial || disk.name}`}
-                        className={`rounded-md p-0.5 outline-accent-cyan hover:bg-white/[0.08] focus-visible:outline-2 ${linkTransition}`}
+                        className={`flex h-11 items-end rounded-md p-0.5 outline-accent-cyan hover:bg-white/[0.08] focus-visible:outline-2 ${linkTransition}`}
                       >
                         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
                       </button>
