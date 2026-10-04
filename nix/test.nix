@@ -30,6 +30,18 @@ testers.runNixOSTest {
     services.nginx = {
       enable = true;
       virtualHosts."immich.example.com" = { };
+      virtualHosts.explorer.listen = [
+        {
+          addr = "0.0.0.0";
+          port = 8098;
+        }
+      ];
+      virtualHosts.internal.listen = [
+        {
+          addr = "127.0.0.1";
+          port = 8099;
+        }
+      ];
     };
   };
 
@@ -62,8 +74,9 @@ testers.runNixOSTest {
 
     apps = get(hub, "/api/apps")
     assert [(a["name"], a["machine"], a["url"]) for a in apps] == [
+      ("explorer", "agent", "http://agent:8098"),
       ("grafana", "hub", "http://grafana.example.com:3000"),
-      ("immich", "agent", "http://immich.example.com"),
+      ("immich", "agent", "https://immich.example.com"),
       ("jellyfin", "hub", "https://jellyfin.example.com"),
     ], apps
 

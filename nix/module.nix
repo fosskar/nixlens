@@ -48,18 +48,33 @@ let
     in
     lib.concatMap toApp addresses;
 
+  # a vhost without tls options may still sit behind a tls-terminating proxy,
+  # so hostnames get https. vhosts named by a label rather than a hostname are
+  # reached through their non-loopback listen addresses instead
   nginxApps = lib.concatLists (
     lib.mapAttrsToList (
       attrName: vhost:
       let
-        tls =
-          vhost.forceSSL || vhost.onlySSL || vhost.addSSL || vhost.enableACME || vhost.useACMEHost != null;
-        names = [
-          (if vhost.serverName == null then attrName else vhost.serverName)
-        ]
-        ++ vhost.serverAliases;
+        hostNames = lib.filter (n: usable n && lib.hasInfix "." n) (
+          [ (if vhost.serverName == null then attrName else vhost.serverName) ] ++ vhost.serverAliases
+        );
+        wildcard = [
+          "0.0.0.0"
+          "::"
+          "[::]"
+        ];
+        loopback = addr: lib.hasPrefix "127." addr || addr == "::1" || addr == "[::1]";
+        listenApp = l: {
+          name = attrName;
+          url = "${if l.ssl then "https" else "http"}://${
+            if lib.elem l.addr wildcard then config.networking.fqdnOrHostName else l.addr
+          }${lib.optionalString (l.port != null) ":${toString l.port}"}";
+        };
       in
-      map (mkApp (if tls then "https" else "http")) (lib.filter usable names)
+      if hostNames != [ ] then
+        map (mkApp "https") hostNames
+      else
+        map listenApp (lib.filter (l: !(loopback l.addr)) vhost.listen)
     ) config.services.nginx.virtualHosts
   );
 
