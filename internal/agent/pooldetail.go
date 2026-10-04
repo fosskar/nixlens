@@ -80,9 +80,10 @@ func readPoolDetail(pool string) (PoolDetail, error) {
 		return d, err
 	}
 	for _, row := range append(props, rootProps...) {
-		if len(row) == 2 {
-			d.Properties[row[0]] = row[1]
+		if len(row) != 2 {
+			return d, fmt.Errorf("zfs get: unexpected row %q", row)
 		}
+		d.Properties[row[0]] = row[1]
 	}
 
 	rows, err := zfsRows("zfs", "list", "-Hp", "-r", "-t", "filesystem,volume",
