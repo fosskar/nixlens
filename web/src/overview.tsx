@@ -9,6 +9,7 @@ export type MachineOverview = Machine & { system?: System; storage?: Storage }
 type Problem = { health: Health; text: string; target?: Target }
 
 const fullAt = 90
+const gib = 1024 ** 3
 
 function usedPercent(pool: Pool): number {
   return pool.usable > 0 ? (100 * pool.used) / pool.usable : 0
@@ -61,18 +62,35 @@ function problems(m: MachineOverview): Problem[] {
   return items.sort((a, b) => (a.health === b.health ? 0 : a.health === 'error' ? -1 : 1))
 }
 
-function Bar({ label, percent }: { label: string; percent: number }) {
+function Bar({ percent }: { percent: number }) {
   return (
-    <div className="flex items-center gap-1.5" title={`${label} ${Math.round(percent)} %`}>
-      <span className="w-8 text-[10px] text-fg-muted">{label}</span>
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
-        <div
-          className={`h-full rounded-full ${percent >= fullAt ? 'bg-warning' : 'bg-gradient-to-r from-accent to-accent-cyan'}`}
-          style={{ width: `${Math.min(percent, 100)}%` }}
-        />
-      </div>
+    <div className="h-1 overflow-hidden rounded-full bg-white/[0.07]">
+      <div
+        className={`h-full rounded-full ${percent >= fullAt ? 'bg-warning' : 'bg-gradient-to-r from-accent to-accent-cyan'}`}
+        style={{ width: `${Math.min(percent, 100)}%` }}
+      />
     </div>
   )
+}
+
+// one labelled meter: name, bar, value; rows share their columns
+function Meter({ label, percent, value }: { label: string; percent: number; value: string }) {
+  return (
+    <>
+      <span className="truncate text-[11px] text-fg-muted" title={label}>
+        {label}
+      </span>
+      <Bar percent={percent} />
+      <span className="text-right font-mono text-[10px] text-fg-muted tabular-nums">{value}</span>
+    </>
+  )
+}
+
+// the last part of a go error is the cause ("connection refused"); the full
+// text stays available on hover
+function shortError(error?: string): string {
+  if (!error) return 'unreachable'
+  return error.split(': ').at(-1) ?? error
 }
 
 function uptime(sec: number): string {
@@ -82,11 +100,13 @@ function uptime(sec: number): string {
 
 function MachineCard({ m }: { m: MachineOverview }) {
   const s = m.system
-  const pools = (m.storage?.pools ?? []).filter((p) => p.state !== 'unmounted')
+  // boot partitions are kept for the machine view
+  const pools = (m.storage?.pools ?? []).filter((p) => p.state !== 'unmounted' && p.kind !== 'vfat')
   const disks = m.storage?.disks ?? []
-  const usable = pools.reduce((sum, p) => sum + p.usable, 0)
-  const used = pools.reduce((sum, p) => sum + p.used, 0)
+  const asleep = disks.filter((d) => d.smart?.standby).length
+  const temps = disks.map((d) => d.smart?.temperature ?? 0).filter((t) => t > 0)
   const items = problems(m)
+  const health = m.online ? (items.some((i) => i.health === 'error') ? 'error' : items.length ? 'warn' : 'ok') : 'error'
 
   // the whole card opens the machine; problem lines open their pool or drive
   // and sit above the card's button, since buttons cannot nest
@@ -98,42 +118,63 @@ function MachineCard({ m }: { m: MachineOverview }) {
         aria-label={`Open ${m.name}`}
         className="absolute inset-0 rounded-2xl outline-accent-cyan transition hover:bg-white/[0.04] focus-visible:outline-2"
       />
-      <div className="pointer-events-none relative flex flex-col gap-2.5">
-        <div className="flex items-center gap-2">
-          <Led
-            health={
-              m.online ? (items.some((i) => i.health === 'error') ? 'error' : items.length ? 'warn' : 'ok') : 'error'
-            }
-          />
-          <span className="truncate text-sm font-semibold text-fg-inverse">{m.name}</span>
-          {m.self && <span className="text-[10px] text-accent-cyan">hub</span>}
-          <span className="ml-auto shrink-0 font-mono text-[10px] text-fg-muted">
-            {s ? `up ${uptime(s.uptimeSec)}` : 'offline'}
-          </span>
+      <div className="pointer-events-none relative flex flex-col gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Led health={health} />
+            <span className="truncate text-sm font-semibold text-fg-inverse">{m.name}</span>
+            {m.self && <span className="text-[10px] text-accent-cyan">hub</span>}
+            <span className="ml-auto shrink-0 font-mono text-[10px] text-fg-muted">
+              {s ? `up ${uptime(s.uptimeSec)}` : 'offline'}
+            </span>
+          </div>
+          {s && (
+            <div className="mt-1 truncate pl-4 font-mono text-[10px] text-fg-muted">
+              NixOS {s.nixosVersion.split('.').slice(0, 2).join('.')} · Linux {s.kernel} · {s.cores}c/{s.cpus}t
+            </div>
+          )}
+          {!m.online && (
+            <div className="mt-1 truncate pl-4 text-[11px] text-error/90" title={m.error}>
+              {shortError(m.error)}
+            </div>
+          )}
         </div>
 
-        {!m.online && <div className="truncate text-[11px] text-error/90">{m.error || 'unreachable'}</div>}
-
         {s && (
-          <div className="grid grid-cols-2 gap-x-3">
-            <Bar label="CPU" percent={s.cpuPercent} />
-            <Bar label="RAM" percent={(100 * (s.memTotal - s.memAvailable)) / s.memTotal} />
+          <div className="grid grid-cols-[4.5rem_minmax(0,1fr)_6.5rem] items-center gap-x-2 gap-y-1.5">
+            <Meter
+              label="CPU"
+              percent={s.cpuPercent}
+              value={`${Math.round(s.cpuPercent)} % · ${s.load[0].toFixed(2)}`}
+            />
+            <Meter
+              label="Memory"
+              percent={(100 * (s.memTotal - s.memAvailable)) / s.memTotal}
+              value={`${Math.round((s.memTotal - s.memAvailable) / gib)} / ${Math.round((s.memInstalled || s.memTotal) / gib)} GiB`}
+            />
+            {pools.map((p) => (
+              <Meter
+                key={p.name}
+                label={p.name}
+                percent={usedPercent(p)}
+                value={`${formatCapacity(p.used)} / ${formatCapacity(p.usable)}`}
+              />
+            ))}
           </div>
         )}
 
-        {usable > 0 && (
-          <div>
-            <Bar label="Disk" percent={(100 * used) / usable} />
-            <div className="mt-1.5 flex items-center gap-1 pl-[2.375rem]">
-              {disks.map((d) => (
-                <span key={d.name} title={`${d.serial || d.name}`}>
-                  <Led health={driveHealth(d, m.storage?.pools ?? [])} asleep={d.smart?.standby} small />
-                </span>
-              ))}
-              <span className="ml-auto font-mono text-[10px] text-fg-muted tabular-nums">
-                {formatCapacity(used)} / {formatCapacity(usable)}
+        {disks.length > 0 && (
+          <div className="flex items-center gap-1">
+            {disks.map((d) => (
+              <span key={d.name} title={d.serial || d.name}>
+                <Led health={driveHealth(d, m.storage?.pools ?? [])} asleep={d.smart?.standby} small />
               </span>
-            </div>
+            ))}
+            <span className="ml-auto truncate pl-2 font-mono text-[10px] text-fg-muted">
+              {disks.length} {disks.length === 1 ? 'drive' : 'drives'}
+              {asleep > 0 && ` · ${asleep} asleep`}
+              {temps.length > 0 && ` · max ${Math.max(...temps)} °C`}
+            </span>
           </div>
         )}
 
