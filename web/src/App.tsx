@@ -105,7 +105,7 @@ export default function App() {
   const online = machines.filter((m) => m.online).length
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen font-sans text-fg-base">
       <div
         className={`transition-opacity duration-300 ${active ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
         aria-hidden={active !== null}
@@ -114,13 +114,13 @@ export default function App() {
           className={`${glass} m-3 flex flex-col gap-7 p-4 md:fixed md:inset-y-3 md:left-3 md:m-0 md:w-80 md:overflow-y-auto md:pb-6`}
         >
           <div className="flex items-center gap-2.5 px-1 pt-1">
-            <img src="/favicon.svg" alt="" className="h-7 w-7" />
-            <span className="text-lg font-semibold tracking-tight">nOS</span>
+            <img src="/favicon.svg" alt="" className="h-7 w-7 drop-shadow-[0_2px_8px_rgb(22_160_133/0.45)]" />
+            <span className="text-lg font-semibold tracking-tight text-fg-inverse">nOS</span>
           </div>
           {machinesPoll.data ? (
             <MachineSwitcher machines={machines} selected={selected} onSelect={selectMachine} />
           ) : (
-            <div className="px-1 text-xs text-white/45">{machinesPoll.error ?? 'Loading machines…'}</div>
+            <div className="px-1 text-xs text-fg-muted">{machinesPoll.error ?? 'Loading machines…'}</div>
           )}
           {selected && (
             <>
@@ -135,9 +135,11 @@ export default function App() {
         >
           <div className="mx-auto max-w-5xl">
             <header className="mb-10 text-center">
-              <h1 className="text-4xl font-semibold tracking-tight">{greeting()}.</h1>
+              <h1 className="bg-gradient-to-b from-fg-inverse to-fg-base bg-clip-text text-4xl font-semibold tracking-tight text-transparent md:text-5xl">
+                {greeting()}.
+              </h1>
               {machinesPoll.data && (
-                <p className="mt-2 text-sm text-white/50">
+                <p className="mt-3 text-sm text-fg-muted tabular-nums">
                   {online} of {machines.length} {machines.length === 1 ? 'machine' : 'machines'} online ·{' '}
                   {apps.length} apps
                 </p>

@@ -2,15 +2,113 @@
 
 @theme {
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "CommitMono Nerd Font Propo", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-bg-base: #202020;
+  --color-bg-surface: #282828;
+  --color-bg-elevated: #181818;
+  --color-bg-overlay: #303030;
+
+  --color-fg-base: #cccccc;
+  --color-fg-muted: #9d9d9d;
+  --color-fg-dim: #616161;
+  --color-fg-inverse: #ffffff;
+
+  --color-accent: #16a085;
+  --color-accent-cyan: #1abc9c;
+  --color-accent-secondary: #c79a3a;
+  --color-accent-tertiary: #6796e6;
+
+  --color-success: #73c991;
+  --color-error: #f07167;
+  --color-warning: #c79a3a;
+  --color-info: #6796e6;
+}
+
+:root {
+  color-scheme: dark;
+  --nos-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
 body {
-  background:
-    radial-gradient(1200px 700px at 10% -10%, rgb(20 184 166 / 0.35), transparent 60%),
-    radial-gradient(900px 600px at 100% 0%, rgb(99 102 241 / 0.30), transparent 60%),
-    radial-gradient(900px 600px at 50% 120%, rgb(16 185 129 / 0.25), transparent 60%),
-    linear-gradient(180deg, #071a1f 0%, #0c1426 100%);
+  background-color: var(--color-bg-elevated);
+  background-image:
+    radial-gradient(1000px 680px at 24% -6%, rgb(22 160 133 / 0.24), transparent 65%),
+    radial-gradient(820px 600px at 96% 100%, rgb(26 188 156 / 0.18), transparent 65%),
+    radial-gradient(760px 540px at 80% 6%, rgb(204 204 204 / 0.06), transparent 70%),
+    radial-gradient(640px 520px at 8% 88%, rgb(22 160 133 / 0.12), transparent 70%),
+    linear-gradient(160deg, var(--color-bg-base) 0%, var(--color-bg-elevated) 100%);
   background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--nos-noise);
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+@utility glass {
+  background-color: rgb(255 255 255 / 0.055);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0) 40%);
+  border: 1px solid rgb(255 255 255 / 0.10);
+  backdrop-filter: blur(32px) saturate(150%);
+  -webkit-backdrop-filter: blur(32px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.10),
+    inset 0 0 0 1px rgb(255 255 255 / 0.02),
+    0 24px 60px -24px rgb(0 0 0 / 0.65),
+    0 2px 6px -2px rgb(0 0 0 / 0.35);
+}
+
+@utility glass-strong {
+  background-color: rgb(32 32 32 / 0.62);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.02) 50%);
+  border: 1px solid rgb(255 255 255 / 0.11);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 30px 80px -24px rgb(0 0 0 / 0.75),
+    0 0 0 1px rgb(0 0 0 / 0.25);
+}
+
+@utility glass-card {
+  background-color: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    0 8px 24px -16px rgb(0 0 0 / 0.6);
+}
+
+@utility glass-tile {
+  background-color: rgb(255 255 255 / 0.07);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0) 60%);
+  border: 1px solid rgb(255 255 255 / 0.10);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 10px 24px -12px rgb(0 0 0 / 0.6);
+}
+
+@utility glass-accent {
+  background-color: rgb(22 160 133 / 0.16);
+  background-image: linear-gradient(180deg, rgb(26 188 156 / 0.12), rgb(22 160 133 / 0.04));
+  border: 1px solid rgb(26 188 156 / 0.28);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.10),
+    0 6px 20px -10px rgb(22 160 133 / 0.55);
 }
 
 .nos-window {

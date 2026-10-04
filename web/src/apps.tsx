@@ -14,10 +14,10 @@ export function AppIcon({ app, size = 'lg' }: { app: App; size?: keyof typeof ic
   const s = iconSizes[size]
   return (
     <div
-      className={`${s.box} grid place-items-center border border-white/10 bg-white/[0.08] backdrop-blur-xl shadow-[inset_0_1px_0_rgb(255_255_255/0.1)]`}
+      className={`${s.box} glass-tile grid place-items-center`}
     >
       {failed ? (
-        <span className={`${s.letter} font-semibold`}>{app.name.charAt(0).toUpperCase()}</span>
+        <span className={`${s.letter} font-semibold text-fg-base`}>{app.name.charAt(0).toUpperCase()}</span>
       ) : (
         <img src={`${iconBase}/${app.name}.svg`} alt="" className={s.img} onError={() => setFailed(true)} />
       )}
@@ -35,17 +35,17 @@ export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from
             onOpen(app, (e.currentTarget.firstElementChild ?? e.currentTarget).getBoundingClientRect())
           }
           title={`${app.name} on ${app.machine}${app.frameable ? '' : ' (opens in a new tab)'}`}
-          className="group flex flex-col items-center gap-2 transition-transform duration-300 ease-out hover:-translate-y-1 active:scale-95"
+          className="group flex flex-col items-center gap-2.5 transition-transform duration-300 ease-out hover:-translate-y-1 active:scale-95"
         >
           <div className="relative">
             <AppIcon app={app} />
             {!app.frameable && (
-              <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-white/15 bg-neutral-900/90 text-[10px] text-white/80 shadow-md">
+              <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-white/15 bg-bg-overlay/90 text-[10px] text-fg-base shadow-[inset_0_1px_0_rgb(255_255_255/0.1),0_2px_6px_rgb(0_0_0/0.5)]">
                 ↗
               </span>
             )}
           </div>
-          <span className="max-w-full truncate px-1 text-xs text-white/75 group-hover:text-white">{app.name}</span>
+          <span className="max-w-full truncate px-1 text-xs text-fg-muted transition-colors group-hover:text-fg-inverse">{app.name}</span>
         </button>
       ))}
     </div>
@@ -67,17 +67,17 @@ export function Dock({
 }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center">
-      <div className="pointer-events-auto flex items-end gap-2 rounded-3xl border border-white/10 bg-black/30 px-3 py-2 shadow-[0_12px_40px_-12px_rgb(0_0_0/0.6)] backdrop-blur-2xl">
+      <div className="glass-strong pointer-events-auto flex items-end gap-2 rounded-[26px] px-3 pt-2 pb-1.5">
         <button
           onClick={onHome}
           title="Home"
-          className={`grid h-11 w-11 place-items-center rounded-xl border border-white/10 transition hover:-translate-y-1 ${active === null ? 'bg-white/20' : 'bg-white/[0.08]'}`}
+          className={`mb-2 grid h-11 w-11 place-items-center rounded-xl border transition hover:-translate-y-1 ${active === null ? 'glass-accent text-accent-cyan' : 'glass-tile text-fg-base'}`}
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white/90">
+          <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
             <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v6H4zM14 15h6v6h-6z" />
           </svg>
         </button>
-        {open.length > 0 && <div className="mx-1 h-8 w-px self-center bg-white/15" />}
+        {open.length > 0 && <div className="mx-1 mb-1.5 h-8 w-px self-center bg-white/[0.12]" />}
         {open.map((app) => (
           <div key={app.url} data-dock={app.url} className="group relative flex flex-col items-center">
             <button
@@ -90,11 +90,13 @@ export function Dock({
             <button
               onClick={() => onClose(app)}
               title={`Close ${app.name}`}
-              className="absolute -top-1 -right-1 hidden h-4 w-4 place-items-center rounded-full bg-neutral-700 text-[10px] leading-none group-hover:grid"
+              className="absolute -top-1 -right-1 hidden h-4 w-4 place-items-center rounded-full border border-white/15 bg-bg-overlay text-[10px] leading-none text-fg-base shadow-[0_2px_6px_rgb(0_0_0/0.5)] group-hover:grid hover:bg-error hover:text-fg-inverse"
             >
               ×
             </button>
-            <span className={`mt-1 h-1 w-1 rounded-full ${active === app.url ? 'bg-white' : 'bg-white/40'}`} />
+            <span
+              className={`mt-1 h-1 rounded-full transition-all ${active === app.url ? 'w-3 bg-accent-cyan shadow-[0_0_6px_var(--color-accent-cyan)]' : 'w-1 bg-fg-muted'}`}
+            />
           </div>
         ))}
       </div>
@@ -117,7 +119,7 @@ function TitleButton({ title, onClick, danger, children }: {
     <button
       onClick={onClick}
       title={title}
-      className={`grid h-7 w-7 place-items-center rounded-lg text-white/55 transition hover:text-white ${danger ? 'hover:bg-rose-500/80' : 'hover:bg-white/10'}`}
+      className={`grid h-7 w-7 place-items-center rounded-lg text-fg-muted transition hover:text-fg-inverse ${danger ? 'hover:bg-error/80' : 'hover:bg-white/[0.08]'}`}
     >
       <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         {children}
@@ -170,12 +172,12 @@ export function AppWindow({
         bottom: windowBottom,
         transformOrigin: origin ?? '50% 100%',
       }}
-      className="nos-window fixed z-40 flex flex-col overflow-hidden rounded-[20px] border border-white/10 bg-neutral-950/75 shadow-[0_30px_90px_-20px_rgb(0_0_0/0.75),0_0_0_1px_rgb(0_0_0/0.3)] backdrop-blur-2xl"
+      className="nos-window glass-strong fixed z-40 flex flex-col overflow-hidden rounded-[22px]"
     >
-      <div className="flex h-11 shrink-0 items-center gap-2.5 border-b border-white/[0.08] bg-white/[0.04] pr-2 pl-3.5">
+      <div className="flex h-11 shrink-0 items-center gap-2.5 border-b border-white/[0.07] bg-white/[0.03] pr-2 pl-3.5">
         <AppIcon app={app} size="xs" />
-        <span className="truncate text-sm font-medium text-white/90">{app.name}</span>
-        <span className="truncate text-xs text-white/40">{app.machine}</span>
+        <span className="truncate text-sm font-medium text-fg-inverse">{app.name}</span>
+        <span className="truncate font-mono text-xs text-fg-muted">{app.machine}</span>
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
           <TitleButton title="Reload" onClick={reload}>
             <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
@@ -199,7 +201,7 @@ export function AppWindow({
             <div className="nos-breathe">
               <AppIcon app={app} />
             </div>
-            <span className="text-xs text-white/40">Loading {app.name}…</span>
+            <span className="text-xs text-fg-muted">Loading {app.name}…</span>
           </div>
         </div>
         <iframe
