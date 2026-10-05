@@ -53,8 +53,8 @@ func TestHubConcurrentRequests(t *testing.T) {
 		api.WriteJSON(w, map[string][]any{"pools": {}, "disks": {}}, nil)
 	})
 
-	h, err := New(local, appsFile, &http.Client{Timeout: 5 * time.Second},
-		map[string]string{"one": a1.URL, "two": a2.URL}, []string{"apps"}, Access{})
+	h, err := New(local, appsFile, map[string]Peer{"one": {URL: a1.URL}, "two": {URL: a2.URL}},
+		func(Peer) *http.Client { return &http.Client{Timeout: 5 * time.Second} }, []string{"apps"}, Access{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,12 +6,14 @@
 }:
 let
   cfg = config.services.nos;
-  tlsFilesSet = lib.count (f: f != null) [
-    cfg.tls.certFile
-    cfg.tls.keyFile
-    cfg.tls.caFile
+  loopback = lib.elem cfg.listenAddress [
+    "127.0.0.1"
+    "::1"
+    "localhost"
   ];
-  tls = tlsFilesSet == 3;
+  # an agent serves https to the hubs it trusts; the hub's own listener
+  # stays plain http behind its proxy
+  tls = !cfg.hub.enable && cfg.trustedHubs != [ ];
 
   apps = lib.mapAttrsToList (name: app: {
     inherit name;
@@ -52,28 +54,30 @@ in
       description = "Open {option}`services.nos.port` in the firewall.";
     };
 
-    tls = {
-      certFile = lib.mkOption {
-        type = lib.types.nullOr lib.types.path;
-        default = null;
-        description = ''
-          Certificate for mutual TLS: an agent's server certificate
-          (extended key usage serverAuth, naming the host the hub dials), or
-          the hub's client certificate (clientAuth).
-        '';
-      };
-      keyFile = lib.mkOption {
-        # externalPath rejects the world-readable nix store, where a path
-        # literal would copy the key
-        type = lib.types.nullOr lib.types.externalPath;
-        default = null;
-        description = "Private key of {option}`services.nos.tls.certFile`.";
-      };
-      caFile = lib.mkOption {
-        type = lib.types.nullOr lib.types.path;
-        default = null;
-        description = "CA that an agent checks the hub against, and the hub checks its agents against.";
-      };
+    keyFile = lib.mkOption {
+      # externalPath rejects the world-readable nix store, where a path
+      # literal would copy the key
+      type = lib.types.nullOr lib.types.externalPath;
+      default = null;
+      description = ''
+        This machine's ed25519 key for mutual TLS between hub and agents, in
+        PKCS #8 PEM. Without one, nOS creates its own in its state directory
+        on first start. Either way its fingerprint is logged on every start
+        (`journalctl -u nos | grep fingerprint`), for
+        {option}`services.nos.trustedHubs` and
+        {option}`services.nos.hub.peers.<name>.fingerprint` on the other side.
+      '';
+    };
+
+    trustedHubs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "SHA256:mE3VtPq1Zz8l1d7m4cX0nV2QHqzQd5a8V0b8m1f7n6Y" ];
+      description = ''
+        Fingerprints of the hubs that may read this agent. When set, the agent
+        serves https and accepts only these hubs. Required when the agent
+        listens beyond loopback.
+      '';
     };
 
     apps = lib.mkOption {
@@ -124,12 +128,24 @@ in
       enable = lib.mkEnableOption "the nOS web UI, aggregating this machine with its peers";
 
       peers = lib.mkOption {
-        type = lib.types.attrsOf lib.types.str;
+        type = lib.types.attrsOf (
+          lib.types.submodule {
+            options = {
+              url = lib.mkOption {
+                type = lib.types.str;
+                example = "https://nixbox.example.lan:7480";
+                description = "Base URL of the agent.";
+              };
+              fingerprint = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Fingerprint of the agent's key, required for an https URL.";
+              };
+            };
+          }
+        );
         default = { };
-        example = {
-          nixbox = "http://nixbox.example.lan:7480";
-        };
-        description = "Agents shown by this hub, by machine name and base URL.";
+        description = "Agents shown by this hub, by machine name.";
       };
 
       categories = lib.mkOption {
@@ -183,30 +199,18 @@ in
         message = "services.nos.hub trusts the Remote-* headers of a reverse proxy, so services.nos.listenAddress must be a loopback address";
       }
       {
-        assertion = lib.elem tlsFilesSet [
-          0
-          3
-        ];
-        message = "services.nos.tls.certFile, keyFile and caFile must be set together";
+        assertion = cfg.hub.enable || loopback || tls;
+        message = "services.nos listens on ${cfg.listenAddress}; set services.nos.trustedHubs, or anyone who reaches the port can read this machine's system and storage data";
       }
       {
-        assertion =
-          !(cfg.hub.enable && tls) || lib.all (lib.hasPrefix "https://") (lib.attrValues cfg.hub.peers);
-        message = "with services.nos.tls set, every services.nos.hub.peers url must use https";
+        assertion = !(cfg.hub.enable && cfg.trustedHubs != [ ]);
+        message = "services.nos.trustedHubs is for agents; a hub is reached through its reverse proxy";
       }
-    ];
-
-    warnings =
-      lib.optional
-        (
-          !tls
-          && !(lib.elem cfg.listenAddress [
-            "127.0.0.1"
-            "::1"
-            "localhost"
-          ])
-        )
-        "services.nos listens on ${cfg.listenAddress} without services.nos.tls, so anyone who reaches the port can read this machine's system and storage data";
+    ]
+    ++ lib.mapAttrsToList (name: peer: {
+      assertion = lib.hasPrefix "https://" peer.url == (peer.fingerprint != null);
+      message = "services.nos.hub.peers.${name}: an https url needs a fingerprint, and a fingerprint an https url";
+    }) cfg.hub.peers;
 
     systemd.services.nos = {
       description = "nOS dashboard";
@@ -234,18 +238,25 @@ in
             "-smart-file"
             "/run/nos-smart/smart.json"
           ]
+          ++ [
+            "-key"
+            (if cfg.keyFile == null then "/var/lib/nos/key.pem" else "%d/key")
+          ]
           ++ lib.optionals tls [
-            "-tls-cert"
-            "%d/cert"
-            "-tls-key"
-            "%d/key"
-            "-tls-ca"
-            "%d/ca"
+            "-trust"
+            (lib.concatStringsSep "," cfg.trustedHubs)
           ]
           ++ lib.optionals cfg.hub.enable [
             "-hub"
             "-peers"
-            (pkgs.writeText "nos-peers.json" (builtins.toJSON cfg.hub.peers))
+            (pkgs.writeText "nos-peers.json" (
+              builtins.toJSON (
+                lib.mapAttrs (_: peer: {
+                  inherit (peer) url;
+                  fingerprint = if peer.fingerprint == null then "" else peer.fingerprint;
+                }) cfg.hub.peers
+              )
+            ))
             "-categories"
             (lib.concatStringsSep "," cfg.hub.categories)
             "-admin-groups"
@@ -260,11 +271,9 @@ in
         );
         ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nos/installed-memory";
         RuntimeDirectory = "nos";
-        LoadCredential = lib.mkIf tls [
-          "cert:${cfg.tls.certFile}"
-          "key:${cfg.tls.keyFile}"
-          "ca:${cfg.tls.caFile}"
-        ];
+        # holds the key nOS creates when services.nos.keyFile is unset
+        StateDirectory = "nos";
+        LoadCredential = lib.mkIf (cfg.keyFile != null) [ "key:${cfg.keyFile}" ];
         DynamicUser = true;
         Restart = "on-failure";
         ProtectSystem = "strict";

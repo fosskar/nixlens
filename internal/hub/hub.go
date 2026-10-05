@@ -35,15 +35,26 @@ type Hub struct {
 	self     string
 	local    http.Handler
 	appsFile string
-	peers    map[string]string
+	peers    map[string]peer
 	order    map[string]int
 	access   Access
-	client   *http.Client
 	frames   *frameChecker
 }
 
-func ReadPeers(path string) (map[string]string, error) {
-	peers := map[string]string{}
+// Peer is an agent: where it listens, and the fingerprint of its key, which
+// an https url requires
+type Peer struct {
+	URL         string `json:"url"`
+	Fingerprint string `json:"fingerprint"`
+}
+
+type peer struct {
+	url    string
+	client *http.Client
+}
+
+func ReadPeers(path string) (map[string]Peer, error) {
+	peers := map[string]Peer{}
 	if path == "" {
 		return peers, nil
 	}
@@ -54,15 +65,32 @@ func ReadPeers(path string) (map[string]string, error) {
 	if err := json.Unmarshal(data, &peers); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
+	// an agent is either reached over https and known by its key, or over
+	// plain http, e.g. through a tunnel; a fingerprint over http would
+	// suggest a check that never happens
+	for name, p := range peers {
+		https := strings.HasPrefix(p.URL, "https://")
+		if https != (p.Fingerprint != "") {
+			return nil, fmt.Errorf("peer %s: an https url needs a fingerprint, and a fingerprint an https url", name)
+		}
+	}
 	return peers, nil
 }
 
-func New(local http.Handler, appsFile string, client *http.Client, peers map[string]string, categories []string, acc Access) (*Hub, error) {
+// New takes the peers with an http client for each, which checks the
+// peer's fingerprint
+func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor func(Peer) *http.Client, categories []string, acc Access) (*Hub, error) {
 	self, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
-	delete(peers, self)
+	byName := map[string]peer{}
+	for name, p := range peers {
+		if name == self {
+			continue
+		}
+		byName[name] = peer{url: p.URL, client: clientFor(p)}
+	}
 	order := map[string]int{}
 	for i, c := range categories {
 		if c != "" {
@@ -73,10 +101,9 @@ func New(local http.Handler, appsFile string, client *http.Client, peers map[str
 		self:     self,
 		local:    local,
 		appsFile: appsFile,
-		peers:    peers,
+		peers:    byName,
 		order:    order,
 		access:   acc,
-		client:   client,
 		frames:   newFrameChecker(),
 	}, nil
 }
@@ -145,15 +172,15 @@ func (h *Hub) fetch(ctx context.Context, name, path string) ([]byte, error) {
 		}
 		return c.body.Bytes(), nil
 	}
-	base, ok := h.peers[name]
+	p, ok := h.peers[name]
 	if !ok {
 		return nil, statusError{http.StatusNotFound, "unknown machine " + name}
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/api/local/"+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.url+"/api/local/"+path, nil)
 	if err != nil {
 		return nil, err
 	}
-	res, err := h.client.Do(req)
+	res, err := p.client.Do(req)
 	if err != nil {
 		return nil, err
 	}

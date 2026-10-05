@@ -4,6 +4,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -20,11 +21,11 @@ import (
 func main() {
 	listen := flag.String("listen", "127.0.0.1:7480", "listen address")
 	appsFile := flag.String("apps", "", "path to this machine's apps JSON file")
-	tlsCert := flag.String("tls-cert", "", "an agent's server certificate, or the hub's client certificate for its peers")
-	tlsKey := flag.String("tls-key", "", "key of -tls-cert")
-	tlsCA := flag.String("tls-ca", "", "ca that an agent checks clients against, or the hub checks its peers against")
+	keyFile := flag.String("key", "", "this machine's key for mutual tls, created if missing")
+	trust := flag.String("trust", "", "agent: comma-separated fingerprints of the hubs that may connect; serves https when set")
+	printFingerprint := flag.Bool("fingerprint", false, "print the fingerprint of -key, creating the key if missing, and exit")
 	isHub := flag.Bool("hub", false, "serve the web UI and aggregate this machine with its peers")
-	peersFile := flag.String("peers", "", "hub: path to a JSON object mapping peer names to base URLs")
+	peersFile := flag.String("peers", "", `hub: path to a JSON object mapping peer names to {"url", "fingerprint"}`)
 	categories := flag.String("categories", "", "hub: comma-separated categories listed first, in this order")
 	adminGroups := flag.String("admin-groups", "", "hub: comma-separated groups that see machines; empty allows everyone")
 	accountURL := flag.String("account-url", "", "hub: page where users manage their account, linked from the user menu")
@@ -52,10 +53,29 @@ func main() {
 		return
 	}
 
-	certs := mtls.Files{Cert: *tlsCert, Key: *tlsKey, CA: *tlsCA}
-	useTLS, err := certs.Enabled()
-	if err != nil {
-		log.Fatal(err)
+	var id mtls.Identity
+	if *keyFile != "" {
+		var err error
+		if id, err = mtls.Load(*keyFile); err != nil {
+			log.Fatal(err)
+		}
+		if *printFingerprint {
+			fmt.Println(id.Fingerprint)
+			return
+		}
+		log.Printf("key fingerprint %s", id.Fingerprint)
+	} else if *printFingerprint {
+		log.Fatal("-fingerprint needs -key")
+	}
+	var trusted []string
+	for _, fp := range strings.Split(*trust, ",") {
+		if fp != "" {
+			trusted = append(trusted, fp)
+		}
+	}
+	useTLS := !*isHub && len(trusted) > 0
+	if useTLS && *keyFile == "" {
+		log.Fatal("-trust needs -key")
 	}
 	memInstalled, err := agent.ReadInstalledMemory(*memFile)
 	if err != nil {
@@ -93,17 +113,21 @@ func main() {
 			}
 		}
 		acc := hub.NewAccess(admins, categoryGroups, *accountURL)
-		// the hub itself serves plain http behind its proxy; its certificate
-		// is for reaching the agents
-		client := &http.Client{Timeout: 5 * time.Second}
-		if useTLS {
-			config, err := certs.Client()
-			if err != nil {
-				log.Fatal(err)
+		// the hub itself serves plain http behind its proxy; its key is for
+		// reaching the agents
+		for name, p := range peers {
+			if p.Fingerprint != "" && *keyFile == "" {
+				log.Fatalf("peer %s has a fingerprint, so the hub needs -key", name)
 			}
-			client.Transport = &http.Transport{TLSClientConfig: config}
 		}
-		h, err := hub.New(local, *appsFile, client, peers, strings.Split(*categories, ","), acc)
+		clientFor := func(p hub.Peer) *http.Client {
+			client := &http.Client{Timeout: 5 * time.Second}
+			if p.Fingerprint != "" {
+				client.Transport = &http.Transport{TLSClientConfig: id.Client(p.Fingerprint)}
+			}
+			return client
+		}
+		h, err := hub.New(local, *appsFile, peers, clientFor, strings.Split(*categories, ","), acc)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -121,13 +145,9 @@ func main() {
 
 	mux.Handle("GET /api/local/", localHandler)
 
-	log.Printf("listening on %s (hub: %t, tls: %t)", *listen, *isHub, useTLS && !*isHub)
-	if useTLS && !*isHub {
-		config, err := certs.Server()
-		if err != nil {
-			log.Fatal(err)
-		}
-		server.TLSConfig = config
+	log.Printf("listening on %s (hub: %t, tls: %t)", *listen, *isHub, useTLS)
+	if useTLS {
+		server.TLSConfig = id.Server(trusted)
 		log.Fatal(server.ListenAndServeTLS("", ""))
 	}
 	log.Fatal(server.ListenAndServe())

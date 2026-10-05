@@ -138,7 +138,16 @@ nos.example.com {
 
 ### Several machines
 
-Every other machine runs an agent. Hub and agents authenticate each other with certificates from one private CA; agent certificates carry only the `serverAuth` usage and the hub's only `clientAuth`, so a certificate taken from one agent cannot read another. The openssl commands in [`nix/certs.nix`](./nix/certs.nix) create exactly these certificates.
+Every other machine runs an agent. Hub and agents authenticate each other over mutual TLS without a CA: every machine creates its own ed25519 key on first start, and each side trusts the other by the fingerprint of its public key, as with SSH or WireGuard. The private key never leaves the machine, and nothing secret goes into your configuration.
+
+1. Enable nOS on every machine with its defaults, which listen on loopback only, and deploy once. Each logs its fingerprint on start:
+
+   ```console
+   $ journalctl -u nos | grep fingerprint
+   nos[812]: key fingerprint SHA256:kCMYrBc50GUIBasXh+I46P+YP5e5kWUBIUN/iegW9fM
+   ```
+
+2. Tell each side about the other:
 
 ```nix
 # on each agent, e.g. vault
@@ -147,29 +156,25 @@ services.nos = {
   smart.enable = true;
   listenAddress = "::";
   openFirewall = true;
-  tls = {
-    certFile = ./certs/vault.crt;      # serverAuth, names the host the hub dials
-    keyFile = "/run/secrets/nos.key";  # never a nix store path
-    caFile = ./certs/ca.crt;
-  };
+  trustedHubs = [ "SHA256:6PYaZQqsy1qpSBCVqlN2BpfrAZGF0QB6k9Chgqo7mM4" ]; # the hub's
 };
 
 # on the hub
 services.nos = {
   enable = true;
   hub.enable = true;
-  hub.peers.vault = "https://vault.example.lan:7480";
-  tls = {
-    certFile = ./certs/hub.crt;        # clientAuth
-    keyFile = "/run/secrets/nos.key";
-    caFile = ./certs/ca.crt;
+  hub.peers.vault = {
+    url = "https://vault.example.lan:7480";
+    fingerprint = "SHA256:kCMYrBc50GUIBasXh+I46P+YP5e5kWUBIUN/iegW9fM"; # vault's
   };
 };
 ```
 
+The key lives in `/var/lib/private/nos`; keep that directory across reboots, or set `services.nos.keyFile` to a key from your secret manager.
+
 ### With clan
 
-nOS ships a [clan](https://clan.lol) service that wires up roles, peers and certificates for you. The CA and per-machine certificates come from vars generators; the CA key is never deployed.
+nOS ships a [clan](https://clan.lol) service that wires up roles, peers and keys for you. Every machine's key comes from a vars generator, and the service writes each side's fingerprint into the other's configuration.
 
 ```nix
 inventory.instances.nos = {
@@ -195,9 +200,10 @@ The hub reaches each agent at `https://<machine>.<meta.domain>:7480`. Run `clan 
 | `services.nos.openFirewall`                  | `false`       | Open the port in the firewall.                                                        |
 | `services.nos.apps.<name>`                   | `{ }`         | Apps on this machine: `url`, `icon`, `category` (default `"Apps"`) and `description`. |
 | `services.nos.smart.enable`                  | `false`       | Collect SMART health every 30 minutes without waking sleeping drives.                 |
-| `services.nos.tls.{certFile,keyFile,caFile}` | `null`        | Certificates for mutual TLS between hub and agents.                                   |
+| `services.nos.keyFile`                       | `null`        | Key for mutual TLS; created in the state directory when unset.                        |
+| `services.nos.trustedHubs`                   | `[ ]`         | Fingerprints of the hubs that may read this agent. Required beyond loopback.          |
 | `services.nos.hub.enable`                    | `false`       | Serve the UI and aggregate this machine with its peers.                               |
-| `services.nos.hub.peers.<name>`              | `{ }`         | Agents to show, by machine name and base URL.                                         |
+| `services.nos.hub.peers.<name>`              | `{ }`         | Agents to show, by machine name: `url` and the `fingerprint` of their key.            |
 | `services.nos.hub.categories`                | `[ ]`         | Categories listed first, in this order; the rest follow alphabetically.               |
 | `services.nos.hub.adminGroups`               | `[ ]`         | Groups that see machines and storage. Empty allows everyone.                          |
 | `services.nos.hub.categoryGroups.<category>` | `{ }`         | Groups that see a category. Unlisted categories are visible to all.                   |
@@ -208,11 +214,11 @@ An app's `icon` can be a dashboard-icons file or name (`jellyfin.svg`), a selfh.
 
 - **Read-only agents.** The agent runs as a `DynamicUser` with an empty capability set, a read-only file system, a system call allow-list, closed device access apart from `/dev/zfs`, only the `AF_INET`, `AF_INET6`, `AF_NETLINK` and `AF_UNIX` socket families, and memory and task limits. `systemd-analyze security` rates it 1.5.
 - **Privileged parts are isolated.** Reading installed memory from SMBIOS runs once in a privileged `ExecStartPre`. SMART runs in `nos-smart.service` with only `CAP_SYS_RAWIO` and `CAP_SYS_ADMIN`, read-only disk access and no network.
-- **Transport.** Mutual TLS 1.3 between hub and agents, with role-bound certificates. Keys reach the services through `LoadCredential` and may not live in the Nix store.
+- **Transport.** Mutual TLS 1.3 between hub and agents, each pinning the other's key by its fingerprint. Keys are created on the machine or reach the service through `LoadCredential`, and may not live in the Nix store.
 - **Browser.** The UI is served with a strict Content Security Policy and `frame-ancestors 'none'`.
 
-> [!WARNING]
-> An agent listening beyond loopback without `services.nos.tls` serves its system and storage data to anyone who can reach the port. The module warns about this configuration.
+> [!IMPORTANT]
+> An agent that listens beyond loopback must set `services.nos.trustedHubs`; the module refuses the configuration otherwise, since anyone who reaches the port could read the machine's system and storage data.
 
 ## Development
 

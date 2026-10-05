@@ -1,14 +1,17 @@
 { nosModule }:
-{ lib, ... }:
+{ lib, clanLib, ... }:
 let
-  certs = import ./certs.nix { inherit lib; };
-  certGenerator = pkgs: args: {
-    dependencies = [ "nos-ca" ];
-    files."cert.pem".secret = false;
-    files."key.pem" = { };
-    runtimeInputs = [ pkgs.openssl ];
-    script = certs.cert args;
-  };
+  # the public half of another machine's key, from the vars store
+  fingerprintOf =
+    config: machine:
+    lib.trim (
+      clanLib.getPublicValue {
+        flake = config.clan.core.settings.directory;
+        inherit machine;
+        generator = "nos";
+        file = "fingerprint";
+      }
+    );
 in
 {
   _class = "clan.service";
@@ -17,13 +20,13 @@ in
   manifest.readme = ''
     `agent` machines report their state; the `hub` serves the web UI on
     loopback (put an authenticating reverse proxy in front) and reaches each
-    agent at `<machine>.<meta.domain>` over mutual TLS. A private ca in the
-    vars store signs one certificate per machine. A hub machine needs no
-    agent role.
+    agent at `<machine>.<meta.domain>` over mutual TLS. Every machine gets
+    its own key from the vars store; hub and agents pin each other's
+    fingerprints, so there is no CA. A hub machine needs no agent role.
   '';
 
   roles.agent = {
-    description = "Reports this machine's system, drives and apps to the hub";
+    description = "Reports this machine's system, drives, network and apps to the hub";
     interface = {
       options = {
         port = lib.mkOption {
@@ -39,29 +42,16 @@ in
       };
     };
     perInstance =
-      { settings, ... }:
+      { settings, roles, ... }:
       {
         nixosModule =
-          { config, pkgs, ... }:
-          let
-            inherit (config.networking) hostName;
-            cert = config.clan.core.vars.generators.nos-agent.files;
-          in
+          { config, ... }:
           {
-            clan.core.vars.generators.nos-agent = certGenerator pkgs {
-              name = hostName;
-              usage = "serverAuth";
-              sans = [
-                "${hostName}.${config.clan.core.settings.domain}"
-                hostName
-              ];
-            };
             services.nos = {
               enable = true;
               listenAddress = "::";
               inherit (settings) port openFirewall;
-              tls.certFile = cert."cert.pem".path;
-              tls.keyFile = cert."key.pem".path;
+              trustedHubs = map (fingerprintOf config) (lib.attrNames (roles.hub.machines or { }));
             };
           };
       };
@@ -80,45 +70,38 @@ in
       { settings, roles, ... }:
       {
         nixosModule =
-          { config, pkgs, ... }:
-          let
-            cert = config.clan.core.vars.generators.nos-hub.files;
-          in
+          { config, ... }:
           {
-            clan.core.vars.generators.nos-hub = certGenerator pkgs {
-              name = config.networking.hostName;
-              usage = "clientAuth";
-            };
             services.nos = {
               enable = true;
               # explicit, so a machine that is also an agent (::) fails
               # evaluation instead of exposing the unauthenticated ui
               listenAddress = "127.0.0.1";
               inherit (settings) port;
-              tls.certFile = cert."cert.pem".path;
-              tls.keyFile = cert."key.pem".path;
               hub.enable = true;
-              hub.peers = lib.mapAttrs (
-                name: machine:
-                "https://${name}.${config.clan.core.settings.domain}:${toString machine.settings.port}"
-              ) (roles.agent.machines or { });
+              hub.peers = lib.mapAttrs (name: machine: {
+                url = "https://${name}.${config.clan.core.settings.domain}:${toString machine.settings.port}";
+                fingerprint = fingerprintOf config name;
+              }) (roles.agent.machines or { });
             };
           };
       };
   };
 
   perMachine.nixosModule =
-    { config, pkgs, ... }:
+    { config, ... }:
     {
       imports = [ nosModule ];
-      # the key never leaves the vars store
-      clan.core.vars.generators.nos-ca = {
-        share = true;
-        files."ca.crt".secret = false;
-        files."ca.key".deploy = false;
-        runtimeInputs = [ pkgs.openssl ];
-        script = certs.ca;
+      # nos creates the key and prints its fingerprint itself, so the format
+      # always matches what it checks
+      clan.core.vars.generators.nos = {
+        files."key.pem" = { };
+        files.fingerprint.secret = false;
+        runtimeInputs = [ config.services.nos.package ];
+        script = ''
+          nos -key "$out/key.pem" -fingerprint > "$out/fingerprint"
+        '';
       };
-      services.nos.tls.caFile = config.clan.core.vars.generators.nos-ca.files."ca.crt".path;
+      services.nos.keyFile = config.clan.core.vars.generators.nos.files."key.pem".path;
     };
 }

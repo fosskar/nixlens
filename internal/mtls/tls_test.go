@@ -1,138 +1,69 @@
 package mtls
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
-	"math/big"
-	"net"
+	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
 
-type testCert struct {
-	cert *x509.Certificate
-	key  *ecdsa.PrivateKey
-	der  []byte
-}
-
-func issue(t *testing.T, ca *testCert, name string, usage x509.ExtKeyUsage) *testCert {
+func load(t *testing.T, name string) Identity {
 	t.Helper()
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	id, err := Load(filepath.Join(t.TempDir(), name+".key"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpl := &x509.Certificate{
-		SerialNumber: big.NewInt(time.Now().UnixNano()),
-		Subject:      pkix.Name{CommonName: name},
-		NotBefore:    time.Now().Add(-time.Hour),
-		NotAfter:     time.Now().Add(time.Hour),
-		DNSNames:     []string{name},
-		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1")},
-		ExtKeyUsage:  []x509.ExtKeyUsage{usage},
-		KeyUsage:     x509.KeyUsageDigitalSignature,
-	}
-	parent, signer := tmpl, key
-	if ca == nil {
-		tmpl.IsCA = true
-		tmpl.BasicConstraintsValid = true
-		tmpl.KeyUsage |= x509.KeyUsageCertSign
-		tmpl.ExtKeyUsage = nil
-	} else {
-		parent, signer = ca.cert, ca.key
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, parent, &key.PublicKey, signer)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cert, err := x509.ParseCertificate(der)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return &testCert{cert: cert, key: key, der: der}
+	return id
 }
 
-func writeFiles(t *testing.T, dir string, c, ca *testCert) Files {
-	t.Helper()
-	keyDER, err := x509.MarshalECPrivateKey(c.key)
+func TestLoadKeepsKey(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "key.pem")
+	first, err := Load(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := Files{
-		Cert: filepath.Join(dir, c.cert.Subject.CommonName+".crt"),
-		Key:  filepath.Join(dir, c.cert.Subject.CommonName+".key"),
-		CA:   filepath.Join(dir, "ca.crt"),
+	second, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
 	}
-	for path, block := range map[string]*pem.Block{
-		f.Cert: {Type: "CERTIFICATE", Bytes: c.der},
-		f.Key:  {Type: "EC PRIVATE KEY", Bytes: keyDER},
-		f.CA:   {Type: "CERTIFICATE", Bytes: ca.der},
-	} {
-		if err := os.WriteFile(path, pem.EncodeToMemory(block), 0o600); err != nil {
-			t.Fatal(err)
-		}
+	if first.Fingerprint != second.Fingerprint || !strings.HasPrefix(first.Fingerprint, "SHA256:") {
+		t.Fatalf("fingerprint changed or malformed: %s, %s", first.Fingerprint, second.Fingerprint)
 	}
-	return f
 }
 
-func TestMutualTLS(t *testing.T) {
-	dir := t.TempDir()
-	ca := issue(t, nil, "nos test ca", 0)
-	other := issue(t, nil, "other ca", 0)
-	agentFiles := writeFiles(t, dir, issue(t, ca, "agent", x509.ExtKeyUsageServerAuth), ca)
-	hubFiles := writeFiles(t, dir, issue(t, ca, "hub", x509.ExtKeyUsageClientAuth), ca)
-	otherDir := t.TempDir()
-	foreignFiles := writeFiles(t, otherDir, issue(t, other, "hub", x509.ExtKeyUsageClientAuth), ca)
+func TestPinnedMutualTLS(t *testing.T) {
+	agent, hub, stranger := load(t, "agent"), load(t, "hub"), load(t, "stranger")
 
-	serverConfig, err := agentFiles.Server()
-	if err != nil {
-		t.Fatal(err)
-	}
-	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	srv.TLS = serverConfig
-	srv.StartTLS()
-	defer srv.Close()
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "ok")
+	}))
+	server.TLS = agent.Server([]string{hub.Fingerprint})
+	server.StartTLS()
+	defer server.Close()
 
-	get := func(files *Files) error {
-		var config *tls.Config
-		if files != nil {
-			if config, err = files.Client(); err != nil {
-				t.Fatal(err)
-			}
-		} else {
-			_, pool, err := hubFiles.load()
-			if err != nil {
-				t.Fatal(err)
-			}
-			config = &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS13}
-		}
-		client := &http.Client{Transport: &http.Transport{TLSClientConfig: config}}
-		res, err := client.Get(srv.URL)
+	get := func(config *tls.Config) error {
+		client := &http.Client{Timeout: 5 * time.Second, Transport: &http.Transport{TLSClientConfig: config}}
+		res, err := client.Get(server.URL)
 		if err != nil {
 			return err
 		}
-		res.Body.Close()
-		return nil
+		return res.Body.Close()
 	}
 
-	if err := get(&hubFiles); err != nil {
-		t.Errorf("hub certificate: %v", err)
+	if err := get(hub.Client(agent.Fingerprint)); err != nil {
+		t.Errorf("trusted hub to pinned agent: %v", err)
 	}
-	if get(nil) == nil {
-		t.Error("request without a client certificate was accepted")
+	if err := get(stranger.Client(agent.Fingerprint)); err == nil {
+		t.Error("an untrusted hub must be rejected")
 	}
-	if get(&agentFiles) == nil {
-		t.Error("an agent's serverAuth certificate was accepted as a client certificate")
+	if err := get(hub.Client(stranger.Fingerprint)); err == nil {
+		t.Error("an agent with another key must be rejected")
 	}
-	if get(&foreignFiles) == nil {
-		t.Error("a client certificate from another ca was accepted")
+	if err := get(&tls.Config{MinVersion: tls.VersionTLS13, InsecureSkipVerify: true}); err == nil {
+		t.Error("a client without a certificate must be rejected")
 	}
 }

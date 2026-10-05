@@ -1,78 +1,150 @@
 // Package mtls sets up mutual tls between the hub and its agents.
+//
+// every machine has its own ed25519 key, created on first start, and is
+// known to the others by the fingerprint of its public key, as with ssh or
+// wireguard. there is no ca: the hub pins each agent's fingerprint, and an
+// agent pins the hubs it answers
 package mtls
 
 import (
+	"crypto"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/fs"
+	"math/big"
 	"os"
+	"slices"
+	"time"
 )
 
-// agents and the hub authenticate each other with certificates from one
-// private ca. agent certificates carry serverAuth and the hub's clientAuth,
-// so a certificate taken from one agent cannot be used to read another
-type Files struct {
-	Cert, Key, CA string
+// Identity is a machine's key with a self-signed certificate around it; the
+// certificate only carries the key, nothing in it is checked
+type Identity struct {
+	cert        tls.Certificate
+	Fingerprint string
 }
 
-func (f Files) Enabled() (bool, error) {
-	set := 0
-	for _, p := range []string{f.Cert, f.Key, f.CA} {
-		if p != "" {
-			set++
-		}
+// Load reads the key at path, creating it first if it does not exist
+func Load(path string) (Identity, error) {
+	key, err := readKey(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		key, err = createKey(path)
 	}
-	switch set {
-	case 0:
-		return false, nil
-	case 3:
-		return true, nil
-	default:
-		return false, errors.New("-tls-cert, -tls-key and -tls-ca must be set together")
-	}
-}
-
-func (f Files) load() (tls.Certificate, *x509.CertPool, error) {
-	cert, err := tls.LoadX509KeyPair(f.Cert, f.Key)
 	if err != nil {
-		return tls.Certificate{}, nil, err
+		return Identity{}, err
 	}
-	pem, err := os.ReadFile(f.CA)
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		NotBefore:    time.Unix(0, 0),
+		NotAfter:     time.Date(9999, 12, 31, 0, 0, 0, 0, time.UTC),
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
 	if err != nil {
-		return tls.Certificate{}, nil, err
+		return Identity{}, err
 	}
-	pool := x509.NewCertPool()
-	if !pool.AppendCertsFromPEM(pem) {
-		return tls.Certificate{}, nil, fmt.Errorf("%s: no certificates", f.CA)
-	}
-	return cert, pool, nil
-}
-
-// agent side: only clients with a clientAuth certificate from the ca
-func (f Files) Server() (*tls.Config, error) {
-	cert, pool, err := f.load()
+	fp, err := Fingerprint(key.Public())
 	if err != nil {
-		return nil, err
+		return Identity{}, err
 	}
-	return &tls.Config{
-		MinVersion:   tls.VersionTLS13,
-		Certificates: []tls.Certificate{cert},
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    pool,
+	return Identity{
+		cert:        tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key},
+		Fingerprint: fp,
 	}, nil
 }
 
-// hub side: agents must present a serverAuth certificate from the ca that
-// names the host in their peer url
-func (f Files) Client() (*tls.Config, error) {
-	cert, pool, err := f.load()
+func readKey(path string) (ed25519.PrivateKey, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != "PRIVATE KEY" {
+		return nil, fmt.Errorf("%s: no private key", path)
+	}
+	parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	key, ok := parsed.(ed25519.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("%s: not an ed25519 key", path)
+	}
+	return key, nil
+}
+
+func createKey(path string) (ed25519.PrivateKey, error) {
+	_, key, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	der, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+	// O_EXCL: never overwrite a key another process just wrote
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	if err := pem.Encode(f, &pem.Block{Type: "PRIVATE KEY", Bytes: der}); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return key, f.Close()
+}
+
+// Fingerprint names a public key the way ssh-keygen -l does: SHA256: and
+// the unpadded base64 of the hash, here of the key's der encoding
+func Fingerprint(pub crypto.PublicKey) (string, error) {
+	der, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(der)
+	return "SHA256:" + base64.RawStdEncoding.EncodeToString(sum[:]), nil
+}
+
+func pinned(state tls.ConnectionState, allowed []string) error {
+	if len(state.PeerCertificates) == 0 {
+		return errors.New("no certificate")
+	}
+	fp, err := Fingerprint(state.PeerCertificates[0].PublicKey)
+	if err != nil {
+		return err
+	}
+	if !slices.Contains(allowed, fp) {
+		return fmt.Errorf("untrusted key %s", fp)
+	}
+	return nil
+}
+
+// Server is the agent side: only the given hubs may connect
+func (id Identity) Server(trusted []string) *tls.Config {
 	return &tls.Config{
 		MinVersion:   tls.VersionTLS13,
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      pool,
-	}, nil
+		Certificates: []tls.Certificate{id.cert},
+		// the certificate is checked by its key below, not by a ca
+		ClientAuth:       tls.RequireAnyClientCert,
+		VerifyConnection: func(state tls.ConnectionState) error { return pinned(state, trusted) },
+	}
+}
+
+// Client is the hub side towards one agent, which must hold the key with
+// the given fingerprint
+func (id Identity) Client(fingerprint string) *tls.Config {
+	return &tls.Config{
+		MinVersion:   tls.VersionTLS13,
+		Certificates: []tls.Certificate{id.cert},
+		// no ca and no names: the agent is known by its key alone, which
+		// VerifyConnection checks
+		InsecureSkipVerify: true,
+		VerifyConnection:   func(state tls.ConnectionState) error { return pinned(state, []string{fingerprint}) },
+	}
 }
