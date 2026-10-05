@@ -1,5 +1,5 @@
 {
-  description = "nOS: read-only web frontend for a NixOS host";
+  description = "nOS: a visual overview of your NixOS machines";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";

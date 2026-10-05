@@ -16,7 +16,7 @@ in
 {
   _class = "clan.service";
   manifest.name = "@fosskar/nos";
-  manifest.description = "Read-only web frontend for the machines of a clan";
+  manifest.description = "Visual overview of the machines of a clan, with their apps one click away";
   manifest.readme = ''
     `agent` machines report their state; the `hub` serves the web UI on
     loopback (put an authenticating reverse proxy in front) and reaches each

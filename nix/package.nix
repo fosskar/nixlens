@@ -53,7 +53,7 @@ buildGoModule {
   passthru = { inherit web; };
 
   meta = {
-    description = "Read-only web frontend for a NixOS host";
+    description = "Visual overview of your NixOS machines, with your apps one click away";
     mainProgram = "nos";
     license = lib.licenses.mit;
     platforms = lib.platforms.linux;

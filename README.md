@@ -5,7 +5,7 @@
 
 # nOS
 
-_A home screen and status overview for your NixOS machines_
+**A visual overview of your NixOS machines: what runs where, on which drives and networks, at a glance, with your apps one click away.**
 
 [![NixOS module](https://img.shields.io/badge/NixOS-module-5277C3?style=flat-square&logo=nixos&logoColor=white)](#getting-started)
 [![Go](https://img.shields.io/badge/Go-standard_library_only-00ADD8?style=flat-square&logo=go&logoColor=white)](./go.mod)
@@ -18,7 +18,9 @@ _A home screen and status overview for your NixOS machines_
 
 </div>
 
-nOS is a single place to open your self-hosted apps and see how your machines are doing _right now_: which ones are up, how busy they are, whether every pool and drive is healthy, and where each machine is reachable. Think of a homepage-style launcher paired with the storage view of a NAS operating system, built for NixOS and configured entirely in Nix.
+NixOS describes your systems, but it doesn't show them. Everything sits in `.nix` files, spread across modules, machines and clan roles. It's all declared, but you can't see it anywhere. Which interface has which IP, which filesystem runs where, how many drives sit in which pool, which app runs on which machine: you'd have to look it up across the code or SSH in to find out.
+
+nOS is the view onto it: what's actually there and running, at a glance, read-only. It feels like the home screen of a NAS system such as umbrelOS or ZimaOS, but it manages nothing; your configuration already does that. nOS only makes it visible, and opens your apps.
 
 > [!NOTE]
 > nOS shows live state only. It keeps no history, draws no charts and sends no alerts. Pair it with a monitoring tool if you need those.
