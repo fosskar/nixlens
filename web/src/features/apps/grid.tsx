@@ -2,6 +2,7 @@ import { type MouseEvent } from 'react'
 import { AppIcon } from '@/features/apps/icon'
 import { type App } from '@/lib/api'
 import { setPrefs, usePrefs } from '@/lib/prefs'
+import { isPlainClick } from '@/lib/router'
 
 function byCategory(apps: App[]): [string, App[]][] {
   const groups = new Map<string, App[]>()
@@ -76,11 +77,18 @@ function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DO
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-y-6">
       {apps.map((app) => (
-        <button
+        // a link, so the browser's own menu, middle click and modified clicks
+        // open the app in a tab; a plain click opens frameable apps in a window
+        <a
           key={app.url}
-          onClick={(e: MouseEvent<HTMLButtonElement>) =>
+          href={app.url}
+          target={app.frameable ? undefined : '_blank'}
+          rel="noopener"
+          onClick={(e: MouseEvent<HTMLAnchorElement>) => {
+            if (!app.frameable || !isPlainClick(e.nativeEvent)) return
+            e.preventDefault()
             onOpen(app, (e.currentTarget.firstElementChild ?? e.currentTarget).getBoundingClientRect())
-          }
+          }}
           title={appTitle(app)}
           className="group flex flex-col items-center gap-2.5 transition-transform duration-300 hover:-translate-y-1 active:scale-95"
         >
@@ -103,7 +111,7 @@ function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DO
           <span className="max-w-full truncate px-1 text-xs text-fg-muted transition-colors group-hover:text-fg-inverse">
             {app.name}
           </span>
-        </button>
+        </a>
       ))}
     </div>
   )

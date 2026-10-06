@@ -1,5 +1,6 @@
 import { AppIcon } from '@/features/apps/icon'
 import { type App } from '@/lib/api'
+import { isPlainClick } from '@/lib/router'
 
 export function Dock({
   open,
@@ -46,14 +47,20 @@ export function Dock({
             inert={closing.includes(app.url)}
             className={`group relative transition-[opacity,scale] duration-300 ${closing.includes(app.url) ? 'scale-50 opacity-0' : ''}`}
           >
-            <button
-              onClick={() => onSelect(app)}
+            <a
+              href={app.url}
+              rel="noopener"
+              onClick={(e) => {
+                if (!isPlainClick(e.nativeEvent)) return
+                e.preventDefault()
+                onSelect(app)
+              }}
               title={`${app.name} on ${app.machine}`}
               aria-label={`${app.name} on ${app.machine}`}
-              className="transition hover:-translate-y-1"
+              className="block transition hover:-translate-y-1"
             >
               <AppIcon app={app} size="sm" />
-            </button>
+            </a>
             <button
               onClick={() => onClose(app)}
               title={`Close ${app.name}`}

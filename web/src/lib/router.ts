@@ -94,3 +94,9 @@ export function canGoBack(): boolean {
 export function goBack() {
   history.back()
 }
+
+// a left click without modifiers; links leave every other click, as for a
+// new tab or window, to the browser
+export function isPlainClick(e: MouseEvent): boolean {
+  return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
+}
