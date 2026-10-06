@@ -5,6 +5,7 @@ import { Dock } from '@/features/apps/dock'
 import { AppGrid } from '@/features/apps/grid'
 import { AppWindow, type Point } from '@/features/apps/window'
 import { Inspector } from '@/features/inspector/inspector'
+import { NoticeBanner } from '@/features/notice/notice'
 import { type MachineOverview, OverviewWidget } from '@/features/overview/overview'
 import { UserMenu } from '@/features/user/user'
 import { type App as AppEntry, type Me, usePoll } from '@/lib/api'
@@ -186,6 +187,7 @@ export default function App() {
                     {appsPoll.data ? 'The app list could not be updated' : 'The app list could not be loaded'}
                   </p>
                 )}
+                <NoticeBanner />
               </header>
               <AppGrid apps={apps} onOpen={openApp} />
             </div>

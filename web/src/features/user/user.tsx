@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useEffectEvent, useId, useRef, useState } from 'react'
 import { closeIcon, IconButton } from '@/components/ui'
+import { NoticeEditor } from '@/features/notice/notice'
 import { type Me } from '@/lib/api'
 import { type Accent, accents, reducedMotion, resetPrefs, setPrefs, usePrefs } from '@/lib/prefs'
 
@@ -34,6 +35,7 @@ export function UserMenu({ me }: { me?: Me }) {
     setPrefsState('leaving')
     setTimeout(() => setPrefsState('closed'), reducedMotion() ? 0 : 150)
   }
+  const [noticeOpen, setNoticeOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const menuId = useId()
   const name = me?.name || me?.user || ''
@@ -91,6 +93,16 @@ export function UserMenu({ me }: { me?: Me }) {
               >
                 Preferences…
               </MenuItem>
+              {me?.admin && (
+                <MenuItem
+                  onClick={() => {
+                    setOpen(false)
+                    setNoticeOpen(true)
+                  }}
+                >
+                  Notice for everyone…
+                </MenuItem>
+              )}
               {me?.accountUrl && (
                 <MenuItem href={me.accountUrl}>
                   Account settings <span className="text-fg-muted">↗</span>
@@ -101,6 +113,7 @@ export function UserMenu({ me }: { me?: Me }) {
         )}
       </div>
       {prefsState !== 'closed' && <PreferencesPanel leaving={prefsState === 'leaving'} onClose={closePrefs} />}
+      {noticeOpen && <NoticeEditor onClose={() => setNoticeOpen(false)} />}
     </>
   )
 }
