@@ -18,6 +18,9 @@
 
 </div>
 
+> [!WARNING]
+> nixlens is in alpha and a work in progress. Options, the agent API and the UI may change without notice, and things may break between commits.
+
 NixOS describes your systems, but it doesn't show them. Everything sits in `.nix` files, spread across modules, machines and clan roles. It's all declared, but you can't see it anywhere. Which interface has which IP, which filesystem runs where, how many drives sit in which pool, which app runs on which machine: you'd have to look it up across the code or SSH in to find out.
 
 nixlens is the view onto it: what's actually there and running, at a glance, read-only. It feels like the home screen of a NAS system such as umbrelOS or ZimaOS, but it manages nothing; your configuration already does that. nixlens only makes it visible, and opens your apps.
