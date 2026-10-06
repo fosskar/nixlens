@@ -130,3 +130,15 @@ func TestFrameCheckSurvivesRestart(t *testing.T) {
 		t.Fatalf("broken file: probed %d times", probes.Load())
 	}
 }
+
+func TestFrameCheckUntrustedCertificate(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer srv.Close()
+	if newFrameChecker("").check(context.Background(), srv.URL, "https://home.nx3.eu") {
+		t.Fatal("app with an untrusted certificate frameable")
+	}
+	// unreachable stays frameable, as the browser may reach what the hub cannot
+	if !newFrameChecker("").check(context.Background(), "https://127.0.0.1:1", "https://home.nx3.eu") {
+		t.Fatal("unreachable app not frameable")
+	}
+}

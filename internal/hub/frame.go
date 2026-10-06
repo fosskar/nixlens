@@ -2,6 +2,7 @@ package hub
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -141,10 +142,12 @@ func (c *frameChecker) check(ctx context.Context, appURL, origin string) bool {
 func (c *frameChecker) update(ctx context.Context, key, appURL, origin string) bool {
 	frameable, err := c.probe(ctx, appURL, origin)
 	if err != nil {
-		// the hub may not reach an app the browser can (e.g. a .lan host),
-		// so an unknown result lets the browser try
 		log.Printf("frame check %s: %v", appURL, err)
-		frameable = true
+		// a browser shows a certificate it does not trust as an error page
+		// with no way past it inside a frame, but lets the user proceed in a
+		// tab. otherwise the hub may not reach an app the browser can (e.g. a
+		// .lan host), so an unknown result lets the browser try
+		frameable = !badCertificate(err)
 	}
 	c.mu.Lock()
 	// the origin comes from request headers, so keys are not fully under
@@ -243,4 +246,13 @@ func sourceMatches(src, origin string) bool {
 		return strings.HasSuffix(o.Host, "."+host)
 	}
 	return s.Host == o.Host
+}
+
+// a hub trusting fewer authorities than the browsers sends their apps to a
+// tab as well
+func badCertificate(err error) bool {
+	var unknown x509.UnknownAuthorityError
+	var invalid x509.CertificateInvalidError
+	var host x509.HostnameError
+	return errors.As(err, &unknown) || errors.As(err, &invalid) || errors.As(err, &host)
 }
