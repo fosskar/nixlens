@@ -27,7 +27,8 @@ function MenuItem({ onClick, href, children }: { onClick?: () => void; href?: st
   )
 }
 
-export function UserMenu({ me }: { me?: Me }) {
+// hidden while details are open: their close button takes this corner
+export function UserMenu({ me, hidden }: { me?: Me; hidden: boolean }) {
   const [open, setOpen] = useState(false)
   // closing plays the panel's slide-in backwards before it unmounts
   const [prefsState, setPrefsState] = useState<'closed' | 'open' | 'leaving'>('closed')
@@ -58,7 +59,11 @@ export function UserMenu({ me }: { me?: Me }) {
 
   return (
     <>
-      <div ref={root} className="fixed top-[calc(1rem+var(--safe-top))] right-[calc(1rem+var(--safe-right))] z-30">
+      <div
+        ref={root}
+        inert={hidden}
+        className={`fixed top-[calc(1rem+var(--safe-top))] right-[calc(1rem+var(--safe-right))] z-30 ${hidden ? 'invisible' : ''}`}
+      >
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}

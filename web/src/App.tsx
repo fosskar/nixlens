@@ -142,13 +142,14 @@ export default function App() {
     <div className="min-h-screen text-fg-base">
       <title>{title}</title>
       {/* the layout depends on the sidebar, known once /api/me answers, so it
-          is painted in its final place */}
+          is painted in its final place. on phones details cover the screen, and
+          the home view goes while they are open instead of showing through */}
       {settled && (
         <div
-          className={`transition-opacity duration-300 ${active ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+          className={`transition-opacity duration-300 ${active ? 'pointer-events-none opacity-0' : 'opacity-100'} ${detail ? 'max-md:invisible' : ''}`}
           inert={active !== null}
         >
-          <UserMenu me={me} />
+          <UserMenu me={me} hidden={detail !== null} />
           {admin && (
             <aside
               className={`${glass} m-3 mt-[calc(4rem+var(--safe-top))] flex flex-col md:z-[36] md:fixed md:top-[calc(0.75rem+var(--safe-top))] md:bottom-[calc(0.75rem+var(--safe-bottom))] md:left-[calc(0.75rem+var(--safe-left))] md:m-0 md:w-[22rem] md:overflow-hidden`}
