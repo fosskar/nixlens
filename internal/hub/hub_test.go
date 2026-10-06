@@ -61,7 +61,7 @@ func TestHubConcurrentRequests(t *testing.T) {
 	mux := http.NewServeMux()
 	h.Register(mux)
 
-	paths := []string{"/api/apps", "/api/machines", "/api/overview", "/api/machines/one/system", "/api/machines/" + h.self + "/system"}
+	paths := []string{"/api/apps", "/api/overview", "/api/machines/one/system", "/api/machines/" + h.self + "/system"}
 	var wg sync.WaitGroup
 	for range 50 {
 		wg.Go(func() {

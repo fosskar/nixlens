@@ -113,7 +113,7 @@ testers.runNixOSTest {
       assert first == second and first.startswith("SHA256:"), (first, second)
       agent.succeed("test -s /var/lib/private/nixlens-autokey/key.pem")
 
-      machines = get(hub, "/api/machines")
+      machines = get(hub, "/api/overview")
       assert [(m["name"], m["self"], m["online"]) for m in machines] == [
         ("hub", True, True),
         ("agent", False, True),
@@ -136,7 +136,12 @@ testers.runNixOSTest {
       assert network["nixlenstap0"]["kind"] == "tap" and network["nixlenstap0"]["master"] == "nixlensbr0", network
 
       agent.succeed("zpool create -f testpool mirror /dev/vdb /dev/vdc")
-      storage = get(hub, "/api/machines/agent/storage")
+      # the agent caches storage for a few seconds, and the overview above read it
+      def has_zfs_pool(_):
+          global storage
+          storage = get(hub, "/api/machines/agent/storage")
+          return any(p["kind"] == "zfs" for p in storage["pools"])
+      retry(has_zfs_pool)
       [pool] = [p for p in storage["pools"] if p["kind"] == "zfs"]
       assert pool["name"] == "testpool" and pool["state"] == "ONLINE" and pool["usable"] > 0, pool
       [group] = pool["groups"]
@@ -174,7 +179,6 @@ testers.runNixOSTest {
       assert me["name"] == "Simon" and me["groups"] == ["user", "admin"] and me["admin"], me
       assert me["accountUrl"] == "https://auth.example.com/settings", me
       assert not get(hub, "/api/me", groups="user")["admin"]
-      hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/machines")
       hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/overview")
       overview = get(hub, "/api/overview")
       assert [(m["name"], m["online"], "system" in m, "storage" in m) for m in overview] == [
@@ -184,7 +188,7 @@ testers.runNixOSTest {
       assert [a["name"] for a in get(hub, "/api/apps", groups="user")] == ["Immich"]
 
       agent.stop_job("nixlens.service")
-      machines = get(hub, "/api/machines")
+      machines = get(hub, "/api/overview")
       assert not machines[1]["online"], machines
       hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/machines/agent/system")
     '';

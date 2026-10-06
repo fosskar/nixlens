@@ -109,7 +109,6 @@ func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor f
 }
 
 func (h *Hub) Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/machines", h.access.AdminOnly(h.machines))
 	mux.HandleFunc("GET /api/overview", h.access.AdminOnly(h.overview))
 	mux.HandleFunc("GET /api/machines/{name}/{kind}", h.access.AdminOnly(h.machineData))
 	mux.HandleFunc("GET /api/machines/{name}/pool/{pool}", h.access.AdminOnly(h.poolDetail))
@@ -196,26 +195,6 @@ func (h *Hub) fetch(ctx context.Context, name, path string) ([]byte, error) {
 		return nil, fmt.Errorf("%s: response larger than %d bytes", name, maxPeerResponse)
 	}
 	return body, nil
-}
-
-func (h *Hub) machines(w http.ResponseWriter, r *http.Request) {
-	names := h.names()
-	out := make([]Machine, len(names))
-	var wg sync.WaitGroup
-	for i, n := range names {
-		out[i] = Machine{Name: n, Self: n == h.self, Online: true}
-		if n == h.self {
-			continue
-		}
-		wg.Go(func() {
-			if _, err := h.fetch(r.Context(), n, "system"); err != nil {
-				out[i].Online = false
-				out[i].Error = err.Error()
-			}
-		})
-	}
-	wg.Wait()
-	api.WriteJSON(w, out, nil)
 }
 
 func (h *Hub) machineData(w http.ResponseWriter, r *http.Request) {
