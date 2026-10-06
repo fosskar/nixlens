@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -120,12 +121,16 @@ func main() {
 				log.Fatalf("peer %s has a fingerprint, so the hub needs -key", name)
 			}
 		}
+		// the overview waits for every agent, so one that cannot be reached
+		// should hold it up briefly; a connected but busy one gets longer
 		clientFor := func(p hub.Peer) *http.Client {
-			client := &http.Client{Timeout: 5 * time.Second}
+			transport := http.DefaultTransport.(*http.Transport).Clone()
+			transport.DialContext = (&net.Dialer{Timeout: 2 * time.Second}).DialContext
+			transport.TLSHandshakeTimeout = 2 * time.Second
 			if p.Fingerprint != "" {
-				client.Transport = &http.Transport{TLSClientConfig: id.Client(p.Fingerprint)}
+				transport.TLSClientConfig = id.Client(p.Fingerprint)
 			}
-			return client
+			return &http.Client{Timeout: 5 * time.Second, Transport: transport}
 		}
 		h, err := hub.New(local, *appsFile, peers, clientFor, strings.Split(*categories, ","), acc)
 		if err != nil {
