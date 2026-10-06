@@ -23,6 +23,13 @@ func Handler(o Options) http.Handler {
 	// the overview polls every machine's storage every few seconds per
 	// viewer; lsblk, zpool and zfs need not run that often
 	storage := &cached[Storage]{ttl: 5 * time.Second, read: func() (Storage, error) { return readStorage(o.SmartFile) }}
+	// zpool and zfs take about 100 ms per pool; details change slowly
+	pools := &cachedBy[PoolDetail]{
+		ttl:     30 * time.Second,
+		read:    poolDetail,
+		drop:    func(err error) bool { return errors.Is(err, errUnknownPool) },
+		entries: map[string]*cached[PoolDetail]{},
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/local/system", func(w http.ResponseWriter, r *http.Request) {
 		s, err := readSystem(cpu, o.InstalledMemory)
@@ -37,7 +44,7 @@ func Handler(o Options) http.Handler {
 		api.WriteJSON(w, n, err)
 	})
 	mux.HandleFunc("GET /api/local/pool/{pool}", func(w http.ResponseWriter, r *http.Request) {
-		d, err := poolDetail(r.PathValue("pool"))
+		d, err := pools.get(r.PathValue("pool"))
 		if errors.Is(err, errUnknownPool) {
 			http.NotFound(w, r)
 			return
