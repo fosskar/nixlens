@@ -8,7 +8,7 @@ const ModalTitleId = createContext<string | undefined>(undefined)
 // details roll out from under the sidebar over the apps, which blur behind
 // them, and take the sidebar's margins and corners; on phones, where the
 // sidebar sits above the page, they fill the screen. the sidebar stays usable,
-// so this is not modal, but the apps behind are inert
+// so it is a dialog without aria-modal, but the apps behind are inert
 export function Modal({
   focusKey,
   leaving,
@@ -48,7 +48,7 @@ export function Modal({
   return (
     <div
       ref={panel}
-      role="region"
+      role="dialog"
       aria-labelledby={titleId}
       tabIndex={-1}
       inert={leaving}
