@@ -41,13 +41,13 @@ nixlens is the view onto it: what's actually there and running, at a glance, rea
 
 ## Screenshots
 
-| Machine details                                                                             | Pool                                                                                       |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| ![Machine popup with system, network ports and connections](./docs/screenshots/machine.png) | ![Pool with capacity dots, vdevs and their failure tolerance](./docs/screenshots/pool.png) |
-| **Drive**                                                                                   | **App window**                                                                             |
-| ![Drive with SMART values, partitions and a shop link](./docs/screenshots/drive.png)        | ![An app open in a nixlens window above the dock](./docs/screenshots/app-window.png)       |
-| **View for non-admins**                                                                     |                                                                                            |
-| ![App grid without the admin sidebar](./docs/screenshots/user-view.png)                     |                                                                                            |
+| Machine details                                                                             | Pool                                                                                         |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| ![Machine popup with system, network ports and connections](./docs/screenshots/machine.png) | ![Pool with capacity dots, vdevs and their failure tolerance](./docs/screenshots/pool.png)   |
+| **Drive**                                                                                   | **App window**                                                                               |
+| ![Drive with SMART values, partitions and a shop link](./docs/screenshots/drive.png)        | ![An app open in a nixlens window above the dock](./docs/screenshots/app-window.png)         |
+| **View for non-admins**                                                                     | **Preferences**                                                                              |
+| ![App grid without the admin sidebar](./docs/screenshots/user-view.png)                     | ![Preferences panel with accent colour, glow and motion](./docs/screenshots/preferences.png) |
 
 <details>
 <summary>On a phone</summary>
