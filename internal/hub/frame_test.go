@@ -1,8 +1,12 @@
 package hub
 
 import (
+	"context"
 	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestAllowsFraming(t *testing.T) {
@@ -47,4 +51,40 @@ func FuzzAllowsFraming(f *testing.F) {
 		h.Set("Content-Security-Policy", csp)
 		allowsFraming(h, origin)
 	})
+}
+
+func TestFrameCheckRefreshesInBackground(t *testing.T) {
+	var deny atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if deny.Load() {
+			w.Header().Set("X-Frame-Options", "DENY")
+		}
+	}))
+	defer srv.Close()
+	c := newFrameChecker()
+	const origin = "https://home.nx3.eu"
+	if !c.check(context.Background(), srv.URL, origin) {
+		t.Fatal("first check: not frameable")
+	}
+
+	deny.Store(true)
+	key := srv.URL + " " + origin
+	c.mu.Lock()
+	c.cache[key] = frameResult{frameable: true, at: time.Now().Add(-2 * frameCacheTTL)}
+	c.mu.Unlock()
+	if !c.check(context.Background(), srv.URL, origin) {
+		t.Fatal("expired result was not returned while refreshing")
+	}
+	for range 100 {
+		c.mu.Lock()
+		done := !c.refreshing[key]
+		c.mu.Unlock()
+		if done {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if c.check(context.Background(), srv.URL, origin) {
+		t.Fatal("refreshed result not used")
+	}
 }

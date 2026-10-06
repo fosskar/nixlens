@@ -25,9 +25,12 @@ type frameResult struct {
 // origin, from the X-Frame-Options and CSP frame-ancestors headers of the
 // app's own responses
 type frameChecker struct {
-	client *http.Client
-	mu     sync.Mutex
-	cache  map[string]frameResult
+	client     *http.Client
+	mu         sync.Mutex
+	cache      map[string]frameResult
+	refreshing map[string]bool
+	// background probes, a few at a time
+	slots chan struct{}
 }
 
 func newFrameChecker() *frameChecker {
@@ -38,7 +41,9 @@ func newFrameChecker() *frameChecker {
 				return http.ErrUseLastResponse
 			},
 		},
-		cache: map[string]frameResult{},
+		cache:      map[string]frameResult{},
+		refreshing: map[string]bool{},
+		slots:      make(chan struct{}, maxFrameProbes),
 	}
 }
 
@@ -53,18 +58,37 @@ func requestOrigin(r *http.Request) string {
 	return scheme + "://" + r.Host
 }
 
+// an expired result is returned while a probe in the background replaces it,
+// so only an app never probed before makes the app list wait
 func (c *frameChecker) check(ctx context.Context, appURL, origin string) bool {
-	key := appURL + " " + origin
-	c.mu.Lock()
-	cached, ok := c.cache[key]
-	c.mu.Unlock()
-	if ok && time.Since(cached.at) < frameCacheTTL {
-		return cached.frameable
-	}
-
 	if u, err := url.Parse(appURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") {
 		return false
 	}
+	key := appURL + " " + origin
+	c.mu.Lock()
+	cached, ok := c.cache[key]
+	refresh := ok && time.Since(cached.at) >= frameCacheTTL && !c.refreshing[key]
+	if refresh {
+		c.refreshing[key] = true
+	}
+	c.mu.Unlock()
+	if !ok {
+		return c.update(ctx, key, appURL, origin)
+	}
+	if refresh {
+		go func() {
+			c.slots <- struct{}{}
+			c.update(context.Background(), key, appURL, origin)
+			<-c.slots
+			c.mu.Lock()
+			delete(c.refreshing, key)
+			c.mu.Unlock()
+		}()
+	}
+	return cached.frameable
+}
+
+func (c *frameChecker) update(ctx context.Context, key, appURL, origin string) bool {
 	frameable, err := c.probe(ctx, appURL, origin)
 	if err != nil {
 		// the hub may not reach an app the browser can (e.g. a .lan host),
@@ -73,6 +97,7 @@ func (c *frameChecker) check(ctx context.Context, appURL, origin string) bool {
 		frameable = true
 	}
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	// the origin comes from request headers, so keys are not fully under
 	// our control; expired entries go and the cache stays bounded
 	if len(c.cache) >= frameCacheMax {
@@ -85,7 +110,6 @@ func (c *frameChecker) check(ctx context.Context, appURL, origin string) bool {
 	if len(c.cache) < frameCacheMax {
 		c.cache[key] = frameResult{frameable: frameable, at: time.Now()}
 	}
-	c.mu.Unlock()
 	return frameable
 }
 
