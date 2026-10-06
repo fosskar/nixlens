@@ -47,7 +47,14 @@ export function AppIcon({ app, size = 'lg' }: { app: App; size?: keyof typeof ic
           />
         </>
       ) : (
-        <img src={source.url} alt="" className={`${s.img} object-contain`} onError={onError} />
+        <img
+          src={source.url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className={`${s.img} object-contain`}
+          onError={onError}
+        />
       )}
     </div>
   )

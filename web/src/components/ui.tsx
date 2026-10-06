@@ -28,8 +28,8 @@ export function UsageBar({ percent, className }: { percent: number; className: s
   return (
     <div className={`overflow-hidden rounded-full bg-fill shadow-well ${className}`}>
       <div
-        className={`h-full rounded-full bg-gradient-to-r ${fill} transition-[width] duration-300`}
-        style={{ width: `${Math.min(percent, 100)}%` }}
+        className={`h-full w-full rounded-full bg-gradient-to-r ${fill} transition-transform duration-300`}
+        style={{ transform: `translateX(${Math.min(percent, 100) - 100}%)` }}
       />
     </div>
   )
