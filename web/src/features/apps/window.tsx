@@ -143,7 +143,7 @@ export function AppWindow({
           className={`absolute inset-0 grid place-items-center transition-opacity duration-300 ${loaded ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
         >
           <div className="flex flex-col items-center gap-4">
-            <div className="nixlens-breathe">
+            <div className={loaded ? '' : 'nixlens-breathe'}>
               <AppIcon app={app} />
             </div>
             <span className="text-xs text-fg-muted">Loading {app.name}…</span>

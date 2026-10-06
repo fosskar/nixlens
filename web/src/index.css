@@ -321,10 +321,10 @@ body::before {
       translate: 0 2px;
     }
   }
-  .nixlens-scroll-hint[data-direction='down'] svg {
+  .nixlens-scroll-hint[data-direction='down'][data-visible] svg {
     animation: nixlens-hint-bob 2.4s ease-in-out infinite;
   }
-  .nixlens-scroll-hint[data-direction='up'] svg {
+  .nixlens-scroll-hint[data-direction='up'][data-visible] svg {
     animation: nixlens-hint-bob 2.4s ease-in-out infinite reverse;
   }
   @keyframes nixlens-panel-in {
