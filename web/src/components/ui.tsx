@@ -26,7 +26,7 @@ export function UsageBar({ percent, className }: { percent: number; className: s
         ? 'from-warning/80 to-warning shadow-[0_0_8px_color-mix(in_srgb,var(--color-warning)_40%,transparent)]'
         : 'from-accent to-accent-cyan shadow-[0_0_8px_color-mix(in_srgb,var(--color-accent-cyan)_40%,transparent)]'
   return (
-    <div className={`overflow-hidden rounded-full bg-fill shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] ${className}`}>
+    <div className={`overflow-hidden rounded-full bg-fill shadow-well ${className}`}>
       <div
         className={`h-full rounded-full bg-gradient-to-r ${fill} transition-[width] duration-700 motion-reduce:transition-none`}
         style={{ width: `${Math.min(percent, 100)}%` }}
@@ -97,10 +97,7 @@ export function Ring({
   return (
     <div className={`flex min-w-0 items-center ${small ? 'gap-2.5' : 'flex-col gap-2'}`}>
       <div className={`relative shrink-0 ${small ? 'h-11 w-11' : 'h-16 w-16'}`}>
-        <svg
-          viewBox="0 0 64 64"
-          className="h-full w-full -rotate-90 drop-shadow-[0_0_6px_color-mix(in_srgb,var(--color-accent-cyan)_35%,transparent)]"
-        >
+        <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
           <defs>
             <linearGradient id={gradient} x1="0" y1="1" x2="1" y2="0">
               <stop offset="0%" stopColor="var(--color-accent)" />

@@ -140,11 +140,7 @@ export default function App() {
             <ScrollArea>
               <div className="flex flex-col gap-7 p-4 md:pb-6">
                 <div className="flex items-center gap-2.5 px-1 pt-1">
-                  <img
-                    src="/favicon.svg"
-                    alt=""
-                    className="h-7 w-7 drop-shadow-[0_2px_8px_color-mix(in_srgb,var(--color-accent)_45%,transparent)]"
-                  />
+                  <img src="/favicon.svg" alt="" className="h-7 w-7" />
                   <span className="text-lg font-semibold tracking-tight text-fg-inverse">nixlens</span>
                 </div>
                 <OverviewWidget poll={overview} />

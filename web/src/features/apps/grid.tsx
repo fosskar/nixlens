@@ -77,7 +77,7 @@ function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DO
           <div className="relative">
             <AppIcon app={app} />
             {!app.frameable && (
-              <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-line bg-bg-overlay/90 text-[10px] text-fg-base shadow-[inset_0_1px_0_rgb(255_255_255/0.1),0_2px_6px_rgb(0_0_0/0.5)]">
+              <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-line bg-bg-overlay/90 text-[10px] text-fg-base shadow-raised">
                 ↗
               </span>
             )}

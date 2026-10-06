@@ -74,7 +74,7 @@ export function UserMenu({ me }: { me?: Me }) {
           )}
         </button>
         {open && (
-          <div id={menuId} className="glass-strong absolute top-12 right-0 w-64 rounded-surface p-1.5 shadow-2xl">
+          <div id={menuId} className="glass-strong absolute top-12 right-0 w-64 rounded-surface p-1.5">
             {name && (
               <div className="border-b border-hairline px-3 pt-2 pb-2.5">
                 <div className="truncate text-sm font-semibold text-fg-inverse">{name}</div>

@@ -14,7 +14,7 @@ export function DriveGlyph({ disk, health, size = 'lg' }: { disk: Disk; health: 
   const kind = driveKind(disk)
   const s = glyphSizes[size]
   const led = <Led health={health} asleep={disk.smart?.standby} small={size === 'sm'} />
-  const body = `flex shrink-0 flex-col items-center bg-bg-elevated/90 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-line`
+  const body = `flex shrink-0 flex-col items-center bg-bg-elevated/90 shadow-highlight ring-1 ring-line`
   return (
     <span className="flex items-end justify-center">
       {kind === 'hdd' && (

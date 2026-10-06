@@ -38,6 +38,10 @@
   --radius-surface: 20px;
   --radius-card: 12px;
   --radius-control: 6px;
+
+  --shadow-highlight: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 6px rgb(0 0 0 / 0.5);
+  --shadow-well: inset 0 1px 2px rgb(0 0 0 / 0.4);
 }
 
 :root {

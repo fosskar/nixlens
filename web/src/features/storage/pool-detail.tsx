@@ -250,7 +250,7 @@ function VdevTree({ pool, disks, onOpenDisk }: { pool: Pool; disks: Disk[]; onOp
 
 function Chip({ name, value }: { name: string; value: string }) {
   return (
-    <span className="flex items-baseline gap-1.5 rounded-control border border-line bg-fill px-2.5 py-1 text-[11px] shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]">
+    <span className="flex items-baseline gap-1.5 rounded-control border border-line bg-fill px-2.5 py-1 text-[11px] shadow-highlight">
       <span className="text-fg-muted">{name}</span>
       <span className="font-mono text-fg-inverse">{value}</span>
     </span>

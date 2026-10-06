@@ -53,7 +53,7 @@ function Port({ iface }: { iface: NetInterface }) {
   return (
     <div className="flex w-16 flex-col items-center gap-1.5" title={details(iface)}>
       <div
-        className={`relative flex h-11 w-14 flex-col items-center rounded-md bg-bg-elevated/90 pt-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-line ${iface.up ? '' : 'opacity-45'}`}
+        className={`relative flex h-11 w-14 flex-col items-center rounded-md bg-bg-elevated/90 pt-1 shadow-highlight ring-1 ring-line ${iface.up ? '' : 'opacity-45'}`}
       >
         <span className="h-1.5 w-5 rounded-b-sm bg-black/70" />
         <span className="mt-0.5 font-mono text-[10px] font-semibold text-fg-inverse">{portSpeed(iface)}</span>
