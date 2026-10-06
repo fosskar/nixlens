@@ -63,7 +63,7 @@ export function UserMenu({ me }: { me?: Me }) {
           aria-expanded={open}
           aria-controls={menuId}
           aria-label={name ? `Account menu for ${name}` : 'Account menu'}
-          className="glass-tile grid h-10 w-10 place-items-center rounded-full text-sm font-semibold text-fg-inverse transition outline-accent-cyan hover:scale-105 focus-visible:outline-2"
+          className="glass-tile glass-blur grid h-10 w-10 place-items-center rounded-full text-sm font-semibold text-fg-inverse transition outline-accent-cyan hover:scale-105 focus-visible:outline-2"
         >
           {name ? (
             initials(name)
