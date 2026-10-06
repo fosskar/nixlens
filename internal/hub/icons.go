@@ -2,12 +2,16 @@ package hub
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"mime"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -31,14 +35,16 @@ type iconEntry struct {
 // app icons from the icon sets on jsdelivr, fetched by the hub and kept, so
 // browsers load them from the hub alone
 type iconCache struct {
-	cdn    string
+	cdn string
+	// where fetched icons are kept across restarts; empty keeps them in memory only
+	dir    string
 	client *http.Client
 	mu     sync.Mutex
 	cache  map[string]iconEntry
 }
 
-func newIconCache(cdn string) *iconCache {
-	return &iconCache{cdn: cdn, client: &http.Client{Timeout: 5 * time.Second}, cache: map[string]iconEntry{}}
+func newIconCache(cdn, dir string) *iconCache {
+	return &iconCache{cdn: cdn, dir: dir, client: &http.Client{Timeout: 5 * time.Second}, cache: map[string]iconEntry{}}
 }
 
 // only these sets and plain names are fetched, so the hub cannot be made to
@@ -60,13 +66,13 @@ func (c *iconCache) upstream(kind, name string) (string, bool) {
 }
 
 func (c *iconCache) serve(w http.ResponseWriter, r *http.Request) {
-	name := r.PathValue("name")
-	url, ok := c.upstream(r.PathValue("kind"), name)
+	kind, name := r.PathValue("kind"), r.PathValue("name")
+	url, ok := c.upstream(kind, name)
 	if !ok {
 		http.NotFound(w, r)
 		return
 	}
-	icon, err := c.get(r.Context(), url)
+	icon, err := c.get(r.Context(), kind+"/"+name, url)
 	if err != nil {
 		log.Printf("icon %s: %v", url, err)
 		http.Error(w, "icon unavailable", http.StatusBadGateway)
@@ -87,11 +93,16 @@ func (c *iconCache) serve(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (c *iconCache) get(ctx context.Context, url string) (iconEntry, error) {
+// key is <kind>/<name>, both checked by upstream, and names the icon's file
+func (c *iconCache) get(ctx context.Context, key, url string) (iconEntry, error) {
 	c.mu.Lock()
-	cached, ok := c.cache[url]
+	cached, ok := c.cache[key]
 	c.mu.Unlock()
+	if !ok {
+		cached, ok = c.load(key)
+	}
 	if ok && time.Since(cached.at) < iconTTL {
+		c.remember(key, cached)
 		return cached, nil
 	}
 	icon, err := c.fetch(ctx, url)
@@ -103,6 +114,14 @@ func (c *iconCache) get(ctx context.Context, url string) (iconEntry, error) {
 		}
 		return iconEntry{}, err
 	}
+	c.remember(key, icon)
+	if icon.found {
+		c.save(key, icon.body)
+	}
+	return icon, nil
+}
+
+func (c *iconCache) remember(key string, icon iconEntry) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if len(c.cache) >= iconMax {
@@ -113,9 +132,66 @@ func (c *iconCache) get(ctx context.Context, url string) (iconEntry, error) {
 		}
 	}
 	if len(c.cache) < iconMax {
-		c.cache[url] = icon
+		c.cache[key] = icon
 	}
-	return icon, nil
+}
+
+// a fetched icon also goes to disk, so a restart does not need the cdn;
+// its modification time is when it was fetched
+func (c *iconCache) load(key string) (iconEntry, bool) {
+	if c.dir == "" {
+		return iconEntry{}, false
+	}
+	file := filepath.Join(c.dir, key)
+	body, err := os.ReadFile(file)
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			log.Printf("icon cache: %v", err)
+		}
+		return iconEntry{}, false
+	}
+	info, err := os.Stat(file)
+	if err != nil {
+		log.Printf("icon cache: %v", err)
+		return iconEntry{}, false
+	}
+	return iconEntry{body: body, found: true, at: info.ModTime()}, true
+}
+
+func (c *iconCache) save(key string, body []byte) {
+	if c.dir == "" {
+		return
+	}
+	dir := filepath.Join(c.dir, path.Dir(key))
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		log.Printf("icon cache: %v", err)
+		return
+	}
+	// names come from requests; the disk stays as bounded as the memory
+	if entries, err := os.ReadDir(dir); err != nil || len(entries) >= iconMax {
+		if err != nil {
+			log.Printf("icon cache: %v", err)
+		}
+		return
+	}
+	tmp, err := os.CreateTemp(dir, ".icon-*")
+	if err != nil {
+		log.Printf("icon cache: %v", err)
+		return
+	}
+	_, err = tmp.Write(body)
+	if closeErr := tmp.Close(); err == nil {
+		err = closeErr
+	}
+	if err == nil {
+		err = os.Rename(tmp.Name(), filepath.Join(c.dir, key))
+	}
+	if err != nil {
+		log.Printf("icon cache: %v", err)
+		if removeErr := os.Remove(tmp.Name()); removeErr != nil && !errors.Is(removeErr, fs.ErrNotExist) {
+			log.Printf("icon cache: %v", removeErr)
+		}
+	}
 }
 
 func (c *iconCache) fetch(ctx context.Context, url string) (iconEntry, error) {

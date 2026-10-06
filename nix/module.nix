@@ -193,6 +193,8 @@ in
             (lib.concatStringsSep "," cfg.hub.adminGroups)
             "-category-groups"
             (pkgs.writeText "nixlens-category-groups.json" (builtins.toJSON cfg.hub.categoryGroups))
+            "-icon-cache"
+            "/var/lib/nixlens/icons"
           ]
           ++ lib.optionals (cfg.hub.enable && cfg.hub.accountUrl != null) [
             "-account-url"
@@ -201,7 +203,8 @@ in
         );
         ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nixlens/installed-memory";
         RuntimeDirectory = "nixlens";
-        # holds the key nixlens creates when services.nixlens.keyFile is unset
+        # holds the key nixlens creates when services.nixlens.keyFile is unset,
+        # and the app icons a hub fetched
         StateDirectory = "nixlens";
         LoadCredential = lib.mkIf (cfg.keyFile != null) [ "key:${cfg.keyFile}" ];
         DynamicUser = true;
