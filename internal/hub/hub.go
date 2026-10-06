@@ -261,7 +261,9 @@ func (h *Hub) overview(w http.ResponseWriter, r *http.Request) {
 func (h *Hub) apps(w http.ResponseWriter, r *http.Request) {
 	all, err := api.ReadApps(h.appsFile)
 	if err != nil {
-		api.WriteJSON(w, nil, err)
+		// every user may ask for apps; the details stay in the log
+		log.Print(err)
+		http.Error(w, "the app list could not be read", http.StatusInternalServerError)
 		return
 	}
 	for i := range all {

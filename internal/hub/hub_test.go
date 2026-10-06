@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -106,5 +107,23 @@ func TestHubConcurrentRequests(t *testing.T) {
 		if !m.Online || m.Error != "" || len(m.System) == 0 || len(m.Storage) == 0 {
 			t.Errorf("overview %s: %+v", m.Name, m)
 		}
+	}
+}
+
+func TestAppsErrorHidesDetails(t *testing.T) {
+	appsFile := filepath.Join(t.TempDir(), "apps.json")
+	if err := os.WriteFile(appsFile, []byte("not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h, err := New(http.NewServeMux(), appsFile, nil, nil, nil, Access{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	h.Register(mux)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/apps", nil))
+	if rec.Code != http.StatusInternalServerError || strings.Contains(rec.Body.String(), appsFile) {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body)
 	}
 }
