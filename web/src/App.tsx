@@ -32,6 +32,7 @@ function dockRect(url: string): DOMRect | undefined {
 export default function App() {
   const mePoll = usePoll<Me>('/api/me', 60000)
   const me = mePoll.data
+  const settled = me !== undefined || mePoll.error !== undefined
   const admin = me?.admin ?? false
   const firstName = me?.name.split(' ')[0].toLowerCase()
   const overview = usePoll<MachineOverview[]>(admin ? '/api/overview' : null, 10000)
@@ -139,54 +140,59 @@ export default function App() {
   return (
     <div className="min-h-screen text-fg-base">
       <title>{title}</title>
-      <div
-        className={`transition-opacity duration-300 ${active ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
-        inert={active !== null}
-      >
-        <UserMenu me={me} />
-        {admin && (
-          <aside
-            className={`${glass} m-3 mt-[calc(4rem+var(--safe-top))] flex flex-col md:z-[36] md:fixed md:top-[calc(0.75rem+var(--safe-top))] md:bottom-[calc(0.75rem+var(--safe-bottom))] md:left-[calc(0.75rem+var(--safe-left))] md:m-0 md:w-[22rem] md:overflow-hidden`}
-          >
-            <ScrollArea>
-              <div className="flex flex-col gap-7 p-4 md:pb-6">
-                <div className="flex items-center gap-2.5 px-1 pt-1">
-                  <img src="/favicon.svg" alt="" className="h-7 w-7" />
-                  <span className="text-lg font-semibold tracking-tight text-fg-inverse">nixlens</span>
-                </div>
-                <OverviewWidget poll={overview} />
-              </div>
-            </ScrollArea>
-          </aside>
-        )}
-
-        <main
-          inert={detail !== null}
-          className={`nixlens-dock-fade px-6 ${admin ? 'pt-8' : 'pt-[calc(4.5rem+var(--safe-top))]'} pb-32 transition-transform duration-300 md:fixed md:inset-y-0 md:right-0 md:overflow-y-auto ${admin ? 'md:left-[23.5rem]' : 'md:left-0'} md:pt-[calc(4rem+var(--safe-top))] ${active ? 'scale-[0.985]' : ''}`}
+      {/* the layout depends on the sidebar, known once /api/me answers, so it
+          is painted in its final place */}
+      {settled && (
+        <div
+          className={`transition-opacity duration-300 ${active ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+          inert={active !== null}
         >
-          <div className="mx-auto max-w-5xl">
-            <header className="mb-10 text-center">
-              <h1 className="bg-gradient-to-b from-fg-inverse to-fg-base bg-clip-text text-4xl leading-tight font-semibold tracking-tight text-transparent md:text-5xl">
-                {greeting()}
-                {firstName && `, ${firstName}`}.
-              </h1>
-              {overview.data && (
-                <p className="mt-3 text-sm text-fg-muted tabular-nums">
-                  {online} of {machines.length} {machines.length === 1 ? 'machine' : 'machines'} online · {apps.length}{' '}
-                  apps
-                </p>
-              )}
-              {appsPoll.error && (
-                <p className="mt-2 text-sm text-error/90" title={appsPoll.error}>
-                  {appsPoll.data ? 'The app list could not be updated' : 'The app list could not be loaded'}
-                </p>
-              )}
-            </header>
-            <AppGrid apps={apps} onOpen={openApp} />
-          </div>
-        </main>
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-36 bg-gradient-to-t from-bg-elevated via-bg-elevated/80 to-transparent md:hidden" />
-      </div>
+          <UserMenu me={me} />
+          {admin && (
+            <aside
+              className={`${glass} m-3 mt-[calc(4rem+var(--safe-top))] flex flex-col md:z-[36] md:fixed md:top-[calc(0.75rem+var(--safe-top))] md:bottom-[calc(0.75rem+var(--safe-bottom))] md:left-[calc(0.75rem+var(--safe-left))] md:m-0 md:w-[22rem] md:overflow-hidden`}
+            >
+              <ScrollArea>
+                <div className="flex flex-col gap-7 p-4 md:pb-6">
+                  <div className="flex items-center gap-2.5 px-1 pt-1">
+                    <img src="/favicon.svg" alt="" className="h-7 w-7" />
+                    <span className="text-lg font-semibold tracking-tight text-fg-inverse">nixlens</span>
+                  </div>
+                  <OverviewWidget poll={overview} />
+                </div>
+              </ScrollArea>
+            </aside>
+          )}
+
+          <main
+            inert={detail !== null}
+            className={`nixlens-dock-fade px-6 ${admin ? 'pt-8' : 'pt-[calc(4.5rem+var(--safe-top))]'} pb-32 transition-transform duration-300 md:fixed md:inset-y-0 md:right-0 md:overflow-y-auto ${admin ? 'md:left-[23.5rem]' : 'md:left-0'} md:pt-[calc(4rem+var(--safe-top))] ${active ? 'scale-[0.985]' : ''}`}
+          >
+            <div className="mx-auto max-w-5xl">
+              <header className="mb-10 text-center">
+                <h1 className="bg-gradient-to-b from-fg-inverse to-fg-base bg-clip-text text-4xl leading-tight font-semibold tracking-tight text-transparent md:text-5xl">
+                  {greeting()}
+                  {firstName && `, ${firstName}`}.
+                </h1>
+                {admin && (
+                  // keeps its line while the overview loads, so the apps below do not move
+                  <p className="mt-3 min-h-5 text-sm text-fg-muted tabular-nums">
+                    {overview.data &&
+                      `${online} of ${machines.length} ${machines.length === 1 ? 'machine' : 'machines'} online · ${apps.length} apps`}
+                  </p>
+                )}
+                {appsPoll.error && (
+                  <p className="mt-2 text-sm text-error/90" title={appsPoll.error}>
+                    {appsPoll.data ? 'The app list could not be updated' : 'The app list could not be loaded'}
+                  </p>
+                )}
+              </header>
+              <AppGrid apps={apps} onOpen={openApp} />
+            </div>
+          </main>
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-36 bg-gradient-to-t from-bg-elevated via-bg-elevated/80 to-transparent md:hidden" />
+        </div>
+      )}
 
       {open.map((app) => (
         <AppWindow
@@ -203,8 +209,7 @@ export default function App() {
 
       {admin && shownDetail && <Inspector route={shownDetail} leaving={detailLeaving} />}
 
-      {/* where the dock sits depends on the sidebar, known once /api/me answers */}
-      {(me || mePoll.error) && (
+      {settled && (
         <Dock
           open={open}
           closing={closing}
