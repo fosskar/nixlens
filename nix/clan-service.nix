@@ -1,6 +1,8 @@
 { nixlensModule }:
 { lib, clanLib, ... }:
 let
+  shared = import ./options.nix { inherit lib; };
+
   # the public half of another machine's key, from the vars store
   fingerprintOf =
     config: machine:
@@ -12,6 +14,15 @@ let
         file = "fingerprint";
       }
     );
+
+  # what every machine reports about itself, hub or agent
+  machineOptions = {
+    inherit (shared) apps smart;
+  };
+  machineConfig = settings: {
+    inherit (settings) apps;
+    smart.enable = lib.mkDefault settings.smart.enable;
+  };
 in
 {
   _class = "clan.service";
@@ -28,7 +39,12 @@ in
   roles.agent = {
     description = "Reports this machine's system, drives, network and apps to the hub";
     interface = {
-      options = {
+      options = machineOptions // {
+        listenAddress = lib.mkOption {
+          type = lib.types.str;
+          default = "::";
+          description = "Address the agent listens on.";
+        };
         port = lib.mkOption {
           type = lib.types.port;
           default = 7480;
@@ -47,10 +63,10 @@ in
         nixosModule =
           { config, ... }:
           {
-            services.nixlens = {
+            services.nixlens = machineConfig settings // {
               enable = true;
-              listenAddress = "::";
-              inherit (settings) port openFirewall;
+              inherit (settings) listenAddress port;
+              openFirewall = lib.mkDefault settings.openFirewall;
               trustedHubs = map (fingerprintOf config) (lib.attrNames (roles.hub.machines or { }));
             };
           };
@@ -60,10 +76,18 @@ in
   roles.hub = {
     description = "Serves the web UI for all agents";
     interface = {
-      options.port = lib.mkOption {
-        type = lib.types.port;
-        default = 7480;
-        description = "Loopback port the hub listens on.";
+      options = machineOptions // {
+        port = lib.mkOption {
+          type = lib.types.port;
+          default = 7480;
+          description = "Loopback port the hub listens on.";
+        };
+        inherit (shared.hub)
+          categories
+          accountUrl
+          adminGroups
+          categoryGroups
+          ;
       };
     };
     perInstance =
@@ -72,17 +96,25 @@ in
         nixosModule =
           { config, ... }:
           {
-            services.nixlens = {
+            services.nixlens = machineConfig settings // {
               enable = true;
               # explicit, so a machine that is also an agent (::) fails
               # evaluation instead of exposing the unauthenticated ui
               listenAddress = "127.0.0.1";
               inherit (settings) port;
-              hub.enable = true;
-              hub.peers = lib.mapAttrs (name: machine: {
-                url = "https://${name}.${config.clan.core.settings.domain}:${toString machine.settings.port}";
-                fingerprint = fingerprintOf config name;
-              }) (roles.agent.machines or { });
+              hub = {
+                enable = true;
+                peers = lib.mapAttrs (name: machine: {
+                  url = "https://${name}.${config.clan.core.settings.domain}:${toString machine.settings.port}";
+                  fingerprint = fingerprintOf config name;
+                }) (roles.agent.machines or { });
+                inherit (settings)
+                  categories
+                  adminGroups
+                  categoryGroups
+                  ;
+                accountUrl = lib.mkDefault settings.accountUrl;
+              };
             };
           };
       };
