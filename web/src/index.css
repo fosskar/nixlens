@@ -186,9 +186,7 @@ body::before {
     transition:
       transform 300ms var(--ease-out),
       opacity 300ms var(--ease-out),
-      visibility 0s linear 0s,
-      inset 300ms var(--ease-out),
-      border-radius 300ms var(--ease-out);
+      visibility 0s linear 0s;
   }
 
   .nixlens-window[data-state='home'],

@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { closeIcon, IconButton } from '@/components/ui'
 import { AppIcon } from '@/features/apps/icon'
 import { type App } from '@/lib/api'
+import { reducedMotion } from '@/lib/prefs'
 
 export type Point = { x: number; y: number }
 
@@ -50,6 +51,32 @@ export function AppWindow({
     }
   }, [])
 
+  // the window takes its new size at once and a transform carries it there
+  // from the old one, so the app's page is not laid out again every frame
+  const before = useRef<DOMRect | null>(null)
+  const toggleFloating = () => {
+    before.current = panel.current?.getBoundingClientRect() ?? null
+    onToggleFloating()
+  }
+  useLayoutEffect(() => {
+    const from = before.current
+    before.current = null
+    const el = panel.current
+    if (!from || !el || reducedMotion()) return
+    const to = el.getBoundingClientRect()
+    const flip = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`
+    el.animate(
+      [
+        { transform: flip, transformOrigin: '0 0' },
+        { transform: 'none', transformOrigin: '0 0' },
+      ],
+      {
+        duration: 300,
+        easing: getComputedStyle(el).getPropertyValue('--ease-out').trim(),
+      },
+    )
+  }, [floating])
+
   const reload = () => {
     if (!frame.current) return
     setLoaded(false)
@@ -79,7 +106,7 @@ export function AppWindow({
     >
       <div
         onDoubleClick={(e) => {
-          if (!(e.target instanceof Element && e.target.closest('button'))) onToggleFloating()
+          if (!(e.target instanceof Element && e.target.closest('button'))) toggleFloating()
         }}
         className="flex h-11 shrink-0 items-center gap-2.5 border-b border-hairline bg-fill pr-2 pl-3.5 select-none"
       >
@@ -93,7 +120,7 @@ export function AppWindow({
           <IconButton label="Open in new tab" onClick={() => window.open(app.url, '_blank', 'noopener')}>
             <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
           </IconButton>
-          <IconButton label={floating ? 'Fill screen' : 'Float window'} onClick={onToggleFloating}>
+          <IconButton label={floating ? 'Fill screen' : 'Float window'} onClick={toggleFloating}>
             {floating ? (
               <rect x="4" y="4" width="16" height="16" rx="2" />
             ) : (
