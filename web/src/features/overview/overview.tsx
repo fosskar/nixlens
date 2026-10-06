@@ -2,6 +2,7 @@ import { card, Led, Ring, SectionTitle, Unavailable } from '@/components/ui'
 import { PoolBays } from '@/features/overview/pool-bays'
 import { type Disk, type Machine, type Poll, type Storage, type System } from '@/lib/api'
 import { driveHealth, type Health, poolHealth } from '@/lib/health'
+import { setPrefs, usePrefs } from '@/lib/prefs'
 import { navigate } from '@/lib/router'
 import { type Target, usedPercent } from '@/lib/storage'
 
@@ -150,6 +151,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
 }
 
 export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
+  const { machinesOpen: open } = usePrefs()
   const machines = poll.data
   if (!machines) return <Unavailable error={poll.error} className="h-48" />
 
@@ -162,12 +164,35 @@ export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
           .filter(Boolean)
           .join(' · ')
 
+  const count = `${machines.length} ${machines.length === 1 ? 'machine' : 'machines'}`
+  // on phones the sidebar sits above the apps, so its cards stay folded into
+  // the summary until opened
   return (
     <div className={poll.error ? 'opacity-50' : ''} title={poll.error}>
-      <SectionTitle aside={summary}>
-        {machines.length} {machines.length === 1 ? 'machine' : 'machines'}
-      </SectionTitle>
-      <div className="flex flex-col gap-2.5">
+      <button
+        type="button"
+        onClick={() => setPrefs({ machinesOpen: !open })}
+        aria-expanded={open}
+        className="flex w-full items-baseline justify-between gap-3 px-1 text-fg-muted transition-colors hover:text-fg-base md:hidden"
+      >
+        <span className="flex items-center gap-2 text-2xs font-semibold tracking-[0.12em] uppercase">
+          <svg
+            viewBox="0 0 24 24"
+            className={`h-3 w-3 shrink-0 self-center fill-none stroke-current transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+          {count}
+        </span>
+        <span className="font-mono text-2xs tabular-nums">{summary}</span>
+      </button>
+      <div className="hidden md:block">
+        <SectionTitle aside={summary}>{count}</SectionTitle>
+      </div>
+      <div className={`flex-col gap-2.5 md:mt-0 md:flex ${open ? 'mt-3 flex' : 'hidden'}`}>
         {machines.map((m) => (
           <MachineCard key={m.name} m={m} />
         ))}

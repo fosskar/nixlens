@@ -18,10 +18,19 @@ type Prefs = {
   reduceMotion: boolean
   floating: boolean
   collapsed: string[]
+  machinesOpen: boolean
 }
 
 const key = 'nixlens.prefs'
-const defaults: Prefs = { accent: 'teal', glow: 1, solid: false, reduceMotion: false, floating: false, collapsed: [] }
+const defaults: Prefs = {
+  accent: 'teal',
+  glow: 1,
+  solid: false,
+  reduceMotion: false,
+  floating: false,
+  collapsed: [],
+  machinesOpen: false,
+}
 
 // a value from another version or edited by hand must not break the page
 function load(): Prefs {
@@ -43,6 +52,7 @@ function load(): Prefs {
     reduceMotion: p.reduceMotion === true,
     floating: p.floating === true,
     collapsed: Array.isArray(p.collapsed) ? p.collapsed.filter((c): c is string => typeof c === 'string') : [],
+    machinesOpen: p.machinesOpen === true,
   }
 }
 
