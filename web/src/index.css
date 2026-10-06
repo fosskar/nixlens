@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 /* system insets (notch, status bar, home indicator) when installed as an
    app; zero in a desktop browser */
 :root {
@@ -10,8 +17,8 @@
 }
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'CommitMono Nerd Font Propo', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 
   --color-bg-base: #202020;
   --color-bg-surface: #282828;

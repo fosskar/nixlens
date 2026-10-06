@@ -70,7 +70,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="nixlens-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-5xl flex-col overflow-hidden rounded-surface font-sans text-fg-base outline-none"
+        className="nixlens-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-5xl flex-col overflow-hidden rounded-surface text-fg-base outline-none"
       >
         {onBack && (
           <nav className="flex shrink-0 items-center gap-1 border-b border-hairline px-3 py-2 text-2xs">

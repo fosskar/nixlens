@@ -126,7 +126,7 @@ export default function App() {
   const online = machines.filter((m) => m.online).length
 
   return (
-    <div className="min-h-screen font-sans text-fg-base">
+    <div className="min-h-screen text-fg-base">
       <div
         className={`transition-opacity duration-300 ${active ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
         inert={active !== null}
