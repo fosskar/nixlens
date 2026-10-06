@@ -28,15 +28,14 @@ export function UsageBar({ percent, className }: { percent: number; className: s
   return (
     <div className={`overflow-hidden rounded-full bg-fill shadow-well ${className}`}>
       <div
-        className={`h-full rounded-full bg-gradient-to-r ${fill} transition-[width] duration-700 motion-reduce:transition-none`}
+        className={`h-full rounded-full bg-gradient-to-r ${fill} transition-[width] duration-300`}
         style={{ width: `${Math.min(percent, 100)}%` }}
       />
     </div>
   )
 }
 
-export const linkTransition =
-  'transition-[opacity,background-color,border-color] duration-200 motion-reduce:transition-none'
+export const linkTransition = 'transition-[opacity,background-color,border-color]'
 
 export function Facts({ rows }: { rows: [string, ReactNode][] }) {
   return (
@@ -115,7 +114,7 @@ export function Ring({
             strokeLinecap="round"
             strokeDasharray={c}
             strokeDashoffset={c * (1 - Math.min(value, 100) / 100)}
-            className="transition-[stroke-dashoffset] duration-700"
+            className="transition-[stroke-dashoffset] duration-300"
           />
         </svg>
         <span

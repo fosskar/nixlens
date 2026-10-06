@@ -31,7 +31,7 @@ export function UserMenu({ me }: { me?: Me }) {
   const [prefsState, setPrefsState] = useState<'closed' | 'open' | 'leaving'>('closed')
   const closePrefs = () => {
     setPrefsState('leaving')
-    setTimeout(() => setPrefsState('closed'), reducedMotion() ? 0 : 220)
+    setTimeout(() => setPrefsState('closed'), reducedMotion() ? 0 : 150)
   }
   const root = useRef<HTMLDivElement>(null)
   const menuId = useId()

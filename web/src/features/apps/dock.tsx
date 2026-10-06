@@ -56,7 +56,7 @@ export function Dock({
               ×
             </button>
             <span
-              className={`absolute -bottom-2 left-1/2 h-1 -translate-x-1/2 rounded-full transition-all ${active === app.url ? 'w-3 bg-accent-cyan' : 'w-1 bg-fg-muted'}`}
+              className={`absolute -bottom-2 left-1/2 h-1 -translate-x-1/2 rounded-full transition-[width,background-color] ${active === app.url ? 'w-3 bg-accent-cyan' : 'w-1 bg-fg-muted'}`}
             />
           </div>
         ))}

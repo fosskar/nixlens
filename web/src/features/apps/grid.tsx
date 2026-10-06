@@ -44,7 +44,7 @@ export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from
               <span className="h-px flex-1 bg-gradient-to-r from-line to-transparent" />
             </button>
             <div
-              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+              className={`grid transition-[grid-template-rows,opacity] duration-300 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
             >
               <div className={open ? '' : 'overflow-hidden'}>
                 <AppSection apps={list} onOpen={onOpen} />
@@ -72,7 +72,7 @@ function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DO
             onOpen(app, (e.currentTarget.firstElementChild ?? e.currentTarget).getBoundingClientRect())
           }
           title={appTitle(app)}
-          className="group flex flex-col items-center gap-2.5 transition-transform duration-300 ease-out hover:-translate-y-1 active:scale-95"
+          className="group flex flex-col items-center gap-2.5 transition-transform duration-300 hover:-translate-y-1 active:scale-95"
         >
           <div className="relative">
             <AppIcon app={app} />

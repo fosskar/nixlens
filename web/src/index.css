@@ -35,6 +35,9 @@
   --color-fill: rgb(255 255 255 / 0.05);
   --color-fill-hover: rgb(255 255 255 / 0.08);
 
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --default-transition-timing-function: var(--ease-out);
+
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
 
@@ -177,13 +180,12 @@ body::before {
 /* in the components layer, so utilities can override these without ! */
 @layer components {
   .nixlens-window {
-    --nixlens-ease: cubic-bezier(0.22, 1, 0.36, 1);
     transition:
-      transform 350ms var(--nixlens-ease),
-      opacity 350ms var(--nixlens-ease),
+      transform 300ms var(--ease-out),
+      opacity 300ms var(--ease-out),
       visibility 0s linear 0s,
-      inset 350ms var(--nixlens-ease),
-      border-radius 350ms var(--nixlens-ease);
+      inset 300ms var(--ease-out),
+      border-radius 300ms var(--ease-out);
   }
 
   .nixlens-window[data-state='home'],
@@ -192,9 +194,9 @@ body::before {
     visibility: hidden;
     pointer-events: none;
     transition:
-      transform 350ms var(--nixlens-ease),
-      opacity 300ms var(--nixlens-ease),
-      visibility 0s linear 350ms;
+      transform 300ms var(--ease-out),
+      opacity 300ms var(--ease-out),
+      visibility 0s linear 300ms;
   }
 
   .nixlens-window[data-state='home'] {
@@ -202,7 +204,7 @@ body::before {
   }
 
   .nixlens-breathe {
-    animation: nixlens-breathe 1.8s ease-in-out infinite;
+    animation: nixlens-breathe 2.4s ease-in-out infinite;
   }
 
   .nixlens-bay {
@@ -247,11 +249,11 @@ body::before {
   }
 
   .nixlens-modal-backdrop {
-    animation: nixlens-fade 200ms ease-out;
+    animation: nixlens-fade 150ms var(--ease-out);
   }
 
   .nixlens-modal {
-    animation: nixlens-modal-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    animation: nixlens-modal-in 300ms var(--ease-out);
   }
 
   @keyframes nixlens-fade {
@@ -347,7 +349,7 @@ body::before {
     }
   }
   .nixlens-panel {
-    animation: nixlens-panel-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    animation: nixlens-panel-in 300ms var(--ease-out);
   }
   @keyframes nixlens-panel-out {
     to {
@@ -356,7 +358,7 @@ body::before {
     }
   }
   .nixlens-panel-out {
-    animation: nixlens-panel-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+    animation: nixlens-panel-out 150ms var(--ease-out) forwards;
   }
 
   .nixlens-nvme-pins {

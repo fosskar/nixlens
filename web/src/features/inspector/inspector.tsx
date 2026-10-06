@@ -11,7 +11,7 @@ import { poolBays } from '@/lib/storage'
 
 type Detail = Extract<Route, { kind: 'machine' | 'pool' | 'disk' }>
 
-const block = 'flex scroll-mt-4 flex-col gap-5 rounded-card border p-4 transition-colors duration-500'
+const block = 'flex scroll-mt-4 flex-col gap-5 rounded-card border p-4 transition-colors duration-300'
 
 // one page with everything about a machine; a pool or drive in the address
 // is scrolled to and marked, so links from the sidebar land on it
