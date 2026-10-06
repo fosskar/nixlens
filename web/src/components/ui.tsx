@@ -21,16 +21,16 @@ export function TypeBadge({ children }: { children: ReactNode }) {
 export function UsageBar({ percent, className }: { percent: number; className: string }) {
   const fill =
     percent >= 90
-      ? 'from-error/80 to-error'
+      ? 'from-error/80 to-error shadow-[0_0_8px_color-mix(in_srgb,var(--color-error)_40%,transparent)]'
       : percent >= 80
-        ? 'from-warning/80 to-warning'
-        : 'from-accent to-accent-cyan'
+        ? 'from-warning/80 to-warning shadow-[0_0_8px_color-mix(in_srgb,var(--color-warning)_40%,transparent)]'
+        : 'from-accent to-accent-cyan shadow-[0_0_8px_color-mix(in_srgb,var(--color-accent-cyan)_40%,transparent)]'
   return (
     <div
       className={`overflow-hidden rounded-full bg-white/[0.07] shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] ${className}`}
     >
       <div
-        className={`h-full rounded-full bg-gradient-to-r ${fill} shadow-[0_0_8px_color-mix(in_srgb,var(--color-accent-cyan)_40%,transparent)] transition-[width] duration-700 motion-reduce:transition-none`}
+        className={`h-full rounded-full bg-gradient-to-r ${fill} transition-[width] duration-700 motion-reduce:transition-none`}
         style={{ width: `${Math.min(percent, 100)}%` }}
       />
     </div>
