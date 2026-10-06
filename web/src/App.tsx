@@ -145,7 +145,7 @@ export default function App() {
                     alt=""
                     className="h-7 w-7 drop-shadow-[0_2px_8px_color-mix(in_srgb,var(--color-accent)_45%,transparent)]"
                   />
-                  <span className="text-lg font-semibold tracking-tight text-fg-inverse">nOS</span>
+                  <span className="text-lg font-semibold tracking-tight text-fg-inverse">nixlens</span>
                 </div>
                 <OverviewWidget poll={overview} />
               </div>
@@ -154,7 +154,7 @@ export default function App() {
         )}
 
         <main
-          className={`nos-dock-fade px-6 pt-[calc(2.5rem+var(--safe-top))] pb-32 transition-transform duration-300 md:fixed md:inset-y-0 md:right-0 md:overflow-y-auto ${admin ? 'md:left-[23.5rem]' : 'md:left-0'} md:pt-[calc(4rem+var(--safe-top))] ${active ? 'scale-[0.985]' : ''}`}
+          className={`nixlens-dock-fade px-6 pt-[calc(2.5rem+var(--safe-top))] pb-32 transition-transform duration-300 md:fixed md:inset-y-0 md:right-0 md:overflow-y-auto ${admin ? 'md:left-[23.5rem]' : 'md:left-0'} md:pt-[calc(4rem+var(--safe-top))] ${active ? 'scale-[0.985]' : ''}`}
         >
           <div className="mx-auto max-w-5xl">
             <header className="mb-10 text-center">

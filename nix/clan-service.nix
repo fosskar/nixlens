@@ -1,4 +1,4 @@
-{ nosModule }:
+{ nixlensModule }:
 { lib, clanLib, ... }:
 let
   # the public half of another machine's key, from the vars store
@@ -8,14 +8,14 @@ let
       clanLib.getPublicValue {
         flake = config.clan.core.settings.directory;
         inherit machine;
-        generator = "nos";
+        generator = "nixlens";
         file = "fingerprint";
       }
     );
 in
 {
   _class = "clan.service";
-  manifest.name = "@fosskar/nos";
+  manifest.name = "@fosskar/nixlens";
   manifest.description = "Visual overview of the machines of a clan, with their apps one click away";
   manifest.readme = ''
     `agent` machines report their state; the `hub` serves the web UI on
@@ -47,7 +47,7 @@ in
         nixosModule =
           { config, ... }:
           {
-            services.nos = {
+            services.nixlens = {
               enable = true;
               listenAddress = "::";
               inherit (settings) port openFirewall;
@@ -72,7 +72,7 @@ in
         nixosModule =
           { config, ... }:
           {
-            services.nos = {
+            services.nixlens = {
               enable = true;
               # explicit, so a machine that is also an agent (::) fails
               # evaluation instead of exposing the unauthenticated ui
@@ -91,17 +91,17 @@ in
   perMachine.nixosModule =
     { config, ... }:
     {
-      imports = [ nosModule ];
-      # nos creates the key and prints its fingerprint itself, so the format
+      imports = [ nixlensModule ];
+      # nixlens creates the key and prints its fingerprint itself, so the format
       # always matches what it checks
-      clan.core.vars.generators.nos = {
+      clan.core.vars.generators.nixlens = {
         files."key.pem" = { };
         files.fingerprint.secret = false;
-        runtimeInputs = [ config.services.nos.package ];
+        runtimeInputs = [ config.services.nixlens.package ];
         script = ''
-          nos -key "$out/key.pem" -fingerprint > "$out/fingerprint"
+          nixlens -key "$out/key.pem" -fingerprint > "$out/fingerprint"
         '';
       };
-      services.nos.keyFile = config.clan.core.vars.generators.nos.files."key.pem".path;
+      services.nixlens.keyFile = config.clan.core.vars.generators.nixlens.files."key.pem".path;
     };
 }

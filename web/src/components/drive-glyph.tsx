@@ -35,7 +35,7 @@ export function DriveGlyph({ disk, health, size = 'lg' }: { disk: Disk; health: 
       )}
       {kind === 'nvme' && (
         <span className={`${body} ${s.nvme} justify-between rounded-[4px] pb-1.5`}>
-          <span className="nos-nvme-pins h-1.5 w-full rounded-t-[4px]" />
+          <span className="nixlens-nvme-pins h-1.5 w-full rounded-t-[4px]" />
           <span className="flex w-full flex-col items-center gap-1">
             <span className="h-[18%] w-[70%] min-h-1.5 rounded-[2px] bg-black/55 ring-1 ring-white/[0.08]" />
             <span className="h-[18%] w-[70%] min-h-1.5 rounded-[2px] bg-black/55 ring-1 ring-white/[0.08]" />

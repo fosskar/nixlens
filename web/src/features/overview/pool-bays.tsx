@@ -13,7 +13,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
   if (bays.length === 0) return null
 
   return (
-    <div className="nos-bay flex flex-col divide-y divide-white/[0.05] rounded-xl">
+    <div className="nixlens-bay flex flex-col divide-y divide-white/[0.05] rounded-xl">
       {bays.map(({ pool, groups }) => {
         const mounted = redundant(pool) || pool.state === 'mounted'
         // the row opens the pool; drives sit above its button, since

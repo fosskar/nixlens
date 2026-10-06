@@ -1,5 +1,5 @@
 {
-  description = "nOS: a visual overview of your NixOS machines";
+  description = "nixlens: a visual overview of your NixOS machines";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -44,18 +44,18 @@
         { lib, pkgs, ... }:
         {
           imports = [ ./nix/module.nix ];
-          services.nos.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+          services.nixlens.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.default;
         };
 
-      clan.modules."@fosskar/nos" = import ./nix/clan-service.nix {
-        nosModule = self.nixosModules.default;
+      clan.modules."@fosskar/nixlens" = import ./nix/clan-service.nix {
+        nixlensModule = self.nixosModules.default;
       };
 
       checks = forAllSystems (pkgs: {
         formatting = treefmtFor.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
-        nixos-test = pkgs.callPackage ./nix/test.nix { nosModule = self.nixosModules.default; };
+        nixos-test = pkgs.callPackage ./nix/test.nix { nixlensModule = self.nixosModules.default; };
         go-race = pkgs.callPackage ./nix/race.nix {
-          nos = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+          nixlens = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
         };
       });
 

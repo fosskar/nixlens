@@ -3,16 +3,16 @@
 {
   stdenv,
   go,
-  nos,
+  nixlens,
 }:
 stdenv.mkDerivation {
-  name = "nos-go-race";
-  inherit (nos) src;
+  name = "nixlens-go-race";
+  inherit (nixlens) src;
   nativeBuildInputs = [ go ];
   buildPhase = ''
     export HOME=$TMPDIR GOCACHE=$TMPDIR/go-cache GOTOOLCHAIN=local CGO_ENABLED=1
     mkdir -p web
-    cp -r ${nos.web} web/dist
+    cp -r ${nixlens.web} web/dist
     go test -race -count=1 ./...
   '';
   installPhase = "touch $out";

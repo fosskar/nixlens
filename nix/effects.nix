@@ -4,7 +4,7 @@
 let
   inherit (nixbot.lib.effects { inherit pkgs; }) mkEffect;
 
-  repo = "fosskar/nos";
+  repo = "fosskar/nixlens";
   gitName = "fosskar[bot]";
   gitEmail = "300917551+fosskar[bot]@users.noreply.github.com";
 

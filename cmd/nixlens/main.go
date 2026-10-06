@@ -1,4 +1,4 @@
-// Command nos runs an agent, a hub, or one of the agent's privileged
+// Command nixlens runs an agent, a hub, or one of the agent's privileged
 // helpers, chosen by flags.
 package main
 
@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fosskar/nos/internal/agent"
-	"github.com/fosskar/nos/internal/hub"
-	"github.com/fosskar/nos/internal/mtls"
-	"github.com/fosskar/nos/internal/smart"
-	"github.com/fosskar/nos/web"
+	"github.com/fosskar/nixlens/internal/agent"
+	"github.com/fosskar/nixlens/internal/hub"
+	"github.com/fosskar/nixlens/internal/mtls"
+	"github.com/fosskar/nixlens/internal/smart"
+	"github.com/fosskar/nixlens/web"
 )
 
 func main() {

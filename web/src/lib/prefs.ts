@@ -20,7 +20,7 @@ type Prefs = {
   collapsed: string[]
 }
 
-const key = 'nos.prefs'
+const key = 'nixlens.prefs'
 const defaults: Prefs = { accent: 'teal', glow: 1, solid: false, reduceMotion: false, floating: false, collapsed: [] }
 
 // a value from another version or edited by hand must not break the page
@@ -54,9 +54,9 @@ function apply(prefs: Prefs) {
   const [accent, cyan] = accents[prefs.accent]
   root.style.setProperty('--color-accent', accent)
   root.style.setProperty('--color-accent-cyan', cyan)
-  root.style.setProperty('--nos-glow', String(prefs.glow))
-  root.classList.toggle('nos-solid', prefs.solid)
-  root.classList.toggle('nos-reduce-motion', prefs.reduceMotion)
+  root.style.setProperty('--nixlens-glow', String(prefs.glow))
+  root.classList.toggle('nixlens-solid', prefs.solid)
+  root.classList.toggle('nixlens-reduce-motion', prefs.reduceMotion)
 }
 apply(current)
 

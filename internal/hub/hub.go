@@ -16,7 +16,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fosskar/nos/internal/api"
+	"github.com/fosskar/nixlens/internal/api"
 )
 
 const (

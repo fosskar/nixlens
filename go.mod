@@ -1,3 +1,3 @@
-module github.com/fosskar/nos
+module github.com/fosskar/nixlens
 
 go 1.26

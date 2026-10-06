@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fosskar/nos/internal/api"
+	"github.com/fosskar/nixlens/internal/api"
 )
 
 // many clients at once against a hub with two agents: exercises the parallel

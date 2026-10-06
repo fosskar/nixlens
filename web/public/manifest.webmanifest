@@ -1,6 +1,6 @@
 {
-  "name": "nOS",
-  "short_name": "nOS",
+  "name": "nixlens",
+  "short_name": "nixlens",
   "description": "Overview of your NixOS machines and their apps",
   "start_url": "/",
   "scope": "/",

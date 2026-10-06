@@ -22,7 +22,7 @@ func UI(dist fs.FS) http.HandlerFunc {
 			w.Header().Set("Cache-Control", "no-cache")
 		}
 		// the ui runs only its own bundle; images come from icon cdns,
-		// app windows frame the apps, and nothing may frame nOS itself
+		// app windows frame the apps, and nothing may frame nixlens itself
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' https: data:; frame-src http: https:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "same-origin")

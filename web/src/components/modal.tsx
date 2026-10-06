@@ -53,12 +53,12 @@ export function Modal({
 
   useEffect(() => {
     panel.current?.focus()
-    panel.current?.querySelector('.nos-scroll')?.scrollTo({ top: 0 })
+    panel.current?.querySelector('.nixlens-scroll')?.scrollTo({ top: 0 })
   }, [focusKey])
 
   return createPortal(
     <div
-      className="nos-modal-backdrop fixed inset-0 z-[60] grid place-items-center bg-black/55 px-4 pt-[calc(1rem+var(--safe-top))] pb-[calc(1rem+var(--safe-bottom))] backdrop-blur-[6px] md:p-8"
+      className="nixlens-modal-backdrop fixed inset-0 z-[60] grid place-items-center bg-black/55 px-4 pt-[calc(1rem+var(--safe-top))] pb-[calc(1rem+var(--safe-bottom))] backdrop-blur-[6px] md:p-8"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -69,7 +69,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="nos-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-5xl flex-col overflow-hidden rounded-[22px] font-sans text-fg-base outline-none"
+        className="nixlens-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-5xl flex-col overflow-hidden rounded-[22px] font-sans text-fg-base outline-none"
       >
         {onBack && (
           <nav className="flex shrink-0 items-center gap-1 border-b border-white/[0.06] px-3 py-2 text-[11px]">

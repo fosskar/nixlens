@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fosskar/nos/internal/command"
+	"github.com/fosskar/nixlens/internal/command"
 )
 
 type PoolDetail struct {

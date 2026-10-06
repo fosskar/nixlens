@@ -5,7 +5,7 @@ export function Led({ health, small, asleep }: { health: Health; small?: boolean
   return (
     <span
       title={asleep ? 'asleep' : undefined}
-      className={`nos-led nos-led-${health} ${small ? 'h-1.5 w-1.5' : ''} ${asleep ? 'nos-led-asleep' : ''}`}
+      className={`nixlens-led nixlens-led-${health} ${small ? 'h-1.5 w-1.5' : ''} ${asleep ? 'nixlens-led-asleep' : ''}`}
     />
   )
 }

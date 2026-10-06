@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fosskar/nos/internal/command"
+	"github.com/fosskar/nixlens/internal/command"
 )
 
 type Interface struct {

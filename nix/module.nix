@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.services.nos;
+  cfg = config.services.nixlens;
   loopback = lib.elem cfg.listenAddress [
     "127.0.0.1"
     "::1"
@@ -25,33 +25,33 @@ let
       ;
   }) cfg.apps;
 
-  appsFile = pkgs.writeText "nos-apps.json" (builtins.toJSON apps);
+  appsFile = pkgs.writeText "nixlens-apps.json" (builtins.toJSON apps);
 in
 {
-  options.services.nos = {
-    enable = lib.mkEnableOption "the nOS agent, which reports this machine's state";
+  options.services.nixlens = {
+    enable = lib.mkEnableOption "the nixlens agent, which reports this machine's state";
 
     package = lib.mkOption {
       type = lib.types.package;
-      description = "The nos package to run.";
+      description = "The nixlens package to run.";
     };
 
     listenAddress = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
-      description = "Address nOS listens on. A hub should stay on loopback behind an authenticating reverse proxy.";
+      description = "Address nixlens listens on. A hub should stay on loopback behind an authenticating reverse proxy.";
     };
 
     port = lib.mkOption {
       type = lib.types.port;
       default = 7480;
-      description = "Port nOS listens on.";
+      description = "Port nixlens listens on.";
     };
 
     openFirewall = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Open {option}`services.nos.port` in the firewall.";
+      description = "Open {option}`services.nixlens.port` in the firewall.";
     };
 
     keyFile = lib.mkOption {
@@ -61,11 +61,11 @@ in
       default = null;
       description = ''
         This machine's ed25519 key for mutual TLS between hub and agents, in
-        PKCS #8 PEM. Without one, nOS creates its own in its state directory
+        PKCS #8 PEM. Without one, nixlens creates its own in its state directory
         on first start. Either way its fingerprint is logged on every start
-        (`journalctl -u nos | grep fingerprint`), for
-        {option}`services.nos.trustedHubs` and
-        {option}`services.nos.hub.peers.<name>.fingerprint` on the other side.
+        (`journalctl -u nixlens | grep fingerprint`), for
+        {option}`services.nixlens.trustedHubs` and
+        {option}`services.nixlens.hub.peers.<name>.fingerprint` on the other side.
       '';
     };
 
@@ -125,7 +125,7 @@ in
     '';
 
     hub = {
-      enable = lib.mkEnableOption "the nOS web UI, aggregating this machine with its peers";
+      enable = lib.mkEnableOption "the nixlens web UI, aggregating this machine with its peers";
 
       peers = lib.mkOption {
         type = lib.types.attrsOf (
@@ -196,24 +196,24 @@ in
             "::1"
             "localhost"
           ];
-        message = "services.nos.hub trusts the Remote-* headers of a reverse proxy, so services.nos.listenAddress must be a loopback address";
+        message = "services.nixlens.hub trusts the Remote-* headers of a reverse proxy, so services.nixlens.listenAddress must be a loopback address";
       }
       {
         assertion = cfg.hub.enable || loopback || tls;
-        message = "services.nos listens on ${cfg.listenAddress}; set services.nos.trustedHubs, or anyone who reaches the port can read this machine's system and storage data";
+        message = "services.nixlens listens on ${cfg.listenAddress}; set services.nixlens.trustedHubs, or anyone who reaches the port can read this machine's system and storage data";
       }
       {
         assertion = !(cfg.hub.enable && cfg.trustedHubs != [ ]);
-        message = "services.nos.trustedHubs is for agents; a hub is reached through its reverse proxy";
+        message = "services.nixlens.trustedHubs is for agents; a hub is reached through its reverse proxy";
       }
     ]
     ++ lib.mapAttrsToList (name: peer: {
       assertion = lib.hasPrefix "https://" peer.url == (peer.fingerprint != null);
-      message = "services.nos.hub.peers.${name}: an https url needs a fingerprint, and a fingerprint an https url";
+      message = "services.nixlens.hub.peers.${name}: an https url needs a fingerprint, and a fingerprint an https url";
     }) cfg.hub.peers;
 
-    systemd.services.nos = {
-      description = "nOS dashboard";
+    systemd.services.nixlens = {
+      description = "nixlens dashboard";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
       path = [
@@ -232,15 +232,15 @@ in
             "-apps"
             appsFile
             "-installed-memory-file"
-            "/run/nos/installed-memory"
+            "/run/nixlens/installed-memory"
           ]
           ++ lib.optionals cfg.smart.enable [
             "-smart-file"
-            "/run/nos-smart/smart.json"
+            "/run/nixlens-smart/smart.json"
           ]
           ++ [
             "-key"
-            (if cfg.keyFile == null then "/var/lib/nos/key.pem" else "%d/key")
+            (if cfg.keyFile == null then "/var/lib/nixlens/key.pem" else "%d/key")
           ]
           ++ lib.optionals tls [
             "-trust"
@@ -249,7 +249,7 @@ in
           ++ lib.optionals cfg.hub.enable [
             "-hub"
             "-peers"
-            (pkgs.writeText "nos-peers.json" (
+            (pkgs.writeText "nixlens-peers.json" (
               builtins.toJSON (
                 lib.mapAttrs (_: peer: {
                   inherit (peer) url;
@@ -262,17 +262,17 @@ in
             "-admin-groups"
             (lib.concatStringsSep "," cfg.hub.adminGroups)
             "-category-groups"
-            (pkgs.writeText "nos-category-groups.json" (builtins.toJSON cfg.hub.categoryGroups))
+            (pkgs.writeText "nixlens-category-groups.json" (builtins.toJSON cfg.hub.categoryGroups))
           ]
           ++ lib.optionals (cfg.hub.enable && cfg.hub.accountUrl != null) [
             "-account-url"
             cfg.hub.accountUrl
           ]
         );
-        ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nos/installed-memory";
-        RuntimeDirectory = "nos";
-        # holds the key nOS creates when services.nos.keyFile is unset
-        StateDirectory = "nos";
+        ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nixlens/installed-memory";
+        RuntimeDirectory = "nixlens";
+        # holds the key nixlens creates when services.nixlens.keyFile is unset
+        StateDirectory = "nixlens";
         LoadCredential = lib.mkIf (cfg.keyFile != null) [ "key:${cfg.keyFile}" ];
         DynamicUser = true;
         Restart = "on-failure";
@@ -318,16 +318,16 @@ in
 
     networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [ cfg.port ];
 
-    systemd.services.nos-smart = lib.mkIf cfg.smart.enable {
-      description = "nOS SMART collection";
+    systemd.services.nixlens-smart = lib.mkIf cfg.smart.enable {
+      description = "nixlens SMART collection";
       path = [
         pkgs.smartmontools
         pkgs.util-linux
       ];
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = "${lib.getExe cfg.package} -collect-smart /run/nos-smart/smart.json";
-        RuntimeDirectory = "nos-smart";
+        ExecStart = "${lib.getExe cfg.package} -collect-smart /run/nixlens-smart/smart.json";
+        RuntimeDirectory = "nixlens-smart";
         RuntimeDirectoryMode = "0755";
         RuntimeDirectoryPreserve = true;
         # smartctl needs CAP_SYS_RAWIO for ata passthrough and CAP_SYS_ADMIN
@@ -369,7 +369,7 @@ in
       };
     };
 
-    systemd.timers.nos-smart = lib.mkIf cfg.smart.enable {
+    systemd.timers.nixlens-smart = lib.mkIf cfg.smart.enable {
       wantedBy = [ "timers.target" ];
       timerConfig = {
         OnBootSec = "2min";

@@ -18,7 +18,7 @@ let
   };
 
   web = buildNpmPackage {
-    pname = "nos-web";
+    pname = "nixlens-web";
     inherit version;
     src = webSrc;
     # dependencies come straight from package-lock.json, so dependency
@@ -31,7 +31,7 @@ let
   };
 in
 buildGoModule {
-  pname = "nos";
+  pname = "nixlens";
   inherit version;
   src = lib.fileset.toSource {
     root = ../.;
@@ -42,7 +42,7 @@ buildGoModule {
     ];
   };
   vendorHash = null;
-  subPackages = [ "cmd/nos" ];
+  subPackages = [ "cmd/nixlens" ];
   env.CGO_ENABLED = 0;
 
   preBuild = ''
@@ -54,7 +54,7 @@ buildGoModule {
 
   meta = {
     description = "Visual overview of your NixOS machines, with your apps one click away";
-    mainProgram = "nos";
+    mainProgram = "nixlens";
     license = lib.licenses.mit;
     platforms = lib.platforms.linux;
   };

@@ -57,7 +57,7 @@ function Port({ iface }: { iface: NetInterface }) {
       >
         <span className="h-1.5 w-5 rounded-b-sm bg-black/70" />
         <span className="mt-0.5 font-mono text-[10px] font-semibold text-fg-inverse">{portSpeed(iface)}</span>
-        <span className="nos-nvme-pins absolute bottom-1.5 h-1.5 w-9 rounded-[1px]" />
+        <span className="nixlens-nvme-pins absolute bottom-1.5 h-1.5 w-9 rounded-[1px]" />
       </div>
       <Led health={iface.up ? 'ok' : 'unknown'} small />
       <span className="w-full truncate text-center font-mono text-[9px] text-fg-muted">{iface.name}</span>
@@ -175,7 +175,7 @@ export function NetworkWidget({ poll }: { poll: Poll<NetInterface[]> }) {
       </SectionTitle>
       <div className="flex flex-col gap-3">
         {ports.length > 0 && (
-          <div className={`${card} nos-bay flex flex-wrap gap-2 p-3`}>
+          <div className={`${card} nixlens-bay flex flex-wrap gap-2 p-3`}>
             {ports.map((p) => (
               <Port key={p.name} iface={p} />
             ))}

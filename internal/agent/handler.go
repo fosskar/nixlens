@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fosskar/nos/internal/api"
-	"github.com/fosskar/nos/internal/smart"
+	"github.com/fosskar/nixlens/internal/api"
+	"github.com/fosskar/nixlens/internal/smart"
 )
 
 // Options are the files the agent reads besides the system itself

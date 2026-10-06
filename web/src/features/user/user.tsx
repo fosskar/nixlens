@@ -166,7 +166,7 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
         role="dialog"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`${leaving ? 'nos-panel-out' : 'nos-panel'} glass-strong absolute top-[calc(0.75rem+var(--safe-top))] right-[calc(0.75rem+var(--safe-right))] bottom-[calc(0.75rem+var(--safe-bottom))] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col rounded-[22px] font-sans outline-none`}
+        className={`${leaving ? 'nixlens-panel-out' : 'nixlens-panel'} glass-strong absolute top-[calc(0.75rem+var(--safe-top))] right-[calc(0.75rem+var(--safe-right))] bottom-[calc(0.75rem+var(--safe-bottom))] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col rounded-[22px] font-sans outline-none`}
       >
         <div className="flex items-center justify-between border-b border-white/[0.07] py-3.5 pr-3 pl-5">
           <h2 id={titleId} className="text-base font-semibold text-fg-inverse">

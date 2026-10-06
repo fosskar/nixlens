@@ -1,7 +1,7 @@
 {
   lib,
   testers,
-  nosModule,
+  nixlensModule,
 }:
 let
   # fixed keys for the test only; their fingerprints are written out below,
@@ -18,22 +18,22 @@ let
   };
   # keys must not be nix store paths, so they are reached through /etc
   keyFor = role: {
-    environment.etc."nos/key.pem".source = keys.${role}.file;
-    services.nos.keyFile = "/etc/nos/key.pem";
+    environment.etc."nixlens/key.pem".source = keys.${role}.file;
+    services.nixlens.keyFile = "/etc/nixlens/key.pem";
   };
 in
 testers.runNixOSTest {
-  name = "nos";
+  name = "nixlens";
 
   nodes.hub =
     { pkgs, ... }:
     {
       imports = [
-        nosModule
+        nixlensModule
         (keyFor "hub")
       ];
       environment.systemPackages = [ pkgs.openssl ];
-      services.nos = {
+      services.nixlens = {
         enable = true;
         hub.enable = true;
         hub.peers.agent = {
@@ -45,7 +45,7 @@ testers.runNixOSTest {
         hub.accountUrl = "https://auth.example.com/settings";
         hub.categoryGroups.Monitoring = [ "admin" ];
       };
-      services.nos.apps.Grafana = {
+      services.nixlens.apps.Grafana = {
         url = "http://grafana.example.com:3000";
         icon = "grafana.svg";
         category = "Monitoring";
@@ -54,7 +54,7 @@ testers.runNixOSTest {
 
   nodes.agent = {
     imports = [
-      nosModule
+      nixlensModule
       (keyFor "agent")
     ];
     virtualisation.emptyDiskImages = [
@@ -63,14 +63,14 @@ testers.runNixOSTest {
     ];
     boot.supportedFilesystems = [ "zfs" ];
     networking.hostId = "8425e349";
-    services.nos = {
+    services.nixlens = {
       enable = true;
       smart.enable = true;
       listenAddress = "::";
       openFirewall = true;
       trustedHubs = [ keys.hub.fingerprint ];
     };
-    services.nos.apps.Immich = {
+    services.nixlens.apps.Immich = {
       url = "https://immich.example.com";
       category = "Media";
       description = "photos";
@@ -92,9 +92,9 @@ testers.runNixOSTest {
       # curl pins the agent's key like the hub does; the hub's key needs a
       # certificate around it for curl
       pin = "--insecure --pinnedpubkey sha256//" + "${lib.removePrefix "SHA256:" keys.agent.fingerprint}="
-      hub.succeed("openssl req -x509 -new -key /etc/nos/key.pem -subj /CN=hub -days 1 -out /tmp/hub.crt")
+      hub.succeed("openssl req -x509 -new -key /etc/nixlens/key.pem -subj /CN=hub -days 1 -out /tmp/hub.crt")
       hub.succeed("openssl genpkey -algorithm ed25519 -out /tmp/other.pem && openssl req -x509 -new -key /tmp/other.pem -subj /CN=other -days 1 -out /tmp/other.crt")
-      mine = "--cert /tmp/hub.crt --key /etc/nos/key.pem"
+      mine = "--cert /tmp/hub.crt --key /etc/nixlens/key.pem"
       hub.fail("curl -sf http://agent:7480/api/local/system")
       hub.fail(f"curl -sf {pin} https://agent:7480/api/local/system")
       hub.succeed(f"curl -sf {pin} {mine} https://agent:7480/api/local/system")
@@ -104,14 +104,14 @@ testers.runNixOSTest {
       hub.fail(f"curl -sf --insecure --pinnedpubkey sha256//AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= {mine} https://agent:7480/api/local/system")
       # agents serve no ui
       hub.fail(f"curl -sf {pin} {mine} https://agent:7480/")
-      agent.succeed("journalctl -u nos | grep -q 'key fingerprint ${keys.agent.fingerprint}'")
+      agent.succeed("journalctl -u nixlens | grep -q 'key fingerprint ${keys.agent.fingerprint}'")
 
-      # without services.nos.keyFile nos creates its key in its state
+      # without services.nixlens.keyFile nixlens creates its key in its state
       # directory, as the dynamic user it runs as, and keeps it
-      autokey = "systemd-run --wait --pipe -p DynamicUser=yes -p StateDirectory=nos-autokey ${lib.getExe nodes.agent.services.nos.package} -key /var/lib/nos-autokey/key.pem -fingerprint"
+      autokey = "systemd-run --wait --pipe -p DynamicUser=yes -p StateDirectory=nixlens-autokey ${lib.getExe nodes.agent.services.nixlens.package} -key /var/lib/nixlens-autokey/key.pem -fingerprint"
       first, second = agent.succeed(autokey).strip(), agent.succeed(autokey).strip()
       assert first == second and first.startswith("SHA256:"), (first, second)
-      agent.succeed("test -s /var/lib/private/nos-autokey/key.pem")
+      agent.succeed("test -s /var/lib/private/nixlens-autokey/key.pem")
 
       machines = get(hub, "/api/machines")
       assert [(m["name"], m["self"], m["online"]) for m in machines] == [
@@ -126,14 +126,14 @@ testers.runNixOSTest {
 
       assert system["memInstalled"] == 1024 * 2**20, system
 
-      agent.succeed("ip link add nosbr0 type bridge && ip tuntap add nostap0 mode tap && ip link set nostap0 master nosbr0")
+      agent.succeed("ip link add nixlensbr0 type bridge && ip tuntap add nixlenstap0 mode tap && ip link set nixlenstap0 master nixlensbr0")
       network = {i["name"]: i for i in get(hub, "/api/machines/agent/network")}
       assert "lo" not in network, network
       eth1 = network["eth1"]
       assert eth1["kind"] == "ethernet" and eth1["up"] and eth1["driver"] == "virtio_net", eth1
       assert any(a.startswith("192.168.1.") for a in eth1["addresses"]), eth1
-      assert network["nosbr0"]["kind"] == "bridge", network
-      assert network["nostap0"]["kind"] == "tap" and network["nostap0"]["master"] == "nosbr0", network
+      assert network["nixlensbr0"]["kind"] == "bridge", network
+      assert network["nixlenstap0"]["kind"] == "tap" and network["nixlenstap0"]["master"] == "nixlensbr0", network
 
       agent.succeed("zpool create -f testpool mirror /dev/vdb /dev/vdc")
       storage = get(hub, "/api/machines/agent/storage")
@@ -157,8 +157,8 @@ testers.runNixOSTest {
       assert detail["properties"]["ashift"], detail
       hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/machines/agent/pool/-o")
 
-      agent.succeed("systemctl start nos-smart.service")
-      agent.succeed("test -s /run/nos-smart/smart.json")
+      agent.succeed("systemctl start nixlens-smart.service")
+      agent.succeed("test -s /run/nixlens-smart/smart.json")
       storage = get(hub, "/api/machines/agent/storage")
       assert all("smart" not in d for d in storage["disks"]), storage["disks"]
 
@@ -168,7 +168,7 @@ testers.runNixOSTest {
         ("Immich", "agent", "Media", ""),
       ], apps
 
-      hub.succeed("curl -sf http://127.0.0.1:7480/ | grep -q '<title>nOS</title>'")
+      hub.succeed("curl -sf http://127.0.0.1:7480/ | grep -q '<title>nixlens</title>'")
 
       me = get(hub, "/api/me", groups="user, admin")
       assert me["name"] == "Simon" and me["groups"] == ["user", "admin"] and me["admin"], me
@@ -183,7 +183,7 @@ testers.runNixOSTest {
       ], overview
       assert [a["name"] for a in get(hub, "/api/apps", groups="user")] == ["Immich"]
 
-      agent.stop_job("nos.service")
+      agent.stop_job("nixlens.service")
       machines = get(hub, "/api/machines")
       assert not machines[1]["online"], machines
       hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/machines/agent/system")

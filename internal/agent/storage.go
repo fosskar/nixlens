@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fosskar/nos/internal/command"
-	"github.com/fosskar/nos/internal/smart"
+	"github.com/fosskar/nixlens/internal/command"
+	"github.com/fosskar/nixlens/internal/smart"
 )
 
 type Storage struct {

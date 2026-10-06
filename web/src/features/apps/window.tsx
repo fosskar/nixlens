@@ -105,7 +105,7 @@ export function AppWindow({
           ? `${origin.x - (floating ? windowMargin : 0)}px ${origin.y - (floating ? windowMargin : 0)}px`
           : '50% 100%',
       }}
-      className={`nos-window glass-strong fixed z-40 flex flex-col overflow-hidden outline-none ${floating ? 'rounded-[22px]' : 'rounded-none border-0'}`}
+      className={`nixlens-window glass-strong fixed z-40 flex flex-col overflow-hidden outline-none ${floating ? 'rounded-[22px]' : 'rounded-none border-0'}`}
     >
       <div
         onDoubleClick={(e) => {
@@ -143,7 +143,7 @@ export function AppWindow({
           className={`absolute inset-0 grid place-items-center transition-opacity duration-300 ${loaded ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
         >
           <div className="flex flex-col items-center gap-4">
-            <div className="nos-breathe">
+            <div className="nixlens-breathe">
               <AppIcon app={app} />
             </div>
             <span className="text-xs text-fg-muted">Loading {app.name}…</span>
