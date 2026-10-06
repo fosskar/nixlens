@@ -39,7 +39,7 @@ export default function App() {
   const appsPoll = usePoll<AppEntry[]>('/api/apps', 300000)
   const apps = appsPoll.data ?? []
 
-  // the address decides what is in front: an app window, a detail popup or
+  // the address decides what is in front: an app window, a detail panel or
   // nothing over the home view
   const route = useRoute()
   const detail = route.kind === 'machine' || route.kind === 'pool' || route.kind === 'disk' ? route : null
@@ -56,6 +56,15 @@ export default function App() {
   if (routeApp && !open.some((a) => a.url === routeApp.url)) setOpen([...open, routeApp])
   const [origins, setOrigins] = useState<Record<string, Point>>({})
   const [closing, setClosing] = useState<string[]>([])
+  // a closed detail panel stays until it has drawn back under the sidebar
+  const [shownDetail, setShownDetail] = useState(detail)
+  if (detail && detail !== shownDetail) setShownDetail(detail)
+  const detailLeaving = detail === null && shownDetail !== null
+  useEffect(() => {
+    if (!detailLeaving) return
+    const timer = setTimeout(() => setShownDetail(null), reducedMotion() ? 0 : 150)
+    return () => clearTimeout(timer)
+  }, [detailLeaving])
   const closingRef = useRef(new Set<string>())
   // where keyboard focus was before an app came to the front, to return there
   const returnFocus = useRef<HTMLElement | null>(null)
@@ -90,6 +99,7 @@ export default function App() {
   }, [active])
 
   const goHome = () => {
+    if (detail) closeLayer()
     if (!active) return
     setOrigin(active, dockRect(active))
     closeLayer()
@@ -137,7 +147,7 @@ export default function App() {
         <UserMenu me={me} />
         {admin && (
           <aside
-            className={`${glass} m-3 mt-[calc(4rem+var(--safe-top))] flex flex-col md:fixed md:top-[calc(0.75rem+var(--safe-top))] md:bottom-[calc(0.75rem+var(--safe-bottom))] md:left-[calc(0.75rem+var(--safe-left))] md:m-0 md:w-[22rem] md:overflow-hidden`}
+            className={`${glass} m-3 mt-[calc(4rem+var(--safe-top))] flex flex-col md:z-[36] md:fixed md:top-[calc(0.75rem+var(--safe-top))] md:bottom-[calc(0.75rem+var(--safe-bottom))] md:left-[calc(0.75rem+var(--safe-left))] md:m-0 md:w-[22rem] md:overflow-hidden`}
           >
             <ScrollArea>
               <div className="flex flex-col gap-7 p-4 md:pb-6">
@@ -152,6 +162,7 @@ export default function App() {
         )}
 
         <main
+          inert={detail !== null}
           className={`nixlens-dock-fade px-6 ${admin ? 'pt-8' : 'pt-[calc(4.5rem+var(--safe-top))]'} pb-32 transition-transform duration-300 md:fixed md:inset-y-0 md:right-0 md:overflow-y-auto ${admin ? 'md:left-[23.5rem]' : 'md:left-0'} md:pt-[calc(4rem+var(--safe-top))] ${active ? 'scale-[0.985]' : ''}`}
         >
           <div className="mx-auto max-w-5xl">
@@ -191,7 +202,7 @@ export default function App() {
         />
       ))}
 
-      {admin && detail && <Inspector route={detail} />}
+      {admin && shownDetail && <Inspector route={shownDetail} leaving={detailLeaving} />}
 
       {/* where the dock sits depends on the sidebar, known once /api/me answers */}
       {(me || mePoll.error) && (

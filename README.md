@@ -33,7 +33,7 @@ nixlens is the view onto it: what's actually there and running, at a glance, rea
 - **App home screen.** Apps declared in Nix, grouped into collapsible categories, with icons from [dashboard-icons](https://github.com/homarr-labs/dashboard-icons), [selfh.st](https://selfh.st/icons/) or [Material Design Icons](https://pictogrammers.com/library/mdi/).
 - **App windows and a dock.** Apps open inside nixlens and stay alive in the background, so switching is instant. Windows float or maximize above the dock. Apps that forbid framing are detected from their headers and open in a new tab instead.
 - **Machines at a glance.** A sidebar card per machine with CPU and memory rings, uptime, NixOS release and kernel, every pool with its drives, and anything that needs a look. Offline machines say why.
-- **Everything about a machine on one page.** System, network, every pool and every drive in one popup. A pool or drive clicked in the sidebar is scrolled to and marked. Every view has an address, so back, reload and bookmarks work, also with the back gesture of an installed app.
+- **Everything about a machine on one page.** System, network, every pool and every drive in one panel that rolls out from under the sidebar. A pool or drive clicked in the sidebar is scrolled to and marked. Every view has an address, so back, reload and bookmarks work, also with the back gesture of an installed app.
 - **Storage that makes sense.** ZFS and md pools, btrfs, ext4 and other file systems. Capacity is drawn over the raw space of the drives, so you see what redundancy takes, and each vdev shows how many failures it survives. Datasets with quotas and snapshots, partition tables, and a link to look up a replacement drive on geizhals.de.
 - **SMART without waking drives.** Health, temperature, wear and sector counts, collected by a separate privileged oneshot that never spins up a sleeping disk.
 - **Network.** Ethernet ports with their link and the speed they support, and every connection with its addresses: bonds, bridges, WireGuard and other tunnels. Click an address to copy it.
@@ -46,7 +46,7 @@ nixlens is the view onto it: what's actually there and running, at a glance, rea
 
 | Machine details                                                                             | Pool                                                                                         |
 | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| ![Machine popup with system, network ports and connections](./docs/screenshots/machine.png) | ![Pool with capacity dots, vdevs and their failure tolerance](./docs/screenshots/pool.png)   |
+| ![Machine panel with system, network ports and connections](./docs/screenshots/machine.png) | ![Pool with capacity dots, vdevs and their failure tolerance](./docs/screenshots/pool.png)   |
 | **Drive**                                                                                   | **App window**                                                                               |
 | ![Drive with SMART values, partitions and a shop link](./docs/screenshots/drive.png)        | ![An app open in a nixlens window above the dock](./docs/screenshots/app-window.png)         |
 | **View for non-admins**                                                                     | **Preferences**                                                                              |

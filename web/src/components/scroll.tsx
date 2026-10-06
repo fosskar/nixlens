@@ -3,10 +3,12 @@ import { reducedMotion } from '@/lib/prefs'
 
 function ScrollHint({
   direction,
+  underDock,
   visible,
   onClick,
 }: {
   direction: 'up' | 'down'
+  underDock?: boolean
   visible: boolean
   onClick: () => void
 }) {
@@ -16,7 +18,7 @@ function ScrollHint({
       tabIndex={visible ? 0 : -1}
       aria-hidden={!visible}
       title={direction === 'up' ? 'Scroll up' : 'Scroll down'}
-      className={`nixlens-scroll-hint absolute left-1/2 z-10 grid h-7 w-7 -translate-x-1/2 place-items-center rounded-full glass-tile text-fg-base transition-[opacity,transform,background-color] duration-300 hover:bg-fill-hover hover:text-fg-inverse ${direction === 'up' ? 'top-2' : 'bottom-2'} ${visible ? 'opacity-100' : 'pointer-events-none scale-75 opacity-0'}`}
+      className={`nixlens-scroll-hint absolute left-1/2 z-10 grid h-7 w-7 -translate-x-1/2 place-items-center rounded-full glass-tile text-fg-base transition-[opacity,transform,background-color] duration-300 hover:bg-fill-hover hover:text-fg-inverse ${direction === 'up' ? 'top-2' : underDock ? 'bottom-24' : 'bottom-2'} ${visible ? 'opacity-100' : 'pointer-events-none scale-75 opacity-0'}`}
       data-direction={direction}
       data-visible={visible || undefined}
     >
@@ -35,7 +37,8 @@ function ScrollHint({
 
 // a scroll container without a scrollbar: the edges fade where content
 // continues and a small glass arrow offers to scroll there
-export function ScrollArea({ children }: { children: ReactNode }) {
+// underDock keeps the down arrow clear of the dock where it floats over the area
+export function ScrollArea({ children, underDock }: { children: ReactNode; underDock?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState({ top: false, bottom: false })
 
@@ -75,7 +78,7 @@ export function ScrollArea({ children }: { children: ReactNode }) {
         {children}
       </div>
       <ScrollHint direction="up" visible={edges.top} onClick={() => scrollBy(-1)} />
-      <ScrollHint direction="down" visible={edges.bottom} onClick={() => scrollBy(1)} />
+      <ScrollHint direction="down" underDock={underDock} visible={edges.bottom} onClick={() => scrollBy(1)} />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 
 // every view has an address, so the browser's back and forward, the phone's
-// back gesture, reloads and bookmarks all work. popups and app windows are
+// back gesture, reloads and bookmarks all work. detail panels and app windows are
 // "layers" opened from the home view; breadcrumbs show where a view sits,
 // back walks the history
 export type Route =

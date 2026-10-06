@@ -249,25 +249,31 @@ body::before {
     animation: none;
   }
 
-  .nixlens-modal-backdrop {
-    animation: nixlens-fade 150ms var(--ease-out);
-  }
-
-  .nixlens-modal {
-    animation: nixlens-modal-in 300ms var(--ease-out);
-  }
-
-  @keyframes nixlens-fade {
+  /* details roll out from behind the sidebar to the right and draw back
+     under it; clipping instead of fading keeps the blur behind them on */
+  @keyframes nixlens-detail-in {
     from {
-      opacity: 0;
+      clip-path: inset(0 100% 0 0 round var(--radius-surface));
+      translate: -8rem 0;
+    }
+    to {
+      clip-path: inset(0 0 0 0 round var(--radius-surface));
     }
   }
-
-  @keyframes nixlens-modal-in {
+  .nixlens-detail {
+    animation: nixlens-detail-in 300ms var(--ease-out);
+  }
+  @keyframes nixlens-detail-out {
     from {
-      opacity: 0;
-      transform: translateY(10px) scale(0.98);
+      clip-path: inset(0 0 0 0 round var(--radius-surface));
     }
+    to {
+      clip-path: inset(0 100% 0 0 round var(--radius-surface));
+      translate: -8rem 0;
+    }
+  }
+  .nixlens-detail-out {
+    animation: nixlens-detail-out 150ms var(--ease-out) forwards;
   }
 
   @keyframes nixlens-pulse {

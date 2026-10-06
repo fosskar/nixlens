@@ -15,7 +15,7 @@ const block = 'flex scroll-mt-4 flex-col gap-5 rounded-card border p-4 transitio
 
 // one page with everything about a machine; a pool or drive in the address
 // is scrolled to and marked, so links from the sidebar land on it
-export function Inspector({ route }: { route: Detail }) {
+export function Inspector({ route, leaving }: { route: Detail; leaving: boolean }) {
   const { machine } = route
   const base = `/api/machines/${encodeURIComponent(machine)}`
   const system = usePoll<System>(`${base}/system`, 3000)
@@ -43,7 +43,7 @@ export function Inspector({ route }: { route: Detail }) {
   const ordered = [...first, ...disks.filter((d) => !first.includes(d))]
 
   return (
-    <Modal focusKey={machine} onBack={canGoBack() ? goBack : undefined} onClose={closeLayer}>
+    <Modal focusKey={machine} leaving={leaving} onBack={canGoBack() ? goBack : undefined} onClose={closeLayer}>
       <ModalHeader onClose={closeLayer}>
         <ModalTitle className="truncate text-base font-semibold text-fg-inverse">{machine}</ModalTitle>
       </ModalHeader>
