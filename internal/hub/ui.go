@@ -34,6 +34,14 @@ func readAsset(dist fs.FS, name string) (*asset, error) {
 	if !compressible[path.Ext(name)] {
 		return a, nil
 	}
+	if a.gz, err = gzipped(raw); err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+// nil where gzip would not make it smaller
+func gzipped(raw []byte) ([]byte, error) {
 	var b bytes.Buffer
 	zw, err := gzip.NewWriterLevel(&b, gzip.BestCompression)
 	if err != nil {
@@ -45,10 +53,10 @@ func readAsset(dist fs.FS, name string) (*asset, error) {
 	if err := zw.Close(); err != nil {
 		return nil, err
 	}
-	if b.Len() < len(raw) {
-		a.gz = b.Bytes()
+	if b.Len() >= len(raw) {
+		return nil, nil
 	}
-	return a, nil
+	return b.Bytes(), nil
 }
 
 func acceptsGzip(r *http.Request) bool {

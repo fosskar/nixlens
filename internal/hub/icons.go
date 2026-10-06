@@ -27,9 +27,22 @@ const (
 var iconName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 
 type iconEntry struct {
-	body  []byte
+	body []byte
+	// svgs are text, often large, and shrink a lot
+	gz    []byte
 	found bool
 	at    time.Time
+}
+
+func foundIcon(name string, body []byte, at time.Time) iconEntry {
+	icon := iconEntry{body: body, found: true, at: at}
+	if path.Ext(name) == ".svg" {
+		var err error
+		if icon.gz, err = gzipped(body); err != nil {
+			log.Printf("icon %s: %v", name, err)
+		}
+	}
+	return icon
 }
 
 // app icons from the icon sets on jsdelivr, fetched by the hub and kept, so
@@ -87,7 +100,7 @@ func (c *iconCache) serve(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if icon.found {
-			c.write(w, name, icon.body)
+			c.write(w, r, name, icon)
 			return
 		}
 	}
@@ -98,8 +111,16 @@ func (c *iconCache) serve(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func (c *iconCache) write(w http.ResponseWriter, name string, body []byte) {
+func (c *iconCache) write(w http.ResponseWriter, r *http.Request, name string, icon iconEntry) {
 	h := w.Header()
+	body := icon.body
+	if icon.gz != nil {
+		h.Add("Vary", "Accept-Encoding")
+		if acceptsGzip(r) {
+			body = icon.gz
+			h.Set("Content-Encoding", "gzip")
+		}
+	}
 	h.Set("Content-Type", mime.TypeByExtension(path.Ext(name)))
 	h.Set("Cache-Control", "public, max-age=86400")
 	// an svg opened on its own would run as a page of the hub's origin
@@ -172,7 +193,7 @@ func (c *iconCache) load(key string) (iconEntry, bool) {
 		log.Printf("icon cache: %v", err)
 		return iconEntry{}, false
 	}
-	return iconEntry{body: body, found: true, at: info.ModTime()}, true
+	return foundIcon(key, body, info.ModTime()), true
 }
 
 func (c *iconCache) save(key string, body []byte) {
@@ -235,5 +256,5 @@ func (c *iconCache) fetch(ctx context.Context, url string) (iconEntry, error) {
 	if len(body) > maxIconSize {
 		return iconEntry{}, fmt.Errorf("larger than %d bytes", maxIconSize)
 	}
-	return iconEntry{body: body, found: true, at: time.Now()}, nil
+	return foundIcon(url, body, time.Now()), nil
 }

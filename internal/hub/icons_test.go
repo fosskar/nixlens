@@ -1,10 +1,13 @@
 package hub
 
 import (
+	"compress/gzip"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -184,5 +187,53 @@ func TestIconsFallBackToPNG(t *testing.T) {
 	// the svg that does not exist is remembered, so a second load asks nothing
 	if len(asked) != 5 {
 		t.Fatalf("cdn asked %v", asked)
+	}
+}
+
+func TestIconsGzipSVG(t *testing.T) {
+	svg := "<svg>" + strings.Repeat("<path d='M0 0L1 1'/>", 200) + "</svg>"
+	cdn := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := svg
+		if strings.HasSuffix(r.URL.Path, ".png") {
+			body = strings.Repeat("png", 200)
+		}
+		if _, err := w.Write([]byte(body)); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer cdn.Close()
+	c := newIconCache(cdn.URL, t.TempDir())
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/icons/{kind}/{name}", c.serve)
+	get := func(path, encoding string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req.Header.Set("Accept-Encoding", encoding)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec
+	}
+	rec := get("/api/icons/mdi/printer.svg", "gzip")
+	if rec.Header().Get("Content-Encoding") != "gzip" || rec.Body.Len() >= len(svg) {
+		t.Fatalf("svg not gzipped: %v, %d bytes", rec.Header(), rec.Body.Len())
+	}
+	zr, err := gzip.NewReader(rec.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if body, _ := io.ReadAll(zr); string(body) != svg {
+		t.Fatal("gzipped svg differs")
+	}
+	if rec := get("/api/icons/mdi/printer.svg", ""); rec.Header().Get("Content-Encoding") != "" || rec.Body.String() != svg {
+		t.Fatalf("plain svg: %v", rec.Header())
+	}
+	// read back from disk, as after a restart
+	c = newIconCache(cdn.URL, c.dir)
+	mux = http.NewServeMux()
+	mux.HandleFunc("GET /api/icons/{kind}/{name}", c.serve)
+	if rec := get("/api/icons/mdi/printer.svg", "gzip"); rec.Header().Get("Content-Encoding") != "gzip" {
+		t.Fatal("svg from disk not gzipped")
+	}
+	if rec := get("/api/icons/dashboard/x.png", "gzip"); rec.Header().Get("Content-Encoding") != "" {
+		t.Fatal("png gzipped")
 	}
 }
