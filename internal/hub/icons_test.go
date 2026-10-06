@@ -147,3 +147,42 @@ func TestIconUpstream(t *testing.T) {
 		}
 	}
 }
+
+func TestIconsFallBackToPNG(t *testing.T) {
+	var asked []string
+	cdn := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		asked = append(asked, r.URL.Path)
+		switch r.URL.Path {
+		case "/gh/selfhst/icons/png/convertx.png", "/gh/selfhst/icons/svg/radicle.svg":
+			if _, err := w.Write([]byte("icon")); err != nil {
+				t.Error(err)
+			}
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer cdn.Close()
+	c := newIconCache(cdn.URL, "")
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/icons/{kind}/{name}", c.serve)
+	get := func(path string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		return rec
+	}
+	for range 2 {
+		if rec := get("/api/icons/selfhst/convertx"); rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "image/png" {
+			t.Fatalf("convertx: %d %v", rec.Code, rec.Header())
+		}
+	}
+	if rec := get("/api/icons/selfhst/radicle"); rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "image/svg+xml" {
+		t.Fatalf("radicle: %d %v", rec.Code, rec.Header())
+	}
+	if rec := get("/api/icons/selfhst/none"); rec.Code != http.StatusNotFound {
+		t.Fatalf("missing: %d", rec.Code)
+	}
+	// the svg that does not exist is remembered, so a second load asks nothing
+	if len(asked) != 5 {
+		t.Fatalf("cdn asked %v", asked)
+	}
+}

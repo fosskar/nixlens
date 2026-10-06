@@ -67,29 +67,46 @@ func (c *iconCache) upstream(kind, name string) (string, bool) {
 
 func (c *iconCache) serve(w http.ResponseWriter, r *http.Request) {
 	kind, name := r.PathValue("kind"), r.PathValue("name")
-	url, ok := c.upstream(kind, name)
-	if !ok {
-		http.NotFound(w, r)
-		return
+	// a name without extension takes the svg where the set has one and its
+	// png otherwise, as not every icon comes as svg
+	names := []string{name}
+	if path.Ext(name) == "" && (kind == "dashboard" || kind == "selfhst") {
+		names = []string{name + ".svg", name + ".png"}
 	}
-	icon, err := c.get(r.Context(), kind+"/"+name, url)
-	if err != nil {
-		log.Printf("icon %s: %v", url, err)
+	var failed bool
+	for _, name := range names {
+		url, ok := c.upstream(kind, name)
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		icon, err := c.get(r.Context(), kind+"/"+name, url)
+		if err != nil {
+			log.Printf("icon %s: %v", url, err)
+			failed = true
+			continue
+		}
+		if icon.found {
+			c.write(w, name, icon.body)
+			return
+		}
+	}
+	if failed {
 		http.Error(w, "icon unavailable", http.StatusBadGateway)
 		return
 	}
-	if !icon.found {
-		http.NotFound(w, r)
-		return
-	}
+	http.NotFound(w, r)
+}
+
+func (c *iconCache) write(w http.ResponseWriter, name string, body []byte) {
 	h := w.Header()
 	h.Set("Content-Type", mime.TypeByExtension(path.Ext(name)))
 	h.Set("Cache-Control", "public, max-age=86400")
 	// an svg opened on its own would run as a page of the hub's origin
 	h.Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
 	h.Set("X-Content-Type-Options", "nosniff")
-	if _, err := w.Write(icon.body); err != nil {
-		log.Printf("icon %s: write response: %v", url, err)
+	if _, err := w.Write(body); err != nil {
+		log.Printf("icon %s: write response: %v", name, err)
 	}
 }
 

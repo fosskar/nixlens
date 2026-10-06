@@ -6,14 +6,11 @@ type IconSource = { url: string; mask: boolean }
 function iconSource(icon: string): IconSource | null {
   if (icon === '') return null
   if (/^(https?:\/\/|\/)/.test(icon)) return { url: icon, mask: false }
-  // the hub fetches and keeps icons from the icon sets
-  if (icon.startsWith('sh-')) {
-    const name = /\.(svg|png|webp)$/.test(icon) ? icon.slice(3) : `${icon.slice(3)}.svg`
-    return { url: `/api/icons/selfhst/${encodeURIComponent(name)}`, mask: false }
-  }
+  // the hub fetches and keeps icons from the icon sets; without an extension
+  // it takes the svg, or the png where there is none
+  if (icon.startsWith('sh-')) return { url: `/api/icons/selfhst/${encodeURIComponent(icon.slice(3))}`, mask: false }
   if (icon.startsWith('mdi-')) return { url: `/api/icons/mdi/${encodeURIComponent(icon.slice(4))}.svg`, mask: true }
-  const name = /\.(svg|png|webp)$/.test(icon) ? icon : `${icon}.svg`
-  return { url: `/api/icons/dashboard/${encodeURIComponent(name)}`, mask: false }
+  return { url: `/api/icons/dashboard/${encodeURIComponent(icon)}`, mask: false }
 }
 
 const iconSizes = {
