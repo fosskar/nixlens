@@ -69,7 +69,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="nixlens-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-5xl flex-col overflow-hidden rounded-[22px] font-sans text-fg-base outline-none"
+        className="nixlens-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-5xl flex-col overflow-hidden rounded-surface font-sans text-fg-base outline-none"
       >
         {onBack && (
           <nav className="flex shrink-0 items-center gap-1 border-b border-white/[0.06] px-3 py-2 text-[11px]">
@@ -77,7 +77,7 @@ export function Modal({
               type="button"
               onClick={onBack}
               title="Back (Alt+←)"
-              className="mr-1 flex items-center gap-1 rounded-lg px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+              className="mr-1 flex items-center gap-1 rounded-control px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -118,7 +118,7 @@ export function ModalHeader({ children, onClose }: { children: ReactNode; onClos
         type="button"
         onClick={onClose}
         title="Close"
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-control text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="2" strokeLinecap="round">
           <path d="M6 6l12 12M18 6L6 18" />

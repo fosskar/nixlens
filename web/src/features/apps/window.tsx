@@ -26,7 +26,7 @@ function TitleButton({
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`grid h-7 w-7 place-items-center rounded-lg text-fg-muted transition hover:text-fg-inverse ${danger ? 'hover:bg-error/80' : 'hover:bg-white/[0.08]'}`}
+      className={`grid h-7 w-7 place-items-center rounded-control text-fg-muted transition hover:text-fg-inverse ${danger ? 'hover:bg-error/80' : 'hover:bg-white/[0.08]'}`}
     >
       <svg
         viewBox="0 0 24 24"
@@ -105,7 +105,7 @@ export function AppWindow({
           ? `${origin.x - (floating ? windowMargin : 0)}px ${origin.y - (floating ? windowMargin : 0)}px`
           : '50% 100%',
       }}
-      className={`nixlens-window glass-strong fixed z-40 flex flex-col overflow-hidden outline-none ${floating ? 'rounded-[22px]' : 'rounded-none border-0'}`}
+      className={`nixlens-window glass-strong fixed z-40 flex flex-col overflow-hidden outline-none ${floating ? 'rounded-surface' : 'rounded-none border-0'}`}
     >
       <div
         onDoubleClick={(e) => {

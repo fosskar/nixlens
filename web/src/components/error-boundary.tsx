@@ -16,13 +16,13 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
     if (!this.state.error) return this.props.children
     return (
       <div className="grid min-h-screen place-items-center p-6 font-sans text-fg-base">
-        <div className="glass max-w-md rounded-2xl p-6 text-center">
+        <div className="glass max-w-md rounded-surface p-6 text-center">
           <div className="text-lg font-semibold text-fg-inverse">Something went wrong</div>
           <p className="mt-2 text-sm text-fg-muted">{String(this.state.error)}</p>
           <button
             type="button"
             onClick={() => location.reload()}
-            className="glass-accent mt-5 rounded-xl px-4 py-2 text-sm text-fg-inverse"
+            className="glass-accent mt-5 rounded-control px-4 py-2 text-sm text-fg-inverse"
           >
             Reload
           </button>

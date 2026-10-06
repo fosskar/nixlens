@@ -84,7 +84,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
         type="button"
         onClick={() => navigate({ kind: 'machine', machine: m.name })}
         aria-label={`Open ${m.name}`}
-        className="absolute inset-0 rounded-2xl outline-accent-cyan transition hover:bg-white/[0.04] focus-visible:outline-2"
+        className="absolute inset-0 rounded-card outline-accent-cyan transition hover:bg-white/[0.04] focus-visible:outline-2"
       />
       <div className="pointer-events-none relative flex flex-col gap-3">
         <div>
@@ -135,7 +135,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
                 onClick={() =>
                   item.target && navigate({ kind: item.target.kind, machine: m.name, name: item.target.name })
                 }
-                className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-left text-[11px] text-fg-base outline-accent-cyan transition hover:bg-white/[0.08] focus-visible:outline-2"
+                className="flex items-center gap-2 rounded-control px-1.5 py-1 text-left text-[11px] text-fg-base outline-accent-cyan transition hover:bg-white/[0.08] focus-visible:outline-2"
               >
                 <Led health={item.health} small />
                 <span className="min-w-0 flex-1 truncate">{item.text}</span>

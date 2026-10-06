@@ -18,12 +18,12 @@ export function Dock({
 }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--safe-bottom))] z-50 flex justify-center">
-      <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-[26px] p-2.5">
+      <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-surface p-2.5">
         <button
           onClick={onHome}
           title="Home"
           aria-label="Home"
-          className={`grid h-11 w-11 place-items-center rounded-xl border transition hover:-translate-y-1 ${active === null ? 'glass-accent text-accent-cyan' : 'glass-tile text-fg-base'}`}
+          className={`grid h-11 w-11 place-items-center rounded-card border transition hover:-translate-y-1 ${active === null ? 'glass-accent text-accent-cyan' : 'glass-tile text-fg-base'}`}
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
             <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v6H4zM14 15h6v6h-6z" />

@@ -13,13 +13,16 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
   if (bays.length === 0) return null
 
   return (
-    <div className="nixlens-bay flex flex-col divide-y divide-white/[0.05] rounded-xl">
+    <div className="nixlens-bay flex flex-col divide-y divide-white/[0.05] rounded-card">
       {bays.map(({ pool, groups }) => {
         const mounted = redundant(pool) || pool.state === 'mounted'
         // the row opens the pool; drives sit above its button, since
         // buttons cannot nest
         return (
-          <div key={`${pool.kind}:${pool.name}`} className="relative px-3 py-2.5 first:rounded-t-xl last:rounded-b-xl">
+          <div
+            key={`${pool.kind}:${pool.name}`}
+            className="relative px-3 py-2.5 first:rounded-t-card last:rounded-b-card"
+          >
             <button
               type="button"
               onClick={() => onOpen({ kind: 'pool', name: pool.name })}
@@ -46,7 +49,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
                         title={driveTitle(disk)}
                         onClick={() => onOpen({ kind: 'disk', name: disk.name })}
                         aria-label={`${disk.model || 'drive'} ${disk.serial || disk.name}`}
-                        className={`flex h-11 items-end rounded-md p-0.5 outline-accent-cyan hover:bg-white/[0.08] focus-visible:outline-2 ${linkTransition}`}
+                        className={`flex h-11 items-end rounded-control p-0.5 outline-accent-cyan hover:bg-white/[0.08] focus-visible:outline-2 ${linkTransition}`}
                       >
                         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
                       </button>

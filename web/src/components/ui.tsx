@@ -12,7 +12,7 @@ export function Led({ health, small, asleep }: { health: Health; small?: boolean
 
 export function TypeBadge({ children }: { children: ReactNode }) {
   return (
-    <span className="shrink-0 rounded-md border border-white/10 bg-white/[0.05] px-1.5 py-px text-[10px] font-medium tracking-wide whitespace-nowrap text-fg-muted">
+    <span className="shrink-0 rounded-control border border-white/10 bg-white/[0.05] px-1.5 py-px text-[10px] font-medium tracking-wide whitespace-nowrap text-fg-muted">
       {children}
     </span>
   )
@@ -53,9 +53,9 @@ export function Facts({ rows }: { rows: [string, ReactNode][] }) {
   )
 }
 
-export const glass = 'glass rounded-[28px]'
+export const glass = 'glass rounded-surface'
 
-export const card = 'glass-card rounded-2xl'
+export const card = 'glass-card rounded-card'
 
 export function SectionTitle({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   return (

@@ -99,7 +99,7 @@ export function DriveDetail({
               target="_blank"
               rel="noopener noreferrer"
               title={`Search ${shopQuery(disk.model)} on geizhals.de`}
-              className="grid h-6 w-6 place-items-center rounded-md text-fg-muted outline-accent-cyan transition hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+              className="grid h-6 w-6 place-items-center rounded-control text-fg-muted outline-accent-cyan transition hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -166,7 +166,7 @@ export function DriveDetail({
                           <button
                             type="button"
                             onClick={() => onOpenPool(target.name)}
-                            className="flex items-center gap-2 rounded-lg px-1.5 py-0.5 text-left outline-accent-cyan transition-colors hover:bg-white/[0.06] focus-visible:outline-2"
+                            className="flex items-center gap-2 rounded-control px-1.5 py-0.5 text-left outline-accent-cyan transition-colors hover:bg-white/[0.06] focus-visible:outline-2"
                           >
                             {health && <Led health={health} small />}
                             <span className="text-accent-cyan">→</span>

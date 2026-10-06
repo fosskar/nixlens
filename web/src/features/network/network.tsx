@@ -83,7 +83,7 @@ function AddressChip({ address }: { address: string }) {
       type="button"
       onClick={copy}
       title="Copy"
-      className={`rounded-md border px-1.5 py-0.5 font-mono text-[10px] outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-white/[0.08] bg-white/[0.04] text-fg-base hover:border-white/20 hover:bg-white/[0.08]'}`}
+      className={`rounded-control border px-1.5 py-0.5 font-mono text-[10px] outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-white/[0.08] bg-white/[0.04] text-fg-base hover:border-white/20 hover:bg-white/[0.08]'}`}
     >
       {copied === 'copied' ? '✓ copied' : copied === 'failed' ? 'copy failed' : address}
     </button>
@@ -92,7 +92,7 @@ function AddressChip({ address }: { address: string }) {
 
 function Chip({ children }: { children: string }) {
   return (
-    <span className="rounded-md border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-fg-base">
+    <span className="rounded-control border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-fg-base">
       {children}
     </span>
   )
@@ -138,7 +138,7 @@ function Connection({ iface, members }: { iface: NetInterface; members: NetInter
               onClick={() => setExpanded(!expanded)}
               aria-expanded={expanded}
               title={expanded ? 'Show fewer addresses' : 'Show all addresses'}
-              className="rounded-md border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-fg-muted outline-accent-cyan transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+              className="rounded-control border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-fg-muted outline-accent-cyan transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
             >
               {expanded ? 'less' : `+${hidden.length}`}
             </button>

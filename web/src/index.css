@@ -32,6 +32,10 @@
   --color-error: #f07167;
   --color-warning: #c79a3a;
   --color-info: #6796e6;
+
+  --radius-surface: 20px;
+  --radius-card: 12px;
+  --radius-control: 6px;
 }
 
 :root {

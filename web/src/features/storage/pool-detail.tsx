@@ -125,7 +125,7 @@ function MemberRow({
       )}
     </>
   )
-  const layout = `relative grid w-full items-center gap-3 rounded-lg px-2.5 py-1.5 text-left ${showState ? 'grid-cols-[auto_1fr_auto_5.5rem] before:absolute before:top-1/2 before:-left-3 before:h-px before:w-2.5 before:bg-white/10' : 'grid-cols-[1fr_auto]'}`
+  const layout = `relative grid w-full items-center gap-3 rounded-control px-2.5 py-1.5 text-left ${showState ? 'grid-cols-[auto_1fr_auto_5.5rem] before:absolute before:top-1/2 before:-left-3 before:h-px before:w-2.5 before:bg-white/10' : 'grid-cols-[1fr_auto]'}`
   if (!disk) return <div className={layout}>{content}</div>
   return (
     <button
@@ -201,7 +201,7 @@ function MemberTile({
       )}
     </>
   )
-  const layout = 'flex w-[4.5rem] flex-col items-center gap-1 rounded-lg px-1 py-1.5'
+  const layout = 'flex w-[4.5rem] flex-col items-center gap-1 rounded-control px-1 py-1.5'
   const title = [disk?.model, memberPartition(member, pool, disk), member.state].filter(Boolean).join('\n')
   if (!disk) return <div className={layout}>{content}</div>
   return (
@@ -250,7 +250,7 @@ function VdevTree({ pool, disks, onOpenDisk }: { pool: Pool; disks: Disk[]; onOp
 
 function Chip({ name, value }: { name: string; value: string }) {
   return (
-    <span className="flex items-baseline gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]">
+    <span className="flex items-baseline gap-1.5 rounded-control border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]">
       <span className="text-fg-muted">{name}</span>
       <span className="font-mono text-fg-inverse">{value}</span>
     </span>
@@ -325,7 +325,7 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
               {[16, 20, 14, 18, 12, 22].map((w, i) => (
                 <div
                   key={i}
-                  className="h-6 animate-pulse rounded-lg bg-white/[0.06]"
+                  className="h-6 animate-pulse rounded-control bg-white/[0.06]"
                   style={{ width: `${w * 0.25}rem` }}
                 />
               ))}
