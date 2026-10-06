@@ -121,17 +121,18 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [active])
 
-  const self = machines.find((m) => m.self)
+  // names what is in front, so tabs and history tell views apart
+  const title = routeApp ? `${routeApp.name} · nixlens` : admin && detail ? `${detail.machine} · nixlens` : 'nixlens'
 
   const online = machines.filter((m) => m.online).length
 
   return (
     <div className="min-h-screen text-fg-base">
+      <title>{title}</title>
       <div
         className={`transition-opacity duration-300 ${active ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
         inert={active !== null}
       >
-        {self && <title>{self.name}</title>}
         <UserMenu me={me} />
         {admin && (
           <aside
