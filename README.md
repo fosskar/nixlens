@@ -1,7 +1,7 @@
 <!-- prettier-ignore -->
 <div align="center">
 
-<img src="./assets/logo/frosted-monogram.svg" alt="" align="center" height="88" />
+<img src="./assets/logo/magnifier-rows.svg" alt="" align="center" height="88" />
 
 # nixlens
 
