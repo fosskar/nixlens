@@ -155,7 +155,7 @@ export default function App() {
         >
           <div className="mx-auto max-w-5xl">
             <header className="mb-10 text-center">
-              <h1 className="bg-gradient-to-b from-fg-inverse to-fg-base bg-clip-text text-4xl font-semibold tracking-tight text-transparent md:text-5xl">
+              <h1 className="bg-gradient-to-b from-fg-inverse to-fg-base bg-clip-text text-4xl leading-tight font-semibold tracking-tight text-transparent md:text-5xl">
                 {greeting()}
                 {firstName && `, ${firstName}`}.
               </h1>
