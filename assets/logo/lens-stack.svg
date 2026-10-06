@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <clipPath id="lens"><circle cx="38" cy="30" r="15"/></clipPath>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="#181818"/>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="#16A085" fill-opacity=".18" stroke="#fff" stroke-opacity=".25"/>
+  <g fill="#fff" fill-opacity=".14">
+    <rect x="12" y="16" width="36" height="8" rx="3"/>
+    <rect x="12" y="28" width="36" height="8" rx="3"/>
+    <rect x="12" y="40" width="36" height="8" rx="3"/>
+  </g>
+  <circle cx="38" cy="30" r="15" fill="#16A085" fill-opacity=".55"/>
+  <g clip-path="url(#lens)">
+    <rect x="14" y="10" width="44" height="11" rx="4" fill="#fff" fill-opacity=".3"/>
+    <rect x="14" y="25" width="44" height="11" rx="4" fill="#fff" fill-opacity=".3"/>
+    <rect x="14" y="40" width="44" height="11" rx="4" fill="#fff" fill-opacity=".3"/>
+    <circle cx="44" cy="15.5" r="2.4" fill="#73C991"/>
+    <circle cx="44" cy="30.5" r="2.4" fill="#73C991"/>
+    <circle cx="44" cy="45.5" r="2.4" fill="#C79A3A"/>
+  </g>
+  <circle cx="38" cy="30" r="15" fill="none" stroke="#fff" stroke-width="3.5"/>
+  <path d="M27.4 40.6 L19 49" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+</svg>
