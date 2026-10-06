@@ -16,7 +16,7 @@ function ScrollHint({
       tabIndex={visible ? 0 : -1}
       aria-hidden={!visible}
       title={direction === 'up' ? 'Scroll up' : 'Scroll down'}
-      className={`nixlens-scroll-hint absolute left-1/2 z-10 grid h-7 w-7 -translate-x-1/2 place-items-center rounded-full border border-line bg-fill text-fg-base shadow-raised backdrop-blur-xl backdrop-saturate-150 transition-[opacity,transform,background-color] duration-300 hover:bg-fill-hover hover:text-fg-inverse ${direction === 'up' ? 'top-2' : 'bottom-2'} ${visible ? 'opacity-100' : 'pointer-events-none scale-75 opacity-0'}`}
+      className={`nixlens-scroll-hint absolute left-1/2 z-10 grid h-7 w-7 -translate-x-1/2 place-items-center rounded-full glass-tile text-fg-base transition-[opacity,transform,background-color] duration-300 hover:bg-fill-hover hover:text-fg-inverse ${direction === 'up' ? 'top-2' : 'bottom-2'} ${visible ? 'opacity-100' : 'pointer-events-none scale-75 opacity-0'}`}
       data-direction={direction}
       data-visible={visible || undefined}
     >

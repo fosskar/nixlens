@@ -18,7 +18,7 @@ export function Dock({
 }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--safe-bottom))] z-50 flex justify-center">
-      <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-surface p-2.5">
+      <div className="glass-strong glass-blur pointer-events-auto flex items-center gap-2 rounded-surface p-2.5">
         <button
           onClick={onHome}
           title="Home"

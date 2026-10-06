@@ -51,7 +51,7 @@ export function Facts({ rows }: { rows: [string, ReactNode][] }) {
   )
 }
 
-export const glass = 'glass rounded-surface'
+export const glass = 'glass glass-blur rounded-surface'
 
 export const card = 'glass-card rounded-card'
 

@@ -74,7 +74,7 @@ export function UserMenu({ me }: { me?: Me }) {
           )}
         </button>
         {open && (
-          <div id={menuId} className="glass-strong absolute top-12 right-0 w-64 rounded-surface p-1.5">
+          <div id={menuId} className="glass-strong glass-blur absolute top-12 right-0 w-64 rounded-surface p-1.5">
             {name && (
               <div className="border-b border-hairline px-3 pt-2 pb-2.5">
                 <div className="truncate text-sm font-semibold text-fg-inverse">{name}</div>
@@ -166,7 +166,7 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
         role="dialog"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`${leaving ? 'nixlens-panel-out' : 'nixlens-panel'} glass-strong absolute top-[calc(0.75rem+var(--safe-top))] right-[calc(0.75rem+var(--safe-right))] bottom-[calc(0.75rem+var(--safe-bottom))] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col rounded-surface font-sans outline-none`}
+        className={`${leaving ? 'nixlens-panel-out' : 'nixlens-panel'} glass-strong glass-blur absolute top-[calc(0.75rem+var(--safe-top))] right-[calc(0.75rem+var(--safe-right))] bottom-[calc(0.75rem+var(--safe-bottom))] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col rounded-surface font-sans outline-none`}
       >
         <div className="flex items-center justify-between border-b border-hairline py-3.5 pr-3 pl-5">
           <h2 id={titleId} className="text-base font-semibold text-fg-inverse">
@@ -213,7 +213,7 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
               className="w-32 accent-[var(--color-accent-cyan)]"
             />
           </Row>
-          <Row label="Reduce transparency" hint="No blur behind panels">
+          <Row label="Reduce transparency" hint="Solid panels without blur">
             <Toggle label="Reduce transparency" checked={prefs.solid} onChange={(solid) => setPrefs({ solid })} />
           </Row>
           <Row label="Reduce motion" hint="Also follows the system setting">
