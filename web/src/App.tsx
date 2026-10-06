@@ -99,7 +99,6 @@ export default function App() {
   }, [active])
 
   const goHome = () => {
-    if (detail) closeLayer()
     if (!active) return
     setOrigin(active, dockRect(active))
     closeLayer()
@@ -211,6 +210,7 @@ export default function App() {
           closing={closing}
           active={active}
           underGrid={admin && active === null}
+          hidden={detail !== null}
           onHome={goHome}
           onSelect={(app) => openApp(app, dockRect(app.url))}
           onClose={closeApp}

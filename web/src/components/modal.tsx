@@ -104,9 +104,8 @@ export function ModalHeader({ children, onClose }: { children: ReactNode; onClos
 
 export function ModalBody({ children }: { children: ReactNode }) {
   return (
-    <ScrollArea underDock>
-      {/* the dock floats over the bottom of the panel */}
-      <div className="flex flex-col gap-6 p-5 pb-28">{children}</div>
+    <ScrollArea>
+      <div className="flex flex-col gap-6 p-5">{children}</div>
     </ScrollArea>
   )
 }

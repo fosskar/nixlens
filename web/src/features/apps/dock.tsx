@@ -7,6 +7,7 @@ export function Dock({
   closing,
   active,
   underGrid,
+  hidden,
   onHome,
   onSelect,
   onClose,
@@ -15,6 +16,7 @@ export function Dock({
   closing: string[]
   active: string | null
   underGrid: boolean
+  hidden: boolean
   onHome: () => void
   onSelect: (app: App) => void
   onClose: (app: App) => void
@@ -22,9 +24,10 @@ export function Dock({
   return (
     // beside the sidebar it moves right by half the apps' left offset
     // (23.5rem) to centre under them; over an app window it centres on the page.
-    // it glides only with apps, not when the sidebar appears on load
+    // details hide it below the screen's edge
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--safe-bottom))] z-50 flex justify-center ${open.length > 0 ? 'transition-transform duration-300' : ''} ${underGrid ? 'md:translate-x-[11.75rem]' : ''}`}
+      inert={hidden}
+      className={`pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--safe-bottom))] z-50 flex justify-center transition-[translate,opacity] duration-300 ${underGrid ? 'md:translate-x-[11.75rem]' : ''} ${hidden ? 'translate-y-[calc(100%+2rem)] opacity-0' : ''}`}
     >
       <div className="glass-strong glass-blur pointer-events-auto flex items-center gap-2 rounded-surface p-2.5">
         <button

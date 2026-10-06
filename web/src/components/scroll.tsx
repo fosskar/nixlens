@@ -35,8 +35,7 @@ function ScrollHint({
 
 // a scroll container without a scrollbar: the edges fade where content
 // continues and a small glass arrow offers to scroll there
-// under the dock a down arrow would stack on it, so the fade alone shows more below
-export function ScrollArea({ children, underDock }: { children: ReactNode; underDock?: boolean }) {
+export function ScrollArea({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState({ top: false, bottom: false })
 
@@ -76,7 +75,7 @@ export function ScrollArea({ children, underDock }: { children: ReactNode; under
         {children}
       </div>
       <ScrollHint direction="up" visible={edges.top} onClick={() => scrollBy(-1)} />
-      {!underDock && <ScrollHint direction="down" visible={edges.bottom} onClick={() => scrollBy(1)} />}
+      <ScrollHint direction="down" visible={edges.bottom} onClick={() => scrollBy(1)} />
     </div>
   )
 }
