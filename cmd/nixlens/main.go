@@ -140,7 +140,11 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		mux.HandleFunc("GET /", hub.UI(dist))
+		ui, err := hub.UI(dist)
+		if err != nil {
+			log.Fatal(err)
+		}
+		mux.HandleFunc("GET /", ui)
 	}
 
 	mux.Handle("GET /api/local/", localHandler)
