@@ -31,6 +31,14 @@ export function AppWindow({
 }) {
   const [entered, setEntered] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  // a frame the browser blocks may never report loading; after a while the
+  // window offers the app in a tab of its own
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    if (loaded) return
+    const timer = setTimeout(() => setSlow(true), 10000)
+    return () => clearTimeout(timer)
+  }, [loaded])
   const frame = useRef<HTMLIFrameElement>(null)
   const panel = useRef<HTMLDivElement>(null)
   const shown = state === 'shown'
@@ -144,6 +152,19 @@ export function AppWindow({
               <AppIcon app={app} />
             </div>
             <span className="text-xs text-fg-muted">Loading {app.name}…</span>
+            {slow && (
+              <span className="flex flex-col items-center gap-2 text-xs text-fg-muted">
+                It may not open inside nixlens.
+                <a
+                  href={app.url}
+                  target="_blank"
+                  rel="noopener"
+                  className="rounded-control border border-line bg-fill px-3 py-1.5 text-fg-base outline-accent-cyan transition-colors hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
+                >
+                  Open in new tab
+                </a>
+              </span>
+            )}
           </div>
         </div>
         <iframe
