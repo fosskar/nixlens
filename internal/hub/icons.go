@@ -57,8 +57,8 @@ func (c *iconCache) upstream(kind, name string) (string, bool) {
 	switch {
 	case kind == "dashboard" && (ext == "svg" || ext == "png" || ext == "webp"):
 		return c.cdn + "/gh/homarr-labs/dashboard-icons/" + ext + "/" + name, true
-	case kind == "selfhst" && ext == "svg":
-		return c.cdn + "/gh/selfhst/icons/svg/" + name, true
+	case kind == "selfhst" && (ext == "svg" || ext == "png" || ext == "webp"):
+		return c.cdn + "/gh/selfhst/icons/" + ext + "/" + name, true
 	case kind == "mdi" && ext == "svg":
 		return c.cdn + "/npm/@mdi/svg/svg/" + name, true
 	}

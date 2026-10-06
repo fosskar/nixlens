@@ -130,3 +130,20 @@ func TestIconsOnDisk(t *testing.T) {
 		t.Fatalf("expired file not replaced: %v %v", info.ModTime(), err)
 	}
 }
+
+func TestIconUpstream(t *testing.T) {
+	c := newIconCache("https://cdn", "")
+	cases := map[[2]string]string{
+		{"selfhst", "convertx.png"}:   "https://cdn/gh/selfhst/icons/png/convertx.png",
+		{"selfhst", "radicle.svg"}:    "https://cdn/gh/selfhst/icons/svg/radicle.svg",
+		{"dashboard", "jellyfin.svg"}: "https://cdn/gh/homarr-labs/dashboard-icons/svg/jellyfin.svg",
+		{"mdi", "printer.svg"}:        "https://cdn/npm/@mdi/svg/svg/printer.svg",
+		{"mdi", "printer.png"}:        "",
+	}
+	for in, want := range cases {
+		got, ok := c.upstream(in[0], in[1])
+		if got != want || ok != (want != "") {
+			t.Errorf("%v: got %q %t, want %q", in, got, ok, want)
+		}
+	}
+}

@@ -213,7 +213,7 @@ The hub reaches each agent at `https://<machine>.<meta.domain>:7480`. Run `clan 
 | `services.nixlens.hub.adminGroups`               | `[ ]`         | Groups that see machines and storage. Empty allows everyone.                          |
 | `services.nixlens.hub.categoryGroups.<category>` | `{ }`         | Groups that see a category. Unlisted categories are visible to all.                   |
 
-An app's `icon` can be a dashboard-icons file or name (`jellyfin.svg`), a selfh.st icon (`sh-jellyfin`), a Material Design icon (`mdi-printer`) or a URL. The hub fetches icons from these sets once, keeps them in `/var/lib/nixlens/icons` and serves them itself, so it needs to reach `cdn.jsdelivr.net` the first time it sees an icon; URLs load directly in the browser.
+An app's `icon` can be a dashboard-icons file or name (`jellyfin.svg`), a selfh.st icon (`sh-jellyfin`, or `sh-convertx.png` for one without an svg), a Material Design icon (`mdi-printer`) or a URL. The hub fetches icons from these sets once, keeps them in `/var/lib/nixlens/icons` and serves them itself, so it needs to reach `cdn.jsdelivr.net` the first time it sees an icon; URLs load directly in the browser.
 
 ## Security
 
