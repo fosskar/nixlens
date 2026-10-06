@@ -31,6 +31,7 @@ func main() {
 	adminGroups := flag.String("admin-groups", "", "hub: comma-separated groups that see machines; empty allows everyone")
 	accountURL := flag.String("account-url", "", "hub: page where users manage their account, linked from the user menu")
 	iconCache := flag.String("icon-cache", "", "hub: directory keeping fetched app icons across restarts")
+	noticeFile := flag.String("notice-file", "", "hub: file keeping the notice admins set for everyone")
 	categoryGroupsFile := flag.String("category-groups", "", "hub: path to a JSON object mapping categories to the groups that see them")
 	memFile := flag.String("installed-memory-file", "", "file holding the installed memory in bytes")
 	writeMem := flag.String("write-installed-memory", "", "write the installed memory from smbios to this file and exit; needs root")
@@ -138,6 +139,11 @@ func main() {
 			log.Fatal(err)
 		}
 		h.Register(mux)
+		notices, err := hub.NewNotices(*noticeFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		notices.Register(mux, acc)
 		// behind the proxy, the hub's own /api/local/ would otherwise bypass
 		// adminGroups
 		localHandler = acc.AdminOnly(local.ServeHTTP)

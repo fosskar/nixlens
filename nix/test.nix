@@ -187,6 +187,13 @@ testers.runNixOSTest {
       ], overview
       assert [a["name"] for a in get(hub, "/api/apps", groups="user")] == ["Immich"]
 
+      put_notice = "curl -sf -X PUT -H 'Content-Type: application/json' -d '{\"message\":\"maintenance\"}' http://127.0.0.1:7480/api/notice"
+      hub.fail(f"{put_notice} -H 'Remote-Groups: user'")
+      hub.succeed(f"{put_notice} -H 'Remote-Groups: admin'")
+      hub.systemctl("restart nixlens.service")
+      hub.wait_for_open_port(7480)
+      assert get(hub, "/api/notice", groups="user")["message"] == "maintenance"
+
       agent.stop_job("nixlens.service")
       machines = get(hub, "/api/overview")
       assert not machines[1]["online"], machines
