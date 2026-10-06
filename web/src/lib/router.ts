@@ -44,11 +44,18 @@ function isState(value: unknown): value is State {
 
 if (!isState(history.state)) history.replaceState({ idx: 0, base: null } satisfies State, '')
 
-let current = parse(location.pathname)
+// an address that names no view shows home, and the address becomes /
+function read(): Route {
+  const route = parse(location.pathname)
+  if (route.kind === 'home' && location.pathname !== '/') history.replaceState(history.state, '', '/')
+  return route
+}
+
+let current = read()
 const listeners = new Set<() => void>()
 
 function emit() {
-  current = parse(location.pathname)
+  current = read()
   listeners.forEach((l) => l())
 }
 window.addEventListener('popstate', emit)

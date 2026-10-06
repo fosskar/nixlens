@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Modal, ModalBody, ModalHeader, ModalTitle } from '@/components/modal'
-import { SectionTitle, Unavailable } from '@/components/ui'
+import { card, SectionTitle, Unavailable } from '@/components/ui'
 import { SystemWidget } from '@/features/inspector/system'
 import { NetworkWidget } from '@/features/network/network'
 import { DriveDetail } from '@/features/storage/drive-detail'
@@ -25,6 +25,10 @@ export function Inspector({ route, leaving }: { route: Detail; leaving: boolean 
   const target = route.kind === 'machine' ? null : `${route.kind}-${route.name}`
   const body = useRef<HTMLDivElement>(null)
   const loaded = storage !== undefined
+  const missing =
+    route.kind === 'pool'
+      ? loaded && !storage.pools.some((p) => p.name === route.name)
+      : route.kind === 'disk' && loaded && !storage.disks.some((d) => d.name === route.name)
 
   useEffect(() => {
     if (!target || !loaded) return
@@ -49,6 +53,12 @@ export function Inspector({ route, leaving }: { route: Detail; leaving: boolean 
       </ModalHeader>
       <ModalBody>
         <div ref={body} className="flex flex-col gap-8">
+          {missing && (
+            <p className={`${card} px-4 py-3 text-sm text-warning`}>
+              No {route.kind === 'pool' ? 'pool' : 'drive'}{' '}
+              <span className="font-mono">{route.kind !== 'machine' && route.name}</span> on {machine}
+            </p>
+          )}
           <SystemWidget poll={system} />
           <NetworkWidget poll={network} />
           {!storage ? (
