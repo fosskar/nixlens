@@ -185,6 +185,14 @@ export function usePoll<T>(path: string | null, intervalMs: number): Poll<T> {
     if (path === null) return
     const abort = new AbortController()
     let timer: ReturnType<typeof setTimeout>
+    // a hidden tab stops polling and catches up once it is visible again
+    let paused = false
+    const onVisible = () => {
+      if (paused && !document.hidden) {
+        paused = false
+        load()
+      }
+    }
     const load = async () => {
       try {
         // a request that never finishes would stop the polling for good
@@ -205,12 +213,18 @@ export function usePoll<T>(path: string | null, intervalMs: number): Poll<T> {
               : String(e)
         setState((s) => ({ path, data: s.path === path ? s.data : undefined, error }))
       }
-      if (!abort.signal.aborted) timer = setTimeout(load, intervalMs)
+      if (abort.signal.aborted) return
+      timer = setTimeout(() => {
+        if (document.hidden) paused = true
+        else load()
+      }, intervalMs)
     }
     load()
+    document.addEventListener('visibilitychange', onVisible)
     return () => {
       abort.abort()
       clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [path, intervalMs])
   return state.path === path ? state : {}
