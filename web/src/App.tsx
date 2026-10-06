@@ -30,7 +30,8 @@ function dockRect(url: string): DOMRect | undefined {
 }
 
 export default function App() {
-  const me = usePoll<Me>('/api/me', 60000).data
+  const mePoll = usePoll<Me>('/api/me', 60000)
+  const me = mePoll.data
   const admin = me?.admin ?? false
   const firstName = me?.name.split(' ')[0].toLowerCase()
   const overview = usePoll<MachineOverview[]>(admin ? '/api/overview' : null, 10000)
@@ -192,15 +193,18 @@ export default function App() {
 
       {admin && detail && <Inspector route={detail} />}
 
-      <Dock
-        open={open}
-        closing={closing}
-        active={active}
-        underGrid={admin && active === null}
-        onHome={goHome}
-        onSelect={(app) => openApp(app, dockRect(app.url))}
-        onClose={closeApp}
-      />
+      {/* where the dock sits depends on the sidebar, known once /api/me answers */}
+      {(me || mePoll.error) && (
+        <Dock
+          open={open}
+          closing={closing}
+          active={active}
+          underGrid={admin && active === null}
+          onHome={goHome}
+          onSelect={(app) => openApp(app, dockRect(app.url))}
+          onClose={closeApp}
+        />
+      )}
     </div>
   )
 }

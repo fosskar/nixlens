@@ -20,9 +20,10 @@ export function Dock({
 }) {
   return (
     // beside the sidebar it moves right by half the apps' left offset
-    // (23.5rem) to centre under them; over an app window it centres on the page
+    // (23.5rem) to centre under them; over an app window it centres on the page.
+    // it glides only with apps, not when the sidebar appears on load
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--safe-bottom))] z-50 flex justify-center transition-transform duration-300 ${underGrid ? 'md:translate-x-[11.75rem]' : ''}`}
+      className={`pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--safe-bottom))] z-50 flex justify-center ${open.length > 0 ? 'transition-transform duration-300' : ''} ${underGrid ? 'md:translate-x-[11.75rem]' : ''}`}
     >
       <div className="glass-strong glass-blur pointer-events-auto flex items-center gap-2 rounded-surface p-2.5">
         <button
