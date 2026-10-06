@@ -39,6 +39,7 @@ type Hub struct {
 	order    map[string]int
 	access   Access
 	frames   *frameChecker
+	icons    *iconCache
 }
 
 // Peer is an agent: where it listens, and the fingerprint of its key, which
@@ -105,6 +106,7 @@ func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor f
 		order:    order,
 		access:   acc,
 		frames:   newFrameChecker(),
+		icons:    newIconCache("https://cdn.jsdelivr.net"),
 	}, nil
 }
 
@@ -113,6 +115,7 @@ func (h *Hub) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/machines/{name}/{kind}", h.access.AdminOnly(h.machineData))
 	mux.HandleFunc("GET /api/machines/{name}/pool/{pool}", h.access.AdminOnly(h.poolDetail))
 	mux.HandleFunc("GET /api/apps", h.apps)
+	mux.HandleFunc("GET /api/icons/{kind}/{name}", h.icons.serve)
 	mux.HandleFunc("GET /api/me", func(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, h.access.me(r), nil)
 	})

@@ -1,20 +1,16 @@
 import { useState } from 'react'
 import { type App } from '@/lib/api'
 
-const dashboardIcons = 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons'
-
 type IconSource = { url: string; mask: boolean }
 
 function iconSource(icon: string): IconSource | null {
   if (icon === '') return null
   if (/^(https?:\/\/|\/)/.test(icon)) return { url: icon, mask: false }
-  if (icon.startsWith('sh-'))
-    return { url: `https://cdn.jsdelivr.net/gh/selfhst/icons/svg/${icon.slice(3)}.svg`, mask: false }
-  if (icon.startsWith('mdi-'))
-    return { url: `https://cdn.jsdelivr.net/npm/@mdi/svg/svg/${icon.slice(4)}.svg`, mask: true }
-  const ext = /\.(svg|png|webp)$/.exec(icon)?.[1]
-  if (ext) return { url: `${dashboardIcons}/${ext}/${icon}`, mask: false }
-  return { url: `${dashboardIcons}/svg/${icon}.svg`, mask: false }
+  // the hub fetches and keeps icons from the icon sets
+  if (icon.startsWith('sh-')) return { url: `/api/icons/selfhst/${encodeURIComponent(icon.slice(3))}.svg`, mask: false }
+  if (icon.startsWith('mdi-')) return { url: `/api/icons/mdi/${encodeURIComponent(icon.slice(4))}.svg`, mask: true }
+  const name = /\.(svg|png|webp)$/.test(icon) ? icon : `${icon}.svg`
+  return { url: `/api/icons/dashboard/${encodeURIComponent(name)}`, mask: false }
 }
 
 const iconSizes = {
