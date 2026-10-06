@@ -26,7 +26,7 @@ function TitleButton({
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`grid h-7 w-7 place-items-center rounded-control text-fg-muted transition hover:text-fg-inverse ${danger ? 'hover:bg-error/80' : 'hover:bg-white/[0.08]'}`}
+      className={`grid h-7 w-7 place-items-center rounded-control text-fg-muted transition hover:text-fg-inverse ${danger ? 'hover:bg-error/80' : 'hover:bg-fill-hover'}`}
     >
       <svg
         viewBox="0 0 24 24"
@@ -111,7 +111,7 @@ export function AppWindow({
         onDoubleClick={(e) => {
           if (!(e.target instanceof Element && e.target.closest('button'))) onToggleFloating()
         }}
-        className="flex h-11 shrink-0 items-center gap-2.5 border-b border-white/[0.07] bg-white/[0.03] pr-2 pl-3.5 select-none"
+        className="flex h-11 shrink-0 items-center gap-2.5 border-b border-hairline bg-fill pr-2 pl-3.5 select-none"
       >
         <AppIcon app={app} size="xs" />
         <span className="truncate text-sm font-medium text-fg-inverse">{app.name}</span>

@@ -13,7 +13,7 @@ function initials(name: string): string {
 
 function MenuItem({ onClick, href, children }: { onClick?: () => void; href?: string; children: ReactNode }) {
   const className =
-    'flex w-full items-center justify-between gap-3 rounded-control px-3 py-2 text-left text-sm text-fg-base transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2'
+    'flex w-full items-center justify-between gap-3 rounded-control px-3 py-2 text-left text-sm text-fg-base transition outline-accent-cyan hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2'
   return href ? (
     <a href={href} target="_blank" rel="noreferrer" className={className}>
       {children}
@@ -76,7 +76,7 @@ export function UserMenu({ me }: { me?: Me }) {
         {open && (
           <div id={menuId} className="glass-strong absolute top-12 right-0 w-64 rounded-surface p-1.5 shadow-2xl">
             {name && (
-              <div className="border-b border-white/[0.07] px-3 pt-2 pb-2.5">
+              <div className="border-b border-hairline px-3 pt-2 pb-2.5">
                 <div className="truncate text-sm font-semibold text-fg-inverse">{name}</div>
                 {me?.email && <div className="truncate text-xs text-fg-muted">{me.email}</div>}
               </div>
@@ -124,7 +124,7 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 shrink-0 rounded-full border transition outline-accent-cyan focus-visible:outline-2 ${checked ? 'border-accent-cyan/50 bg-accent/70' : 'border-white/10 bg-white/[0.08]'}`}
+      className={`relative h-6 w-11 shrink-0 rounded-full border transition outline-accent-cyan focus-visible:outline-2 ${checked ? 'border-accent-cyan/50 bg-accent/70' : 'border-line bg-fill'}`}
     >
       <span
         className={`absolute top-0.5 h-4.5 w-4.5 rounded-full bg-fg-inverse shadow transition-[left] ${checked ? 'left-[1.375rem]' : 'left-0.5'}`}
@@ -168,7 +168,7 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
         tabIndex={-1}
         className={`${leaving ? 'nixlens-panel-out' : 'nixlens-panel'} glass-strong absolute top-[calc(0.75rem+var(--safe-top))] right-[calc(0.75rem+var(--safe-right))] bottom-[calc(0.75rem+var(--safe-bottom))] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col rounded-surface font-sans outline-none`}
       >
-        <div className="flex items-center justify-between border-b border-white/[0.07] py-3.5 pr-3 pl-5">
+        <div className="flex items-center justify-between border-b border-hairline py-3.5 pr-3 pl-5">
           <h2 id={titleId} className="text-base font-semibold text-fg-inverse">
             Preferences
           </h2>
@@ -176,14 +176,14 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
             type="button"
             onClick={onClose}
             aria-label="Close preferences"
-            className="grid h-7 w-7 place-items-center rounded-control text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+            className="grid h-7 w-7 place-items-center rounded-control text-fg-muted transition outline-accent-cyan hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="2" strokeLinecap="round">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </button>
         </div>
-        <div className="flex-1 divide-y divide-white/[0.06] overflow-y-auto px-5 py-2">
+        <div className="flex-1 divide-y divide-hairline overflow-y-auto px-5 py-2">
           <Row label="Accent colour">
             <div role="radiogroup" aria-label="Accent colour" className="flex gap-2">
               {(Object.keys(accents) as Accent[]).map((accent) => (
@@ -231,13 +231,13 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
               type="button"
               disabled={prefs.collapsed.length === 0}
               onClick={() => setPrefs({ collapsed: [] })}
-              className="rounded-control border border-white/10 px-3 py-1.5 text-xs text-fg-base transition outline-accent-cyan hover:bg-white/[0.08] focus-visible:outline-2 disabled:opacity-40"
+              className="rounded-control border border-line px-3 py-1.5 text-xs text-fg-base transition outline-accent-cyan hover:bg-fill-hover focus-visible:outline-2 disabled:opacity-40"
             >
               Expand all
             </button>
           </Row>
         </div>
-        <div className="border-t border-white/[0.07] px-5 py-3 text-right">
+        <div className="border-t border-hairline px-5 py-3 text-right">
           <button
             type="button"
             onClick={resetPrefs}

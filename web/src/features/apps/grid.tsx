@@ -40,8 +40,8 @@ export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from
                 <path d="M9 6l6 6-6 6" />
               </svg>
               {category || 'Other'}
-              <span className="text-fg-dim tabular-nums">{list.length}</span>
-              <span className="h-px flex-1 bg-gradient-to-r from-white/[0.10] to-transparent" />
+              <span className="text-fg-muted tabular-nums">{list.length}</span>
+              <span className="h-px flex-1 bg-gradient-to-r from-line to-transparent" />
             </button>
             <div
               className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
@@ -77,7 +77,7 @@ function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DO
           <div className="relative">
             <AppIcon app={app} />
             {!app.frameable && (
-              <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-white/15 bg-bg-overlay/90 text-[10px] text-fg-base shadow-[inset_0_1px_0_rgb(255_255_255/0.1),0_2px_6px_rgb(0_0_0/0.5)]">
+              <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-line bg-bg-overlay/90 text-[10px] text-fg-base shadow-[inset_0_1px_0_rgb(255_255_255/0.1),0_2px_6px_rgb(0_0_0/0.5)]">
                 ↗
               </span>
             )}

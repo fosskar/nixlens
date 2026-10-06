@@ -29,7 +29,7 @@ export function Dock({
             <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v6H4zM14 15h6v6h-6z" />
           </svg>
         </button>
-        {open.length > 0 && <div className="mx-1 h-8 w-px bg-white/[0.12]" />}
+        {open.length > 0 && <div className="mx-1 h-8 w-px bg-line" />}
         {open.map((app) => (
           // a closing app stays until its window has shrunk into the icon,
           // which fades with it, so the dock does not jump mid-animation
@@ -51,7 +51,7 @@ export function Dock({
               onClick={() => onClose(app)}
               title={`Close ${app.name}`}
               aria-label={`Close ${app.name}`}
-              className="absolute -top-1 -right-1 hidden group-focus-within:grid h-4 w-4 place-items-center rounded-full border border-white/15 bg-bg-overlay text-[10px] leading-none text-fg-base shadow-[0_2px_6px_rgb(0_0_0/0.5)] group-hover:grid hover:bg-error hover:text-fg-inverse"
+              className="absolute -top-1 -right-1 hidden group-focus-within:grid h-4 w-4 place-items-center rounded-full border border-line bg-bg-overlay text-[10px] leading-none text-fg-base shadow-[0_2px_6px_rgb(0_0_0/0.5)] group-hover:grid hover:bg-error hover:text-fg-inverse"
             >
               ×
             </button>

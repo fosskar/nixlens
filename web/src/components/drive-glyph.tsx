@@ -14,22 +14,22 @@ export function DriveGlyph({ disk, health, size = 'lg' }: { disk: Disk; health: 
   const kind = driveKind(disk)
   const s = glyphSizes[size]
   const led = <Led health={health} asleep={disk.smart?.standby} small={size === 'sm'} />
-  const body = `flex shrink-0 flex-col items-center bg-bg-elevated/90 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-white/10`
+  const body = `flex shrink-0 flex-col items-center bg-bg-elevated/90 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-line`
   return (
     <span className="flex items-end justify-center">
       {kind === 'hdd' && (
         <span className={`${body} ${s.hdd} ${s.pad} justify-between rounded-md`}>
           <span className="flex w-full flex-col gap-0.5">
-            <span className="h-px w-full bg-white/10" />
-            <span className="h-px w-full bg-white/10" />
-            <span className="h-px w-full bg-white/10" />
+            <span className="h-px w-full bg-line" />
+            <span className="h-px w-full bg-line" />
+            <span className="h-px w-full bg-line" />
           </span>
           {led}
         </span>
       )}
       {kind === 'ssd' && (
         <span className={`${body} ${s.ssd} ${s.pad} justify-between rounded-md`}>
-          <span className="h-[30%] w-full rounded-[3px] bg-white/[0.07] ring-1 ring-white/[0.05]" />
+          <span className="h-[30%] w-full rounded-[3px] bg-fill ring-1 ring-line" />
           {led}
         </span>
       )}
@@ -37,8 +37,8 @@ export function DriveGlyph({ disk, health, size = 'lg' }: { disk: Disk; health: 
         <span className={`${body} ${s.nvme} justify-between rounded-[4px] pb-1.5`}>
           <span className="nixlens-nvme-pins h-1.5 w-full rounded-t-[4px]" />
           <span className="flex w-full flex-col items-center gap-1">
-            <span className="h-[18%] w-[70%] min-h-1.5 rounded-[2px] bg-black/55 ring-1 ring-white/[0.08]" />
-            <span className="h-[18%] w-[70%] min-h-1.5 rounded-[2px] bg-black/55 ring-1 ring-white/[0.08]" />
+            <span className="h-[18%] w-[70%] min-h-1.5 rounded-[2px] bg-black/55 ring-1 ring-line" />
+            <span className="h-[18%] w-[70%] min-h-1.5 rounded-[2px] bg-black/55 ring-1 ring-line" />
           </span>
           {led}
         </span>

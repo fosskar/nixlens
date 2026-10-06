@@ -12,7 +12,7 @@ export function Led({ health, small, asleep }: { health: Health; small?: boolean
 
 export function TypeBadge({ children }: { children: ReactNode }) {
   return (
-    <span className="shrink-0 rounded-control border border-white/10 bg-white/[0.05] px-1.5 py-px text-[10px] font-medium tracking-wide whitespace-nowrap text-fg-muted">
+    <span className="shrink-0 rounded-control border border-line bg-fill px-1.5 py-px text-[10px] font-medium tracking-wide whitespace-nowrap text-fg-muted">
       {children}
     </span>
   )
@@ -26,9 +26,7 @@ export function UsageBar({ percent, className }: { percent: number; className: s
         ? 'from-warning/80 to-warning shadow-[0_0_8px_color-mix(in_srgb,var(--color-warning)_40%,transparent)]'
         : 'from-accent to-accent-cyan shadow-[0_0_8px_color-mix(in_srgb,var(--color-accent-cyan)_40%,transparent)]'
   return (
-    <div
-      className={`overflow-hidden rounded-full bg-white/[0.07] shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] ${className}`}
-    >
+    <div className={`overflow-hidden rounded-full bg-fill shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)] ${className}`}>
       <div
         className={`h-full rounded-full bg-gradient-to-r ${fill} transition-[width] duration-700 motion-reduce:transition-none`}
         style={{ width: `${Math.min(percent, 100)}%` }}
@@ -75,7 +73,7 @@ export function Unavailable({ error, className }: { error?: string; className: s
           <div className="mt-1 line-clamp-3 font-mono text-[11px] break-all text-fg-muted">{error}</div>
         </div>
       ) : (
-        <div className="h-3 w-24 animate-pulse rounded-full bg-white/[0.08]" />
+        <div className="h-3 w-24 animate-pulse rounded-full bg-fill" />
       )}
     </div>
   )

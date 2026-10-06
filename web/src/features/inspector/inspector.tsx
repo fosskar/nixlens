@@ -35,7 +35,7 @@ export function Inspector({ route }: { route: Detail }) {
   const openDisk = (name: string) => navigate({ kind: 'disk', machine, name })
   const openPool = (name: string) => navigate({ kind: 'pool', machine, name })
   const marked = (key: string) =>
-    key === target ? 'border-accent-cyan/40 bg-accent/[0.06]' : 'border-white/[0.06] bg-white/[0.02]'
+    key === target ? 'border-accent-cyan/40 bg-accent/[0.06]' : 'border-hairline bg-fill'
   const pools = storage?.pools ?? []
   const disks = storage?.disks ?? []
   // drives in the order of the sidebar's bays, then those it leaves out

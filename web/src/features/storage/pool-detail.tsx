@@ -53,7 +53,7 @@ function CapacityView({ pool, disks }: { pool: Pool; disks: Disk[] }) {
   const legend: [string, string, number][] = [
     [usedColor, 'used', pool.used],
     ['bg-accent-cyan/25', 'free', pool.available],
-    ...(protection > 0 ? ([['bg-accent-tertiary/60', 'protection', protection]] as [string, string, number][]) : []),
+    ...(protection > 0 ? ([['bg-info/60', 'protection', protection]] as [string, string, number][]) : []),
   ]
   return (
     <div className={`${card} grid items-center gap-5 p-4 md:grid-cols-[auto_minmax(0,1fr)] md:gap-8`}>
@@ -74,7 +74,7 @@ function CapacityView({ pool, disks }: { pool: Pool; disks: Disk[] }) {
           {Array.from({ length: dotCount }, (_, i) => (
             <span
               key={i}
-              className={`aspect-square rounded-[2px] ${i < usedDots ? usedColor : i >= dotCount - protectionDots ? 'bg-accent-tertiary/60' : 'bg-accent-cyan/25'}`}
+              className={`aspect-square rounded-[2px] ${i < usedDots ? usedColor : i >= dotCount - protectionDots ? 'bg-info/60' : 'bg-accent-cyan/25'}`}
             />
           ))}
         </div>
@@ -118,21 +118,21 @@ function MemberRow({
       {showState && (
         <span className="text-right text-[11px] tabular-nums">
           <span className={textStyles[health]}>{member.device === '' ? 'missing' : member.state || 'unknown'}</span>
-          <span className={`block text-[10px] ${member.errors > 0 ? 'text-warning' : 'text-fg-dim'}`}>
+          <span className={`block text-[10px] ${member.errors > 0 ? 'text-warning' : 'text-fg-muted'}`}>
             {member.errors} {member.errors === 1 ? 'error' : 'errors'}
           </span>
         </span>
       )}
     </>
   )
-  const layout = `relative grid w-full items-center gap-3 rounded-control px-2.5 py-1.5 text-left ${showState ? 'grid-cols-[auto_1fr_auto_5.5rem] before:absolute before:top-1/2 before:-left-3 before:h-px before:w-2.5 before:bg-white/10' : 'grid-cols-[1fr_auto]'}`
+  const layout = `relative grid w-full items-center gap-3 rounded-control px-2.5 py-1.5 text-left ${showState ? 'grid-cols-[auto_1fr_auto_5.5rem] before:absolute before:top-1/2 before:-left-3 before:h-px before:w-2.5 before:bg-line' : 'grid-cols-[1fr_auto]'}`
   if (!disk) return <div className={layout}>{content}</div>
   return (
     <button
       type="button"
       onClick={() => onOpenDisk(disk.name)}
       title={`Show drive ${disk.serial || disk.name}`}
-      className={`${layout} outline-accent-cyan transition-colors hover:bg-white/[0.05] focus-visible:outline-2`}
+      className={`${layout} outline-accent-cyan transition-colors hover:bg-fill focus-visible:outline-2`}
     >
       {content}
     </button>
@@ -209,7 +209,7 @@ function MemberTile({
       type="button"
       onClick={() => onOpenDisk(disk.name)}
       title={title}
-      className={`${layout} outline-accent-cyan transition-colors hover:bg-white/[0.05] focus-visible:outline-2`}
+      className={`${layout} outline-accent-cyan transition-colors hover:bg-fill focus-visible:outline-2`}
     >
       {content}
     </button>
@@ -250,7 +250,7 @@ function VdevTree({ pool, disks, onOpenDisk }: { pool: Pool; disks: Disk[]; onOp
 
 function Chip({ name, value }: { name: string; value: string }) {
   return (
-    <span className="flex items-baseline gap-1.5 rounded-control border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]">
+    <span className="flex items-baseline gap-1.5 rounded-control border border-line bg-fill px-2.5 py-1 text-[11px] shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]">
       <span className="text-fg-muted">{name}</span>
       <span className="font-mono text-fg-inverse">{value}</span>
     </span>
@@ -266,7 +266,7 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
   ].filter(Boolean)
   const mount = dataset.mountpoint === 'legacy' || dataset.mountpoint === 'none' || dataset.mountpoint === '-'
   return (
-    <tr className="transition-colors hover:bg-white/[0.03]">
+    <tr className="transition-colors hover:bg-fill">
       <td className="py-2 pr-3 pl-4" title={dataset.name}>
         <div className="flex items-center gap-2" style={{ paddingLeft: `${depth * 0.75}rem` }}>
           <span className={`font-mono ${depth === 0 ? 'font-semibold text-fg-inverse' : 'text-fg-base'}`}>{name}</span>
@@ -283,7 +283,10 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
       </td>
       <td className="px-3 py-2 text-right font-mono whitespace-nowrap">{formatCapacity(dataset.available)}</td>
       <td className="px-3 py-2 text-right font-mono">{dataset.compressRatio}x</td>
-      <td className={`max-w-40 truncate px-3 py-2 font-mono ${mount ? 'text-fg-dim' : ''}`} title={dataset.mountpoint}>
+      <td
+        className={`max-w-40 truncate px-3 py-2 font-mono ${mount ? 'text-fg-muted' : ''}`}
+        title={dataset.mountpoint}
+      >
         {dataset.mountpoint}
       </td>
       <td
@@ -298,7 +301,7 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
             )}
           </>
         ) : (
-          <span className="text-fg-dim">none</span>
+          <span className="text-fg-muted">none</span>
         )}
       </td>
     </tr>
@@ -325,7 +328,7 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
               {[16, 20, 14, 18, 12, 22].map((w, i) => (
                 <div
                   key={i}
-                  className="h-6 animate-pulse rounded-control bg-white/[0.06]"
+                  className="h-6 animate-pulse rounded-control bg-fill"
                   style={{ width: `${w * 0.25}rem` }}
                 />
               ))}
@@ -368,7 +371,7 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
         <div className={`${card} overflow-x-auto`}>
           <table className="w-full text-[12px] text-fg-base tabular-nums">
             <thead>
-              <tr className="border-b border-white/[0.07] text-[10px] tracking-[0.08em] text-fg-muted uppercase">
+              <tr className="border-b border-hairline text-[10px] tracking-[0.08em] text-fg-muted uppercase">
                 <th className="py-2 pr-3 pl-4 text-left font-semibold">Dataset</th>
                 <th className="px-3 py-2 text-right font-semibold">Used</th>
                 <th className="px-3 py-2 text-right font-semibold">Avail</th>
@@ -377,7 +380,7 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
                 <th className="py-2 pr-4 pl-3 text-right font-semibold">Snapshots</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.05]">
+            <tbody className="divide-y divide-hairline">
               {datasets.map((d) => (
                 <DatasetRow key={d.name} dataset={d} pool={pool.name} />
               ))}

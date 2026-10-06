@@ -13,7 +13,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
   if (bays.length === 0) return null
 
   return (
-    <div className="nixlens-bay flex flex-col divide-y divide-white/[0.05] rounded-card">
+    <div className="nixlens-bay flex flex-col divide-y divide-hairline rounded-card">
       {bays.map(({ pool, groups }) => {
         const mounted = redundant(pool) || pool.state === 'mounted'
         // the row opens the pool; drives sit above its button, since
@@ -27,7 +27,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
               type="button"
               onClick={() => onOpen({ kind: 'pool', name: pool.name })}
               aria-label={`Open pool ${pool.name}`}
-              className={`absolute inset-0 rounded-[inherit] outline-accent-cyan hover:bg-white/[0.04] focus-visible:outline-2 ${linkTransition}`}
+              className={`absolute inset-0 rounded-[inherit] outline-accent-cyan hover:bg-fill focus-visible:outline-2 ${linkTransition}`}
             />
             <div className="pointer-events-none relative flex items-end gap-3">
               <div className="flex max-w-[55%] min-w-0 shrink-0 items-center gap-2 self-center">
@@ -40,7 +40,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
                   <div
                     key={i}
                     title={group.label}
-                    className={`flex items-end gap-0.5 ${i > 0 ? 'border-l border-white/10 pl-1.5' : ''}`}
+                    className={`flex items-end gap-0.5 ${i > 0 ? 'border-l border-line pl-1.5' : ''}`}
                   >
                     {group.drives.map((disk) => (
                       <button
@@ -49,7 +49,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
                         title={driveTitle(disk)}
                         onClick={() => onOpen({ kind: 'disk', name: disk.name })}
                         aria-label={`${disk.model || 'drive'} ${disk.serial || disk.name}`}
-                        className={`flex h-11 items-end rounded-control p-0.5 outline-accent-cyan hover:bg-white/[0.08] focus-visible:outline-2 ${linkTransition}`}
+                        className={`flex h-11 items-end rounded-control p-0.5 outline-accent-cyan hover:bg-fill-hover focus-visible:outline-2 ${linkTransition}`}
                       >
                         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
                       </button>

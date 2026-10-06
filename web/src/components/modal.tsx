@@ -72,12 +72,12 @@ export function Modal({
         className="nixlens-modal glass-strong flex max-h-[calc(100dvh-4rem-var(--safe-top)-var(--safe-bottom))] w-full max-w-5xl flex-col overflow-hidden rounded-surface font-sans text-fg-base outline-none"
       >
         {onBack && (
-          <nav className="flex shrink-0 items-center gap-1 border-b border-white/[0.06] px-3 py-2 text-[11px]">
+          <nav className="flex shrink-0 items-center gap-1 border-b border-hairline px-3 py-2 text-[11px]">
             <button
               type="button"
               onClick={onBack}
               title="Back (Alt+←)"
-              className="mr-1 flex items-center gap-1 rounded-control px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+              className="mr-1 flex items-center gap-1 rounded-control px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -112,13 +112,13 @@ export function ModalTitle({ className, children }: { className: string; childre
 
 export function ModalHeader({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
-    <div className="flex shrink-0 items-center gap-3 border-b border-white/[0.07] bg-white/[0.03] py-3.5 pr-3 pl-5">
+    <div className="flex shrink-0 items-center gap-3 border-b border-hairline bg-fill py-3.5 pr-3 pl-5">
       <div className="flex min-w-0 flex-1 items-center gap-3">{children}</div>
       <button
         type="button"
         onClick={onClose}
         title="Close"
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-control text-fg-muted transition outline-accent-cyan hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-control text-fg-muted transition outline-accent-cyan hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="2" strokeLinecap="round">
           <path d="M6 6l12 12M18 6L6 18" />

@@ -53,7 +53,7 @@ function Port({ iface }: { iface: NetInterface }) {
   return (
     <div className="flex w-16 flex-col items-center gap-1.5" title={details(iface)}>
       <div
-        className={`relative flex h-11 w-14 flex-col items-center rounded-md bg-bg-elevated/90 pt-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-white/10 ${iface.up ? '' : 'opacity-45'}`}
+        className={`relative flex h-11 w-14 flex-col items-center rounded-md bg-bg-elevated/90 pt-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] ring-1 ring-line ${iface.up ? '' : 'opacity-45'}`}
       >
         <span className="h-1.5 w-5 rounded-b-sm bg-black/70" />
         <span className="mt-0.5 font-mono text-[10px] font-semibold text-fg-inverse">{portSpeed(iface)}</span>
@@ -83,7 +83,7 @@ function AddressChip({ address }: { address: string }) {
       type="button"
       onClick={copy}
       title="Copy"
-      className={`rounded-control border px-1.5 py-0.5 font-mono text-[10px] outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-white/[0.08] bg-white/[0.04] text-fg-base hover:border-white/20 hover:bg-white/[0.08]'}`}
+      className={`rounded-control border px-1.5 py-0.5 font-mono text-[10px] outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-line bg-fill text-fg-base hover:bg-fill-hover'}`}
     >
       {copied === 'copied' ? '✓ copied' : copied === 'failed' ? 'copy failed' : address}
     </button>
@@ -92,7 +92,7 @@ function AddressChip({ address }: { address: string }) {
 
 function Chip({ children }: { children: string }) {
   return (
-    <span className="rounded-control border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-fg-base">
+    <span className="rounded-control border border-line bg-fill px-1.5 py-0.5 font-mono text-[10px] text-fg-base">
       {children}
     </span>
   )
@@ -121,7 +121,7 @@ function Connection({ iface, members }: { iface: NetInterface; members: NetInter
         <div className="flex items-baseline gap-2 text-[12px]">
           <span className="font-mono font-medium text-fg-inverse">{iface.name}</span>
           <span className="text-[11px] text-fg-muted">{kindLabels[iface.kind] ?? iface.kind}</span>
-          {!iface.up && <span className="text-[11px] text-fg-dim">{iface.state}</span>}
+          {!iface.up && <span className="text-[11px] text-fg-muted">{iface.state}</span>}
           <span className="ml-auto flex min-w-0 items-baseline gap-2 font-mono text-[10px] text-fg-muted">
             {members.length > 0 && <span className="truncate">via {members.map((m) => m.name).join(', ')}</span>}
             {iface.speedMbps && <span className="shrink-0 text-fg-base">{speedLabel(iface.speedMbps)}</span>}
@@ -138,7 +138,7 @@ function Connection({ iface, members }: { iface: NetInterface; members: NetInter
               onClick={() => setExpanded(!expanded)}
               aria-expanded={expanded}
               title={expanded ? 'Show fewer addresses' : 'Show all addresses'}
-              className="rounded-control border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-fg-muted outline-accent-cyan transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+              className="rounded-control border border-line bg-fill px-1.5 py-0.5 font-mono text-[10px] text-fg-muted outline-accent-cyan transition-colors hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
             >
               {expanded ? 'less' : `+${hidden.length}`}
             </button>

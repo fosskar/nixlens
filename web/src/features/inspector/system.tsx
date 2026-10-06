@@ -25,7 +25,7 @@ export function SystemWidget({ poll }: { poll: Poll<System> }) {
               detail={memoryDetail(system)}
             />
           </div>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 border-t border-white/[0.07] pt-3 text-[11px] md:border-t-0 md:pt-0">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 border-t border-hairline pt-3 text-[11px] md:border-t-0 md:pt-0">
             <dt className="text-fg-muted">NixOS</dt>
             <dd className="truncate text-right font-mono text-fg-base tabular-nums">{system.nixosVersion}</dd>
             <dt className="text-fg-muted">Kernel</dt>

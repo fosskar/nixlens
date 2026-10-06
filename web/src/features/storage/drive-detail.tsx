@@ -99,7 +99,7 @@ export function DriveDetail({
               target="_blank"
               rel="noopener noreferrer"
               title={`Search ${shopQuery(disk.model)} on geizhals.de`}
-              className="grid h-6 w-6 place-items-center rounded-control text-fg-muted outline-accent-cyan transition hover:bg-white/[0.08] hover:text-fg-inverse focus-visible:outline-2"
+              className="grid h-6 w-6 place-items-center rounded-control text-fg-muted outline-accent-cyan transition hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -137,7 +137,7 @@ export function DriveDetail({
           <div className={`${card} overflow-x-auto`}>
             <table className="w-full text-[12px] text-fg-base tabular-nums">
               <thead>
-                <tr className="border-b border-white/[0.07] text-[10px] tracking-[0.08em] text-fg-muted uppercase">
+                <tr className="border-b border-hairline text-[10px] tracking-[0.08em] text-fg-muted uppercase">
                   <th className="py-2 pr-2 pl-4 text-left font-semibold">Partition</th>
                   <th className="px-2 py-2 text-right font-semibold">Size</th>
                   <th className="px-2 py-2 text-left font-semibold">Filesystem</th>
@@ -145,7 +145,7 @@ export function DriveDetail({
                   <th className="py-2 pr-4 pl-2 text-left font-semibold">Used by</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.05]">
+              <tbody className="divide-y divide-hairline">
                 {partitions.map((partition) => {
                   const target = pools.find((p) => p.name === partition.pool)
                   const health = partitionHealth(partition, disk, pools)
@@ -156,7 +156,7 @@ export function DriveDetail({
                         {formatBytes(partition.size)}
                       </td>
                       <td className="px-2 py-2 font-mono whitespace-nowrap">
-                        {partition.fstype || <span className="text-fg-dim">—</span>}
+                        {partition.fstype || <span className="text-fg-muted">—</span>}
                         {partition.label && partition.label !== partition.pool && (
                           <span className="text-fg-muted"> · {partition.label}</span>
                         )}
@@ -166,14 +166,16 @@ export function DriveDetail({
                           <button
                             type="button"
                             onClick={() => onOpenPool(target.name)}
-                            className="flex items-center gap-2 rounded-control px-1.5 py-0.5 text-left outline-accent-cyan transition-colors hover:bg-white/[0.06] focus-visible:outline-2"
+                            className="flex items-center gap-2 rounded-control px-1.5 py-0.5 text-left outline-accent-cyan transition-colors hover:bg-fill focus-visible:outline-2"
                           >
                             {health && <Led health={health} small />}
                             <span className="text-accent-cyan">→</span>
                             <span className="font-mono text-fg-inverse">{target.name}</span>
                           </button>
                         ) : (
-                          <span className="px-1.5 text-fg-dim">{partition.pool || partition.role || 'unassigned'}</span>
+                          <span className="px-1.5 text-fg-muted">
+                            {partition.pool || partition.role || 'unassigned'}
+                          </span>
                         )}
                       </td>
                     </tr>
