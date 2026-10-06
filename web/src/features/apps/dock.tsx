@@ -5,6 +5,7 @@ export function Dock({
   open,
   closing,
   active,
+  underGrid,
   onHome,
   onSelect,
   onClose,
@@ -12,12 +13,17 @@ export function Dock({
   open: App[]
   closing: string[]
   active: string | null
+  underGrid: boolean
   onHome: () => void
   onSelect: (app: App) => void
   onClose: (app: App) => void
 }) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--safe-bottom))] z-50 flex justify-center">
+    // beside the sidebar it moves right by half the apps' left offset
+    // (23.5rem) to centre under them; over an app window it centres on the page
+    <div
+      className={`pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--safe-bottom))] z-50 flex justify-center transition-transform duration-300 ${underGrid ? 'md:translate-x-[11.75rem]' : ''}`}
+    >
       <div className="glass-strong glass-blur pointer-events-auto flex items-center gap-2 rounded-surface p-2.5">
         <button
           onClick={onHome}

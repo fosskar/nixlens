@@ -196,6 +196,7 @@ export default function App() {
         open={open}
         closing={closing}
         active={active}
+        underGrid={admin && active === null}
         onHome={goHome}
         onSelect={(app) => openApp(app, dockRect(app.url))}
         onClose={closeApp}
