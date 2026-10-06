@@ -1,4 +1,5 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { closeIcon, IconButton } from '@/components/ui'
 import { AppIcon } from '@/features/apps/icon'
 import { type App } from '@/lib/api'
 
@@ -9,37 +10,6 @@ const windowMargin = 12
 const windowBottom = 96
 
 type WindowState = 'shown' | 'home' | 'switch'
-
-function TitleButton({
-  title,
-  onClick,
-  danger,
-  children,
-}: {
-  title: string
-  onClick: () => void
-  danger?: boolean
-  children: ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-      className={`grid h-7 w-7 place-items-center rounded-control text-fg-muted transition hover:text-fg-inverse ${danger ? 'hover:bg-error/80' : 'hover:bg-fill-hover'}`}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        className="h-4 w-4 fill-none stroke-current"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {children}
-      </svg>
-    </button>
-  )
-}
 
 export function AppWindow({
   app,
@@ -117,25 +87,25 @@ export function AppWindow({
         <span className="truncate text-sm font-medium text-fg-inverse">{app.name}</span>
         <span className="truncate font-mono text-xs text-fg-muted">{app.machine}</span>
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
-          <TitleButton title="Reload" onClick={reload}>
+          <IconButton label="Reload" onClick={reload}>
             <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
-          </TitleButton>
-          <TitleButton title="Open in new tab" onClick={() => window.open(app.url, '_blank', 'noopener')}>
+          </IconButton>
+          <IconButton label="Open in new tab" onClick={() => window.open(app.url, '_blank', 'noopener')}>
             <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
-          </TitleButton>
-          <TitleButton title={floating ? 'Fill screen' : 'Float window'} onClick={onToggleFloating}>
+          </IconButton>
+          <IconButton label={floating ? 'Fill screen' : 'Float window'} onClick={onToggleFloating}>
             {floating ? (
               <rect x="4" y="4" width="16" height="16" rx="2" />
             ) : (
               <path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4" />
             )}
-          </TitleButton>
-          <TitleButton title="Minimize" onClick={onMinimize}>
+          </IconButton>
+          <IconButton label="Minimize" onClick={onMinimize}>
             <path d="M6 12h12" />
-          </TitleButton>
-          <TitleButton title="Close" onClick={onClose} danger>
-            <path d="M6 6l12 12M18 6L6 18" />
-          </TitleButton>
+          </IconButton>
+          <IconButton label="Close" onClick={onClose} danger>
+            {closeIcon}
+          </IconButton>
         </div>
       </div>
       <div className="relative flex-1">

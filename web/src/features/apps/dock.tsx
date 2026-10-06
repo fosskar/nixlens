@@ -51,9 +51,16 @@ export function Dock({
               onClick={() => onClose(app)}
               title={`Close ${app.name}`}
               aria-label={`Close ${app.name}`}
-              className="absolute -top-1 -right-1 hidden group-focus-within:grid h-4 w-4 place-items-center rounded-full border border-line bg-bg-overlay text-2xs leading-none text-fg-base shadow-raised group-hover:grid hover:bg-error hover:text-fg-inverse"
+              className="absolute -top-1 -right-1 hidden group-focus-within:grid h-4 w-4 place-items-center rounded-full border border-line bg-bg-overlay text-fg-base shadow-raised group-hover:grid hover:bg-error hover:text-fg-inverse"
             >
-              ×
+              <svg
+                viewBox="0 0 24 24"
+                className="h-2.5 w-2.5 fill-none stroke-current"
+                strokeWidth="3"
+                strokeLinecap="round"
+              >
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
             </button>
             <span
               className={`absolute -bottom-2 left-1/2 h-1 -translate-x-1/2 rounded-full transition-[width,background-color] ${active === app.url ? 'w-3 bg-accent-cyan' : 'w-1 bg-fg-muted'}`}

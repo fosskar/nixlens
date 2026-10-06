@@ -1,6 +1,7 @@
 import { createContext, type ReactNode, use, useEffect, useEffectEvent, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { ScrollArea } from '@/components/scroll'
+import { closeIcon, IconButton } from '@/components/ui'
 
 // the open popup's title element, which names the dialog
 const ModalTitleId = createContext<string | undefined>(undefined)
@@ -114,16 +115,9 @@ export function ModalHeader({ children, onClose }: { children: ReactNode; onClos
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-hairline bg-fill py-3.5 pr-3 pl-5">
       <div className="flex min-w-0 flex-1 items-center gap-3">{children}</div>
-      <button
-        type="button"
-        onClick={onClose}
-        title="Close"
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-control text-fg-muted transition outline-accent-cyan hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
-      >
-        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="2" strokeLinecap="round">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
-      </button>
+      <IconButton label="Close" onClick={onClose}>
+        {closeIcon}
+      </IconButton>
     </div>
   )
 }

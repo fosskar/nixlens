@@ -35,6 +35,40 @@ export function UsageBar({ percent, className }: { percent: number; className: s
   )
 }
 
+export function IconButton({
+  label,
+  onClick,
+  danger,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  danger?: boolean
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={`grid h-7 w-7 shrink-0 place-items-center rounded-control text-fg-muted transition outline-accent-cyan hover:text-fg-inverse focus-visible:outline-2 ${danger ? 'hover:bg-error/80' : 'hover:bg-fill-hover'}`}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4 fill-none stroke-current"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {children}
+      </svg>
+    </button>
+  )
+}
+
+export const closeIcon = <path d="M6 6l12 12M18 6L6 18" />
+
 export const linkTransition = 'transition-[opacity,background-color,border-color]'
 
 export function Facts({ rows }: { rows: [string, ReactNode][] }) {

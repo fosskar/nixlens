@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useEffectEvent, useId, useRef, useState } from 'react'
+import { closeIcon, IconButton } from '@/components/ui'
 import { type Me } from '@/lib/api'
 import { type Accent, accents, reducedMotion, resetPrefs, setPrefs, usePrefs } from '@/lib/prefs'
 
@@ -168,20 +169,13 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
         tabIndex={-1}
         className={`${leaving ? 'nixlens-panel-out' : 'nixlens-panel'} glass-strong glass-blur absolute top-[calc(0.75rem+var(--safe-top))] right-[calc(0.75rem+var(--safe-right))] bottom-[calc(0.75rem+var(--safe-bottom))] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col rounded-surface font-sans outline-none`}
       >
-        <div className="flex items-center justify-between border-b border-hairline py-3.5 pr-3 pl-5">
+        <div className="flex items-center justify-between border-b border-hairline bg-fill py-3.5 pr-3 pl-5">
           <h2 id={titleId} className="text-base font-semibold text-fg-inverse">
             Preferences
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close preferences"
-            className="grid h-7 w-7 place-items-center rounded-control text-fg-muted transition outline-accent-cyan hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth="2" strokeLinecap="round">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
+          <IconButton label="Close preferences" onClick={onClose}>
+            {closeIcon}
+          </IconButton>
         </div>
         <div className="flex-1 divide-y divide-hairline overflow-y-auto px-5 py-2">
           <Row label="Accent colour">
