@@ -82,8 +82,8 @@ function AddressChip({ address }: { address: string }) {
     <button
       type="button"
       onClick={copy}
-      title="Copy"
-      className={`rounded-control border px-1.5 py-0.5 font-mono text-2xs outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-line bg-fill text-fg-base hover:bg-fill-hover'}`}
+      title={`Copy ${address}`}
+      className={`max-w-full truncate rounded-control border px-1.5 py-0.5 font-mono text-2xs outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-line bg-fill text-fg-base hover:bg-fill-hover'}`}
     >
       {copied === 'copied' ? '✓ copied' : copied === 'failed' ? 'copy failed' : address}
     </button>
@@ -92,7 +92,10 @@ function AddressChip({ address }: { address: string }) {
 
 function Chip({ children }: { children: string }) {
   return (
-    <span className="rounded-control border border-line bg-fill px-1.5 py-0.5 font-mono text-2xs text-fg-base">
+    <span
+      title={children}
+      className="max-w-full truncate rounded-control border border-line bg-fill px-1.5 py-0.5 font-mono text-2xs text-fg-base"
+    >
       {children}
     </span>
   )
@@ -113,7 +116,7 @@ function Connection({ iface, members }: { iface: NetInterface; members: NetInter
   const { shown, hidden } = chipAddresses(iface)
   const [expanded, setExpanded] = useState(false)
   return (
-    <div className={`${card} flex items-start gap-3 px-3.5 py-2.5`} title={details(iface)}>
+    <div className={`${card} flex min-w-0 items-start gap-3 px-3.5 py-2.5`} title={details(iface)}>
       <span className="pt-1">
         <Led health={iface.up ? 'ok' : 'unknown'} small />
       </span>
@@ -182,7 +185,7 @@ export function NetworkWidget({ poll }: { poll: Poll<NetInterface[]> }) {
           </div>
         )}
         {connections.length > 0 && (
-          <div className="grid gap-2 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
             {connections.map((c) => (
               <Connection key={c.name} iface={c} members={ifaces.filter((i) => i.master === c.name)} />
             ))}
