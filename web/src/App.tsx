@@ -179,7 +179,7 @@ export default function App() {
                   // keeps its line while the overview loads, so the apps below do not move
                   <p className="mt-3 min-h-5 text-sm text-fg-muted tabular-nums">
                     {overview.data &&
-                      `${online} of ${machines.length} ${machines.length === 1 ? 'machine' : 'machines'} online · ${apps.length} apps`}
+                      `${online} of ${machines.length} ${machines.length === 1 ? 'machine' : 'machines'} online${appsPoll.data ? ` · ${apps.length} apps` : ''}`}
                   </p>
                 )}
                 {appsPoll.error && (
