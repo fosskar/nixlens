@@ -5,7 +5,8 @@ import { SystemWidget } from '@/features/inspector/system'
 import { NetworkWidget } from '@/features/network/network'
 import { DriveDetail } from '@/features/storage/drive-detail'
 import { PoolDetail } from '@/features/storage/pool-detail'
-import { type NetInterface, type Storage, type System, usePoll } from '@/lib/api'
+import { type NetInterface, type Poll, type Storage, type System, usePoll } from '@/lib/api'
+import { reducedMotion } from '@/lib/prefs'
 import { canGoBack, closeLayer, goBack, navigate, type Route } from '@/lib/router'
 import { poolBays } from '@/lib/storage'
 
@@ -30,11 +31,34 @@ export function Inspector({ route, leaving }: { route: Detail; leaving: boolean 
       ? loaded && !storage.pools.some((p) => p.name === route.name)
       : route.kind === 'disk' && loaded && !storage.disks.some((d) => d.name === route.name)
 
+  // the sections above the target fill in at their own pace and push it
+  // down, most on phones, so the scroll waits for them and then keeps the
+  // target in place while pool details above it still load, until the
+  // user scrolls or a few seconds pass
+  const settled = (poll: Poll<unknown>) => poll.data !== undefined || poll.error !== undefined
+  const ready = loaded && settled(system) && settled(network)
   useEffect(() => {
-    if (!target || !loaded) return
-    const el = body.current?.querySelector(`[data-target="${CSS.escape(target)}"]`)
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [target, loaded])
+    const root = body.current
+    const el = target ? root?.querySelector(`[data-target="${CSS.escape(target)}"]`) : null
+    if (!root || !el || !ready) return
+    el.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' })
+    let following = true
+    const stop = () => {
+      following = false
+    }
+    const observer = new ResizeObserver(() => {
+      if (following) el.scrollIntoView({ block: 'start' })
+    })
+    observer.observe(root)
+    const timer = setTimeout(stop, 3000)
+    const events = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const
+    events.forEach((e) => window.addEventListener(e, stop, { passive: true }))
+    return () => {
+      observer.disconnect()
+      clearTimeout(timer)
+      events.forEach((e) => window.removeEventListener(e, stop))
+    }
+  }, [target, ready])
 
   const openDisk = (name: string) => navigate({ kind: 'disk', machine, name })
   const openPool = (name: string) => navigate({ kind: 'pool', machine, name })
