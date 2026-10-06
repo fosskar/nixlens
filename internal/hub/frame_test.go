@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -61,7 +63,7 @@ func TestFrameCheckRefreshesInBackground(t *testing.T) {
 		}
 	}))
 	defer srv.Close()
-	c := newFrameChecker()
+	c := newFrameChecker("")
 	const origin = "http://home.nx3.eu"
 	if !c.check(context.Background(), srv.URL, origin) {
 		t.Fatal("first check: not frameable")
@@ -70,7 +72,7 @@ func TestFrameCheckRefreshesInBackground(t *testing.T) {
 	deny.Store(true)
 	key := srv.URL + " " + origin
 	c.mu.Lock()
-	c.cache[key] = frameResult{frameable: true, at: time.Now().Add(-2 * frameCacheTTL)}
+	c.cache[key] = frameResult{Frameable: true, At: time.Now().Add(-2 * frameCacheTTL)}
 	c.mu.Unlock()
 	if !c.check(context.Background(), srv.URL, origin) {
 		t.Fatal("expired result was not returned while refreshing")
@@ -93,7 +95,7 @@ func TestFrameCheckMixedContent(t *testing.T) {
 	var asked atomic.Bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { asked.Store(true) }))
 	defer srv.Close()
-	c := newFrameChecker()
+	c := newFrameChecker("")
 	if c.check(context.Background(), srv.URL, "https://home.nx3.eu") {
 		t.Fatal("http app frameable in an https page")
 	}
@@ -102,5 +104,29 @@ func TestFrameCheckMixedContent(t *testing.T) {
 	}
 	if !c.check(context.Background(), srv.URL, "http://127.0.0.1:7480") {
 		t.Fatal("http app not frameable in an http page")
+	}
+}
+
+func TestFrameCheckSurvivesRestart(t *testing.T) {
+	var probes atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		probes.Add(1)
+		w.Header().Set("X-Frame-Options", "DENY")
+	}))
+	defer srv.Close()
+	file := filepath.Join(t.TempDir(), "frames.json")
+	const origin = "http://home.nx3.eu"
+	if newFrameChecker(file).check(context.Background(), srv.URL, origin) {
+		t.Fatal("denied app frameable")
+	}
+	// a restarted hub answers from the file without probing
+	if newFrameChecker(file).check(context.Background(), srv.URL, origin) || probes.Load() != 1 {
+		t.Fatalf("after restart: probed %d times", probes.Load())
+	}
+	if err := os.WriteFile(file, []byte("not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if newFrameChecker(file).check(context.Background(), srv.URL, origin) || probes.Load() != 2 {
+		t.Fatalf("broken file: probed %d times", probes.Load())
 	}
 }

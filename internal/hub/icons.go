@@ -212,24 +212,30 @@ func (c *iconCache) save(key string, body []byte) {
 		}
 		return
 	}
-	tmp, err := os.CreateTemp(dir, ".icon-*")
-	if err != nil {
+	if err := writeFileAtomic(filepath.Join(c.dir, key), body); err != nil {
 		log.Printf("icon cache: %v", err)
-		return
 	}
-	_, err = tmp.Write(body)
+}
+
+// through a temporary file, so a reader never sees half a file
+func writeFileAtomic(file string, data []byte) error {
+	tmp, err := os.CreateTemp(filepath.Dir(file), "."+filepath.Base(file)+"-*")
+	if err != nil {
+		return err
+	}
+	_, err = tmp.Write(data)
 	if closeErr := tmp.Close(); err == nil {
 		err = closeErr
 	}
 	if err == nil {
-		err = os.Rename(tmp.Name(), filepath.Join(c.dir, key))
+		err = os.Rename(tmp.Name(), file)
 	}
 	if err != nil {
-		log.Printf("icon cache: %v", err)
 		if removeErr := os.Remove(tmp.Name()); removeErr != nil && !errors.Is(removeErr, fs.ErrNotExist) {
-			log.Printf("icon cache: %v", removeErr)
+			err = errors.Join(err, removeErr)
 		}
 	}
+	return err
 }
 
 func (c *iconCache) fetch(ctx context.Context, url string) (iconEntry, error) {

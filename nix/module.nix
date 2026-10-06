@@ -197,6 +197,8 @@ in
             "/var/lib/nixlens/icons"
             "-notice-file"
             "/var/lib/nixlens/notice.json"
+            "-frame-cache"
+            "/var/lib/nixlens/frames.json"
           ]
           ++ lib.optionals (cfg.hub.enable && cfg.hub.accountUrl != null) [
             "-account-url"
@@ -206,7 +208,7 @@ in
         ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nixlens/installed-memory";
         RuntimeDirectory = "nixlens";
         # holds the key nixlens creates when services.nixlens.keyFile is unset,
-        # and the app icons and the notice of a hub
+        # and the app icons, the notice and the frame checks of a hub
         StateDirectory = "nixlens";
         LoadCredential = lib.mkIf (cfg.keyFile != null) [ "key:${cfg.keyFile}" ];
         DynamicUser = true;

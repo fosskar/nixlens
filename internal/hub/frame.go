@@ -2,10 +2,13 @@ package hub
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -17,15 +20,20 @@ const (
 )
 
 type frameResult struct {
-	frameable bool
-	at        time.Time
+	Frameable bool      `json:"frameable"`
+	At        time.Time `json:"at"`
 }
 
 // decides whether a browser will render an app inside an iframe on the hub's
 // origin, from the X-Frame-Options and CSP frame-ancestors headers of the
 // app's own responses
 type frameChecker struct {
-	client     *http.Client
+	client *http.Client
+	// where results are kept across restarts, so a restarted hub answers at
+	// once with them and refreshes them in the background; empty keeps them
+	// in memory only
+	file       string
+	saving     sync.Mutex
 	mu         sync.Mutex
 	cache      map[string]frameResult
 	refreshing map[string]bool
@@ -33,8 +41,9 @@ type frameChecker struct {
 	slots chan struct{}
 }
 
-func newFrameChecker() *frameChecker {
-	return &frameChecker{
+func newFrameChecker(file string) *frameChecker {
+	c := &frameChecker{
+		file: file,
 		client: &http.Client{
 			Timeout: 5 * time.Second,
 			CheckRedirect: func(*http.Request, []*http.Request) error {
@@ -44,6 +53,42 @@ func newFrameChecker() *frameChecker {
 		cache:      map[string]frameResult{},
 		refreshing: map[string]bool{},
 		slots:      make(chan struct{}, maxFrameProbes),
+	}
+	c.load()
+	return c
+}
+
+func (c *frameChecker) load() {
+	if c.file == "" {
+		return
+	}
+	data, err := os.ReadFile(c.file)
+	if errors.Is(err, fs.ErrNotExist) {
+		return
+	}
+	if err == nil {
+		err = json.Unmarshal(data, &c.cache)
+	}
+	if err != nil {
+		log.Printf("frame cache: %v", err)
+		c.cache = map[string]frameResult{}
+	}
+}
+
+func (c *frameChecker) save() {
+	if c.file == "" {
+		return
+	}
+	c.saving.Lock()
+	defer c.saving.Unlock()
+	c.mu.Lock()
+	data, err := json.Marshal(c.cache)
+	c.mu.Unlock()
+	if err == nil {
+		err = writeFileAtomic(c.file, data)
+	}
+	if err != nil {
+		log.Printf("frame cache: %v", err)
 	}
 }
 
@@ -72,7 +117,7 @@ func (c *frameChecker) check(ctx context.Context, appURL, origin string) bool {
 	key := appURL + " " + origin
 	c.mu.Lock()
 	cached, ok := c.cache[key]
-	refresh := ok && time.Since(cached.at) >= frameCacheTTL && !c.refreshing[key]
+	refresh := ok && time.Since(cached.At) >= frameCacheTTL && !c.refreshing[key]
 	if refresh {
 		c.refreshing[key] = true
 	}
@@ -90,7 +135,7 @@ func (c *frameChecker) check(ctx context.Context, appURL, origin string) bool {
 			c.mu.Unlock()
 		}()
 	}
-	return cached.frameable
+	return cached.Frameable
 }
 
 func (c *frameChecker) update(ctx context.Context, key, appURL, origin string) bool {
@@ -102,19 +147,20 @@ func (c *frameChecker) update(ctx context.Context, key, appURL, origin string) b
 		frameable = true
 	}
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	// the origin comes from request headers, so keys are not fully under
 	// our control; expired entries go and the cache stays bounded
 	if len(c.cache) >= frameCacheMax {
 		for k, v := range c.cache {
-			if time.Since(v.at) >= frameCacheTTL {
+			if time.Since(v.At) >= frameCacheTTL {
 				delete(c.cache, k)
 			}
 		}
 	}
 	if len(c.cache) < frameCacheMax {
-		c.cache[key] = frameResult{frameable: frameable, at: time.Now()}
+		c.cache[key] = frameResult{Frameable: frameable, At: time.Now()}
 	}
+	c.mu.Unlock()
+	c.save()
 	return frameable
 }
 

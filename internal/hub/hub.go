@@ -80,7 +80,7 @@ func ReadPeers(path string) (map[string]Peer, error) {
 
 // New takes the peers with an http client for each, which checks the
 // peer's fingerprint
-func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor func(Peer) *http.Client, categories []string, acc Access, iconDir string) (*Hub, error) {
+func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor func(Peer) *http.Client, categories []string, acc Access, iconDir, frameFile string) (*Hub, error) {
 	self, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor f
 		peers:    byName,
 		order:    order,
 		access:   acc,
-		frames:   newFrameChecker(),
+		frames:   newFrameChecker(frameFile),
 		icons:    newIconCache("https://cdn.jsdelivr.net", iconDir),
 	}, nil
 }

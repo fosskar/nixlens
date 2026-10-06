@@ -55,7 +55,7 @@ func TestHubConcurrentRequests(t *testing.T) {
 	})
 
 	h, err := New(local, appsFile, map[string]Peer{"one": {URL: a1.URL}, "two": {URL: a2.URL}},
-		func(Peer) *http.Client { return &http.Client{Timeout: 5 * time.Second} }, []string{"apps"}, Access{}, "")
+		func(Peer) *http.Client { return &http.Client{Timeout: 5 * time.Second} }, []string{"apps"}, Access{}, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestAppsErrorHidesDetails(t *testing.T) {
 	if err := os.WriteFile(appsFile, []byte("not json"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	h, err := New(http.NewServeMux(), appsFile, nil, nil, nil, Access{}, "")
+	h, err := New(http.NewServeMux(), appsFile, nil, nil, nil, Access{}, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
