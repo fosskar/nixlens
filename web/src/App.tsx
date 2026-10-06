@@ -35,7 +35,7 @@ export default function App() {
   const firstName = me?.name.split(' ')[0].toLowerCase()
   const overview = usePoll<MachineOverview[]>(admin ? '/api/overview' : null, 10000)
   const machines = overview.data ?? []
-  const appsPoll = usePoll<AppEntry[]>('/api/apps', 30000)
+  const appsPoll = usePoll<AppEntry[]>('/api/apps', 300000)
   const apps = appsPoll.data ?? []
 
   // the address decides what is in front: an app window, a detail popup or
