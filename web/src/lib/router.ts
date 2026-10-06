@@ -75,14 +75,12 @@ export function navigate(to: Route) {
   emit()
 }
 
-// leaves the current layer for the view it was opened from, so the back
-// gesture afterwards does not reopen what was just closed
+// leaves the current layer for the home view in place, so the back gesture
+// afterwards does not reopen what was just closed. it does not step back to
+// the entry the layer was opened from: open apps' frames share the tab's
+// history, and stepping back would move inside an app instead
 export function closeLayer() {
   const s = state()
-  if (s.base !== null) {
-    history.go(s.base - s.idx)
-    return
-  }
   history.replaceState({ idx: s.idx, base: null } satisfies State, '', '/')
   emit()
 }
