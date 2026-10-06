@@ -12,7 +12,7 @@ export function Led({ health, small, asleep }: { health: Health; small?: boolean
 
 export function TypeBadge({ children }: { children: ReactNode }) {
   return (
-    <span className="shrink-0 rounded-control border border-line bg-fill px-1.5 py-px text-[10px] font-medium tracking-wide whitespace-nowrap text-fg-muted">
+    <span className="shrink-0 rounded-control border border-line bg-fill px-1.5 py-px text-2xs font-medium tracking-wide whitespace-nowrap text-fg-muted">
       {children}
     </span>
   )
@@ -40,7 +40,7 @@ export const linkTransition =
 
 export function Facts({ rows }: { rows: [string, ReactNode][] }) {
   return (
-    <dl className={`${card} grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 p-4 text-[12px]`}>
+    <dl className={`${card} grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 p-4 text-xs`}>
       {rows.map(([term, value]) => (
         <div key={term} className="contents">
           <dt className="text-fg-muted">{term}</dt>
@@ -58,8 +58,8 @@ export const card = 'glass-card rounded-card'
 export function SectionTitle({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   return (
     <div className="mb-3 flex items-baseline justify-between px-1">
-      <span className="text-[11px] font-semibold tracking-[0.12em] text-fg-muted uppercase">{children}</span>
-      {aside && <span className="font-mono text-[11px] text-fg-muted tabular-nums">{aside}</span>}
+      <span className="text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase">{children}</span>
+      {aside && <span className="font-mono text-2xs text-fg-muted tabular-nums">{aside}</span>}
     </div>
   )
 }
@@ -70,7 +70,7 @@ export function Unavailable({ error, className }: { error?: string; className: s
       {error ? (
         <div>
           <div className="text-sm font-medium text-error">Unavailable</div>
-          <div className="mt-1 line-clamp-3 font-mono text-[11px] break-all text-fg-muted">{error}</div>
+          <div className="mt-1 line-clamp-3 font-mono text-2xs break-all text-fg-muted">{error}</div>
         </div>
       ) : (
         <div className="h-3 w-24 animate-pulse rounded-full bg-fill" />
@@ -119,14 +119,14 @@ export function Ring({
           />
         </svg>
         <span
-          className={`absolute inset-0 grid place-items-center font-semibold text-fg-inverse tabular-nums ${small ? 'text-[11px]' : 'text-sm'}`}
+          className={`absolute inset-0 grid place-items-center font-semibold text-fg-inverse tabular-nums ${small ? 'text-2xs' : 'text-sm'}`}
         >
           {Math.round(value)}%
         </span>
       </div>
       <div className={`min-w-0 ${small ? '' : 'text-center'}`}>
         <div className="text-xs font-medium text-fg-base">{label}</div>
-        <div className="text-[11px] whitespace-nowrap text-fg-muted tabular-nums">{detail}</div>
+        <div className="text-2xs whitespace-nowrap text-fg-muted tabular-nums">{detail}</div>
       </div>
     </div>
   )

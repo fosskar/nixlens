@@ -28,7 +28,7 @@ export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from
             <button
               onClick={() => toggle(category)}
               aria-expanded={open}
-              className="group mb-4 flex w-full items-center gap-3 px-1 text-[11px] font-semibold tracking-[0.12em] text-fg-muted uppercase transition-colors hover:text-fg-base"
+              className="group mb-4 flex w-full items-center gap-3 px-1 text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase transition-colors hover:text-fg-base"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -77,7 +77,7 @@ function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DO
           <div className="relative">
             <AppIcon app={app} />
             {!app.frameable && (
-              <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-line bg-bg-overlay/90 text-[10px] text-fg-base shadow-raised">
+              <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-line bg-bg-overlay/90 text-2xs text-fg-base shadow-raised">
                 ↗
               </span>
             )}

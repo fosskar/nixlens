@@ -32,8 +32,8 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
             <div className="pointer-events-none relative flex items-end gap-3">
               <div className="flex max-w-[55%] min-w-0 shrink-0 items-center gap-2 self-center">
                 <Led health={poolHealth(pool)} />
-                <span className="truncate font-mono text-[13px] font-semibold text-fg-inverse">{pool.name}</span>
-                <span className="shrink-0 text-[10px] text-fg-muted">{poolLayout(pool)}</span>
+                <span className="truncate font-mono text-sm font-semibold text-fg-inverse">{pool.name}</span>
+                <span className="shrink-0 text-2xs text-fg-muted">{poolLayout(pool)}</span>
               </div>
               <div className="pointer-events-auto ml-auto flex min-w-0 flex-wrap items-end justify-end gap-x-1.5 gap-y-1">
                 {groups.map((group, i) => (
@@ -60,7 +60,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
             </div>
             <div className="pointer-events-none relative mt-2 flex items-center gap-3">
               {mounted ? <UsageBar percent={usedPercent(pool)} className="h-1 flex-1" /> : <span className="flex-1" />}
-              <span className="shrink-0 font-mono text-[11px] text-fg-muted tabular-nums">
+              <span className="shrink-0 font-mono text-2xs text-fg-muted tabular-nums">
                 {mounted ? formatUsage(pool.used, pool.usable) : 'not mounted'}
               </span>
             </div>

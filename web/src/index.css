@@ -35,6 +35,9 @@
   --color-fill: rgb(255 255 255 / 0.05);
   --color-fill-hover: rgb(255 255 255 / 0.08);
 
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
   --radius-surface: 20px;
   --radius-card: 12px;
   --radius-control: 6px;

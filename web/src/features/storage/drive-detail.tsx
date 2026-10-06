@@ -46,7 +46,7 @@ function SmartFacts({ smart, nvme }: { smart: Smart; nvme: boolean }) {
       {rows.length > 0 ? (
         <Facts rows={rows} />
       ) : (
-        <div className={`${card} p-4 text-[12px] text-fg-muted`}>
+        <div className={`${card} p-4 text-xs text-fg-muted`}>
           The drive has been asleep since collection started; it is not woken up for SMART.
         </div>
       )}
@@ -74,7 +74,7 @@ export function DriveDetail({
         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
         <span className="min-w-0">
           <h3 className="truncate text-base font-semibold text-fg-inverse">{disk.model || disk.name}</h3>
-          <span className="block truncate font-mono text-[11px] text-fg-muted">{disk.serial}</span>
+          <span className="block truncate font-mono text-2xs text-fg-muted">{disk.serial}</span>
           {memberships.length > 0 && (
             <span className="mt-1.5 flex flex-wrap gap-1.5">
               {memberships.map((m) => (
@@ -82,7 +82,7 @@ export function DriveDetail({
                   key={m.pool}
                   type="button"
                   onClick={() => onOpenPool(m.pool)}
-                  className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-fg-inverse transition outline-accent-cyan hover:bg-accent/20 focus-visible:outline-2"
+                  className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-2xs text-fg-inverse transition outline-accent-cyan hover:bg-accent/20 focus-visible:outline-2"
                 >
                   {m.pool}
                   <span className="text-fg-muted">· {m.role}</span>
@@ -132,12 +132,12 @@ export function DriveDetail({
           Partitions
         </SectionTitle>
         {partitions.length === 0 ? (
-          <div className={`${card} p-4 text-[12px] text-fg-muted`}>No partitions; the drive is unused.</div>
+          <div className={`${card} p-4 text-xs text-fg-muted`}>No partitions; the drive is unused.</div>
         ) : (
           <div className={`${card} overflow-x-auto`}>
-            <table className="w-full text-[12px] text-fg-base tabular-nums">
+            <table className="w-full text-xs text-fg-base tabular-nums">
               <thead>
-                <tr className="border-b border-hairline text-[10px] tracking-[0.08em] text-fg-muted uppercase">
+                <tr className="border-b border-hairline text-2xs tracking-[0.08em] text-fg-muted uppercase">
                   <th className="py-2 pr-2 pl-4 text-left font-semibold">Partition</th>
                   <th className="px-2 py-2 text-right font-semibold">Size</th>
                   <th className="px-2 py-2 text-left font-semibold">Filesystem</th>

@@ -17,7 +17,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
     return (
       <div className="grid min-h-screen place-items-center p-6 font-sans text-fg-base">
         <div className="glass max-w-md rounded-surface p-6 text-center">
-          <div className="text-lg font-semibold text-fg-inverse">Something went wrong</div>
+          <div className="text-base font-semibold text-fg-inverse">Something went wrong</div>
           <p className="mt-2 text-sm text-fg-muted">{String(this.state.error)}</p>
           <button
             type="button"

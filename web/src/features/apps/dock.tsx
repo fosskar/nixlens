@@ -51,7 +51,7 @@ export function Dock({
               onClick={() => onClose(app)}
               title={`Close ${app.name}`}
               aria-label={`Close ${app.name}`}
-              className="absolute -top-1 -right-1 hidden group-focus-within:grid h-4 w-4 place-items-center rounded-full border border-line bg-bg-overlay text-[10px] leading-none text-fg-base shadow-raised group-hover:grid hover:bg-error hover:text-fg-inverse"
+              className="absolute -top-1 -right-1 hidden group-focus-within:grid h-4 w-4 place-items-center rounded-full border border-line bg-bg-overlay text-2xs leading-none text-fg-base shadow-raised group-hover:grid hover:bg-error hover:text-fg-inverse"
             >
               ×
             </button>

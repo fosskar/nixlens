@@ -26,7 +26,7 @@ function HealthPill({ pool }: { pool: Pool }) {
   const health = poolHealth(pool)
   return (
     <span
-      className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${pillStyles[health]}`}
+      className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-2xs font-semibold tracking-wide uppercase ${pillStyles[health]}`}
     >
       <Led health={health} small />
       {resilvering(pool) ? 'resilvering' : pool.state || 'unknown'}
@@ -42,7 +42,7 @@ const dotCount = 4 * 48
 function CapacityView({ pool, disks }: { pool: Pool; disks: Disk[] }) {
   const scan = scanLine(pool)
   if (!redundant(pool) && pool.state !== 'mounted') {
-    return <div className={`${card} p-4 text-[12px] text-fg-muted`}>Not mounted; usage unavailable.</div>
+    return <div className={`${card} p-4 text-xs text-fg-muted`}>Not mounted; usage unavailable.</div>
   }
   const raw = Math.max(rawCapacity(pool, disks), pool.usable)
   const protection = raw - pool.usable
@@ -61,8 +61,8 @@ function CapacityView({ pool, disks }: { pool: Pool; disks: Disk[] }) {
         <div className="text-3xl font-semibold tracking-tight text-fg-inverse tabular-nums">
           {formatCapacity(pool.available)}
         </div>
-        <div className="mt-0.5 text-[12px] text-fg-muted">available of {formatCapacity(pool.usable)}</div>
-        {scan && <div className={`mt-2 text-[11px] ${textStyles[scan.health]}`}>{scan.text}</div>}
+        <div className="mt-0.5 text-xs text-fg-muted">available of {formatCapacity(pool.usable)}</div>
+        {scan && <div className={`mt-2 text-2xs ${textStyles[scan.health]}`}>{scan.text}</div>}
       </div>
       <div>
         <div
@@ -78,7 +78,7 @@ function CapacityView({ pool, disks }: { pool: Pool; disks: Disk[] }) {
             />
           ))}
         </div>
-        <div className="mt-2.5 flex flex-wrap justify-end gap-x-4 gap-y-1 text-[11px] text-fg-muted tabular-nums">
+        <div className="mt-2.5 flex flex-wrap justify-end gap-x-4 gap-y-1 text-2xs text-fg-muted tabular-nums">
           {legend.map(([color, label, bytes]) => (
             <span key={label} className="flex items-center gap-1.5">
               <span className={`h-2 w-2 rounded-[2px] ${color}`} />
@@ -109,16 +109,16 @@ function MemberRow({
     <>
       {showState && <Led health={health} />}
       <span className="min-w-0">
-        <span className="block truncate font-mono text-[12px] text-fg-inverse">
+        <span className="block truncate font-mono text-xs text-fg-inverse">
           {disk?.serial || member.device || 'missing'}
         </span>
-        <span className="block truncate text-[10px] text-fg-muted">{disk?.model || member.path}</span>
+        <span className="block truncate text-2xs text-fg-muted">{disk?.model || member.path}</span>
       </span>
-      <span className="font-mono text-[11px] text-fg-muted">{memberPartition(member, pool, disk)}</span>
+      <span className="font-mono text-2xs text-fg-muted">{memberPartition(member, pool, disk)}</span>
       {showState && (
-        <span className="text-right text-[11px] tabular-nums">
+        <span className="text-right text-2xs tabular-nums">
           <span className={textStyles[health]}>{member.device === '' ? 'missing' : member.state || 'unknown'}</span>
-          <span className={`block text-[10px] ${member.errors > 0 ? 'text-warning' : 'text-fg-muted'}`}>
+          <span className={`block text-2xs ${member.errors > 0 ? 'text-warning' : 'text-fg-muted'}`}>
             {member.errors} {member.errors === 1 ? 'error' : 'errors'}
           </span>
         </span>
@@ -155,7 +155,7 @@ function Tolerance({ group, pool }: { group: PoolGroup; pool: Pool }) {
           ? `can lose ${left} more`
           : `can lose ${total} ${total === 1 ? 'drive' : 'drives'}`
   return (
-    <span className={`flex items-center gap-1.5 text-[11px] ${textStyles[health]}`}>
+    <span className={`flex items-center gap-1.5 text-2xs ${textStyles[health]}`}>
       {Array.from({ length: total }, (_, i) => (
         <svg
           key={i}
@@ -193,9 +193,9 @@ function MemberTile({
           ?
         </span>
       )}
-      <span className="w-full truncate text-center font-mono text-[9px] text-fg-base">{label}</span>
+      <span className="w-full truncate text-center font-mono text-2xs text-fg-base">{label}</span>
       {health !== 'ok' && (
-        <span className={`text-[9px] ${textStyles[health]}`}>
+        <span className={`text-2xs ${textStyles[health]}`}>
           {member.errors > 0 ? `${member.errors} errors` : state}
         </span>
       )}
@@ -224,7 +224,7 @@ function VdevTree({ pool, disks, onOpenDisk }: { pool: Pool; disks: Disk[]; onOp
       <div className="flex flex-wrap gap-3">
         {groups.map((group) => (
           <div key={group.name} className={`${card} p-3`}>
-            <div className="flex items-center gap-3 px-1 text-[12px]">
+            <div className="flex items-center gap-3 px-1 text-xs">
               <span className="font-mono font-semibold text-fg-inverse">{groupTitle(group)}</span>
               <span className="ml-auto">
                 <Tolerance group={group} pool={pool} />
@@ -250,7 +250,7 @@ function VdevTree({ pool, disks, onOpenDisk }: { pool: Pool; disks: Disk[]; onOp
 
 function Chip({ name, value }: { name: string; value: string }) {
   return (
-    <span className="flex items-baseline gap-1.5 rounded-control border border-line bg-fill px-2.5 py-1 text-[11px] shadow-highlight">
+    <span className="flex items-baseline gap-1.5 rounded-control border border-line bg-fill px-2.5 py-1 text-2xs shadow-highlight">
       <span className="text-fg-muted">{name}</span>
       <span className="font-mono text-fg-inverse">{value}</span>
     </span>
@@ -273,7 +273,7 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
           {dataset.type === 'volume' && <TypeBadge>volume</TypeBadge>}
         </div>
         {limits.length > 0 && (
-          <div className="mt-0.5 text-[10px] text-accent-cyan/80" style={{ paddingLeft: `${depth * 0.75}rem` }}>
+          <div className="mt-0.5 text-2xs text-accent-cyan/80" style={{ paddingLeft: `${depth * 0.75}rem` }}>
             {limits.join(' · ')}
           </div>
         )}
@@ -318,9 +318,9 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
       <section>
         <SectionTitle>Properties</SectionTitle>
         {detail.error ? (
-          <div className={`${card} p-4 text-[12px]`}>
+          <div className={`${card} p-4 text-xs`}>
             <div className="font-medium text-error">Pool details unavailable</div>
-            <div className="mt-1 font-mono text-[11px] break-all text-fg-muted">{detail.error}</div>
+            <div className="mt-1 font-mono text-2xs break-all text-fg-muted">{detail.error}</div>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -369,9 +369,9 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
           Datasets
         </SectionTitle>
         <div className={`${card} overflow-x-auto`}>
-          <table className="w-full text-[12px] text-fg-base tabular-nums">
+          <table className="w-full text-xs text-fg-base tabular-nums">
             <thead>
-              <tr className="border-b border-hairline text-[10px] tracking-[0.08em] text-fg-muted uppercase">
+              <tr className="border-b border-hairline text-2xs tracking-[0.08em] text-fg-muted uppercase">
                 <th className="py-2 pr-3 pl-4 text-left font-semibold">Dataset</th>
                 <th className="px-3 py-2 text-right font-semibold">Used</th>
                 <th className="px-3 py-2 text-right font-semibold">Avail</th>

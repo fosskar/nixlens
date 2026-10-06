@@ -45,7 +45,7 @@ export function Inspector({ route }: { route: Detail }) {
   return (
     <Modal focusKey={machine} onBack={canGoBack() ? goBack : undefined} onClose={closeLayer}>
       <ModalHeader onClose={closeLayer}>
-        <ModalTitle className="truncate text-lg font-semibold text-fg-inverse">{machine}</ModalTitle>
+        <ModalTitle className="truncate text-base font-semibold text-fg-inverse">{machine}</ModalTitle>
       </ModalHeader>
       <ModalBody>
         <div ref={body} className="flex flex-col gap-8">

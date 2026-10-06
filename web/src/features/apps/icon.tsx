@@ -20,7 +20,7 @@ function iconSource(icon: string): IconSource | null {
 const iconSizes = {
   lg: { box: 'h-16 w-16 rounded-card', img: 'h-10 w-10', letter: 'text-2xl' },
   sm: { box: 'h-11 w-11 rounded-card', img: 'h-7 w-7', letter: 'text-lg' },
-  xs: { box: 'h-6 w-6 rounded-control', img: 'h-4 w-4', letter: 'text-[11px]' },
+  xs: { box: 'h-6 w-6 rounded-control', img: 'h-4 w-4', letter: 'text-2xs' },
 }
 
 export function AppIcon({ app, size = 'lg' }: { app: App; size?: keyof typeof iconSizes }) {
