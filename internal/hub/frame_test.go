@@ -62,7 +62,7 @@ func TestFrameCheckRefreshesInBackground(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := newFrameChecker()
-	const origin = "https://home.nx3.eu"
+	const origin = "http://home.nx3.eu"
 	if !c.check(context.Background(), srv.URL, origin) {
 		t.Fatal("first check: not frameable")
 	}
@@ -86,5 +86,21 @@ func TestFrameCheckRefreshesInBackground(t *testing.T) {
 	}
 	if c.check(context.Background(), srv.URL, origin) {
 		t.Fatal("refreshed result not used")
+	}
+}
+
+func TestFrameCheckMixedContent(t *testing.T) {
+	var asked atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { asked.Store(true) }))
+	defer srv.Close()
+	c := newFrameChecker()
+	if c.check(context.Background(), srv.URL, "https://home.nx3.eu") {
+		t.Fatal("http app frameable in an https page")
+	}
+	if asked.Load() {
+		t.Fatal("http app probed for an https page")
+	}
+	if !c.check(context.Background(), srv.URL, "http://127.0.0.1:7480") {
+		t.Fatal("http app not frameable in an http page")
 	}
 }

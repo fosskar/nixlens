@@ -61,7 +61,12 @@ func requestOrigin(r *http.Request) string {
 // an expired result is returned while a probe in the background replaces it,
 // so only an app never probed before makes the app list wait
 func (c *frameChecker) check(ctx context.Context, appURL, origin string) bool {
-	if u, err := url.Parse(appURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+	u, err := url.Parse(appURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return false
+	}
+	// browsers block plain http frames in an https page as mixed content
+	if u.Scheme == "http" && strings.HasPrefix(origin, "https://") {
 		return false
 	}
 	key := appURL + " " + origin
