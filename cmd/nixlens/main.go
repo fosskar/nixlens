@@ -124,8 +124,8 @@ func main() {
 				log.Fatalf("peer %s has a fingerprint, so the hub needs -key", name)
 			}
 		}
-		// the overview waits for every agent, so one that cannot be reached
-		// should hold it up briefly; a connected but busy one gets longer
+		// an agent that cannot be reached shows as offline soon; a connected
+		// but busy one gets longer
 		clientFor := func(p hub.Peer) *http.Client {
 			transport := http.DefaultTransport.(*http.Transport).Clone()
 			transport.DialContext = (&net.Dialer{Timeout: 2 * time.Second}).DialContext

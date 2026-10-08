@@ -1,12 +1,11 @@
 import { card, Led, Ring, SectionTitle, Unavailable } from '@/components/ui'
 import { PoolBays } from '@/features/overview/pool-bays'
-import { type Disk, type Machine, type Poll, type Storage, type System } from '@/lib/api'
+import { type MachineOverview } from '@/features/overview/machines'
+import { type Disk, type Poll } from '@/lib/api'
 import { driveHealth, type Health, poolHealth } from '@/lib/health'
 import { setPrefs, usePrefs } from '@/lib/prefs'
 import { navigate } from '@/lib/router'
 import { type Target, usedPercent } from '@/lib/storage'
-
-export type MachineOverview = Machine & { system?: System; storage?: Storage }
 
 type Problem = { health: Health; text: string; target?: Target }
 
@@ -75,12 +74,20 @@ function uptime(sec: number): string {
 function MachineCard({ m }: { m: MachineOverview }) {
   const s = m.system
   const items = problems(m)
-  const health = m.online ? (items.some((i) => i.health === 'error') ? 'error' : items.length ? 'warn' : 'ok') : 'error'
+  const health = m.loading
+    ? 'unknown'
+    : m.online
+      ? items.some((i) => i.health === 'error')
+        ? 'error'
+        : items.length
+          ? 'warn'
+          : 'ok'
+      : 'error'
 
   // the whole card opens the machine; problem lines open their pool or drive
   // and sit above the card's button, since buttons cannot nest
   return (
-    <div className={`${card} relative p-3.5 ${m.online ? '' : 'opacity-70'}`}>
+    <div className={`${card} relative p-3.5 ${m.online || m.loading ? '' : 'opacity-70'}`}>
       <button
         type="button"
         onClick={() => navigate({ kind: 'machine', machine: m.name })}
@@ -94,7 +101,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
             <span className="truncate text-sm font-semibold text-fg-inverse">{m.name}</span>
             {m.self && <span className="text-2xs text-accent-cyan">hub</span>}
             <span className="ml-auto shrink-0 font-mono text-2xs text-fg-muted">
-              {s ? `up ${uptime(s.uptimeSec)}` : 'offline'}
+              {s ? `up ${uptime(s.uptimeSec)}` : m.loading ? '' : 'offline'}
             </span>
           </div>
           {s && (
@@ -102,12 +109,14 @@ function MachineCard({ m }: { m: MachineOverview }) {
               NixOS {s.nixosVersion.split('.').slice(0, 2).join('.')} · Linux {s.kernel} · {s.cores}c/{s.cpus}t
             </div>
           )}
-          {!m.online && (
+          {!m.online && !m.loading && (
             <div className="mt-1 truncate pl-4 text-2xs text-error/90" title={m.error}>
               {shortError(m.error)}
             </div>
           )}
         </div>
+
+        {m.loading && <div className="ml-4 h-3 w-24 animate-pulse rounded-full bg-fill" />}
 
         {s && (
           <div className="grid grid-cols-2 gap-3">
@@ -155,11 +164,13 @@ export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
   const machines = poll.data
   if (!machines) return <Unavailable error={poll.error} className="h-48" />
 
-  const offline = machines.filter((m) => !m.online).length
+  const offline = machines.filter((m) => !m.online && !m.loading).length
   const attention = machines.filter((m) => m.online && problems(m).length > 0).length
   const summary =
     offline + attention === 0
-      ? 'all healthy'
+      ? machines.some((m) => m.loading)
+        ? 'checking'
+        : 'all healthy'
       : [offline && `${offline} offline`, attention && `${attention} need${attention === 1 ? 's' : ''} attention`]
           .filter(Boolean)
           .join(' · ')

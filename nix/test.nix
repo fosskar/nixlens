@@ -113,11 +113,8 @@ testers.runNixOSTest {
       assert first == second and first.startswith("SHA256:"), (first, second)
       agent.succeed("test -s /var/lib/private/nixlens-autokey/key.pem")
 
-      machines = get(hub, "/api/overview")
-      assert [(m["name"], m["self"], m["online"]) for m in machines] == [
-        ("hub", True, True),
-        ("agent", False, True),
-      ], machines
+      machines = get(hub, "/api/machines")
+      assert machines == [{"name": "hub", "self": True}, {"name": "agent", "self": False}], machines
 
       system = get(hub, "/api/machines/agent/system")
       assert system["hostname"] == "agent", system
@@ -167,11 +164,12 @@ testers.runNixOSTest {
       storage = get(hub, "/api/machines/agent/storage")
       assert all("smart" not in d for d in storage["disks"]), storage["disks"]
 
-      apps = get(hub, "/api/apps")
-      assert [(a["name"], a["machine"], a["category"], a["icon"]) for a in apps] == [
+      def apps(groups="admin"):
+          return [a for m in get(hub, "/api/apps", groups=groups)["machines"] for a in get(hub, f"/api/apps/{m['name']}", groups=groups)]
+      assert [(a["name"], a["machine"], a["category"], a["icon"]) for a in apps()] == [
         ("Grafana", "hub", "Monitoring", "grafana.svg"),
         ("Immich", "agent", "Media", ""),
-      ], apps
+      ], apps()
 
       hub.succeed("curl -sf http://127.0.0.1:7480/ | grep -q '<title>nixlens</title>'")
 
@@ -179,13 +177,9 @@ testers.runNixOSTest {
       assert me["name"] == "Simon" and me["groups"] == ["user", "admin"] and me["admin"], me
       assert me["accountUrl"] == "https://auth.example.com/settings", me
       assert not get(hub, "/api/me", groups="user")["admin"]
-      hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/overview")
-      overview = get(hub, "/api/overview")
-      assert [(m["name"], m["online"], "system" in m, "storage" in m) for m in overview] == [
-        ("hub", True, True, True),
-        ("agent", True, True, True),
-      ], overview
-      assert [a["name"] for a in get(hub, "/api/apps", groups="user")] == ["Immich"]
+      hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/machines")
+      hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/machines/agent/system")
+      assert [a["name"] for a in apps(groups="user")] == ["Immich"]
 
       put_notice = "curl -sf -X PUT -H 'Content-Type: application/json' -d '{\"message\":\"maintenance\"}' http://127.0.0.1:7480/api/notice"
       hub.fail(f"{put_notice} -H 'Remote-Groups: user'")
@@ -195,8 +189,11 @@ testers.runNixOSTest {
       assert get(hub, "/api/notice", groups="user")["message"] == "maintenance"
 
       agent.stop_job("nixlens.service")
-      machines = get(hub, "/api/overview")
-      assert not machines[1]["online"], machines
+      # the hub and its own data answer while an agent is down
+      assert len(get(hub, "/api/machines")) == 2
+      get(hub, "/api/machines/hub/storage")
+      assert [a["name"] for a in get(hub, "/api/apps/hub")] == ["Grafana"]
       hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/machines/agent/system")
+      hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/apps/agent")
     '';
 }

@@ -25,10 +25,8 @@ const (
 )
 
 type Machine struct {
-	Name   string `json:"name"`
-	Self   bool   `json:"self"`
-	Online bool   `json:"online"`
-	Error  string `json:"error"`
+	Name string `json:"name"`
+	Self bool   `json:"self"`
 }
 
 type Hub struct {
@@ -111,10 +109,11 @@ func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor f
 }
 
 func (h *Hub) Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/overview", h.access.AdminOnly(h.overview))
+	mux.HandleFunc("GET /api/machines", h.access.AdminOnly(h.machines))
 	mux.HandleFunc("GET /api/machines/{name}/{kind}", h.access.AdminOnly(h.machineData))
 	mux.HandleFunc("GET /api/machines/{name}/pool/{pool}", h.access.AdminOnly(h.poolDetail))
-	mux.HandleFunc("GET /api/apps", h.apps)
+	mux.HandleFunc("GET /api/apps", h.appIndex)
+	mux.HandleFunc("GET /api/apps/{machine}", h.apps)
 	mux.HandleFunc("GET /api/icons/{kind}/{name}", h.icons.serve)
 	mux.HandleFunc("GET /api/me", func(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, h.access.me(r), nil)
@@ -231,103 +230,82 @@ func (h *Hub) proxy(w http.ResponseWriter, r *http.Request, name, path string) {
 	}
 }
 
-// MachineOverview is one machine's state in the all-machines view
-type MachineOverview struct {
-	Machine
-	System  json.RawMessage `json:"system,omitempty"`
-	Storage json.RawMessage `json:"storage,omitempty"`
+// the machines without asking them, so each one's data loads on its own
+func (h *Hub) machines(w http.ResponseWriter, r *http.Request) {
+	api.WriteJSON(w, h.machineList(), nil)
 }
 
-// system and storage of every machine in one response, fetched in parallel
-func (h *Hub) overview(w http.ResponseWriter, r *http.Request) {
+func (h *Hub) machineList() []Machine {
 	names := h.names()
-	out := make([]MachineOverview, len(names))
-	var wg sync.WaitGroup
+	out := make([]Machine, len(names))
 	for i, n := range names {
-		out[i].Machine = Machine{Name: n, Self: n == h.self, Online: true}
-		var sysErr, storErr error
-		var inner sync.WaitGroup
-		wg.Go(func() {
-			inner.Go(func() { out[i].System, sysErr = h.fetch(r.Context(), n, "system") })
-			inner.Go(func() { out[i].Storage, storErr = h.fetch(r.Context(), n, "storage") })
-			inner.Wait()
-			if err := errors.Join(sysErr, storErr); err != nil {
-				out[i].Online = sysErr == nil
-				out[i].Error = err.Error()
-			}
-		})
+		out[i] = Machine{Name: n, Self: n == h.self}
 	}
-	wg.Wait()
-	api.WriteJSON(w, out, nil)
+	return out
 }
 
+// AppIndex tells the ui whose apps to ask for and how to order categories
+type AppIndex struct {
+	Machines   []Machine `json:"machines"`
+	Categories []string  `json:"categories"`
+}
+
+func (h *Hub) appIndex(w http.ResponseWriter, r *http.Request) {
+	categories := make([]string, len(h.order))
+	for c, rank := range h.order {
+		categories[rank] = c
+	}
+	api.WriteJSON(w, AppIndex{Machines: h.machineList(), Categories: categories}, nil)
+}
+
+// the apps of one machine that this user sees, sorted
 func (h *Hub) apps(w http.ResponseWriter, r *http.Request) {
-	all, err := api.ReadApps(h.appsFile)
+	name := r.PathValue("machine")
+	var all []api.App
+	var err error
+	if name == h.self {
+		all, err = api.ReadApps(h.appsFile)
+	} else {
+		var body []byte
+		if body, err = h.fetch(r.Context(), name, "apps"); err == nil {
+			err = json.Unmarshal(body, &all)
+		}
+	}
 	if err != nil {
 		// every user may ask for apps; the details stay in the log
-		log.Print(err)
-		http.Error(w, "the app list could not be read", http.StatusInternalServerError)
+		log.Printf("%s apps: %v", name, err)
+		status := http.StatusBadGateway
+		var se statusError
+		if errors.As(err, &se) {
+			status = se.status
+		} else if name == h.self {
+			status = http.StatusInternalServerError
+		}
+		http.Error(w, "the app list could not be read", status)
 		return
 	}
-	for i := range all {
-		all[i].Machine = h.self
-	}
 
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-	for name := range h.peers {
-		wg.Go(func() {
-			body, err := h.fetch(r.Context(), name, "apps")
-			if err != nil {
-				log.Print(err)
-				return
-			}
-			var apps []api.App
-			if err := json.Unmarshal(body, &apps); err != nil {
-				log.Printf("%s apps: %v", name, err)
-				return
-			}
-			mu.Lock()
-			defer mu.Unlock()
-			for _, a := range apps {
-				a.Machine = name
-				all = append(all, a)
-			}
-		})
-	}
-	wg.Wait()
-
-	// self sorts first among equal urls, so dedup keeps the hub's own entry
-	sort.SliceStable(all, func(i, j int) bool {
-		if ci, cj := h.categoryRank(all[i].Category), h.categoryRank(all[j].Category); ci != cj {
-			return ci < cj
-		}
-		if all[i].Category != all[j].Category {
-			return all[i].Category < all[j].Category
-		}
-		if all[i].Name != all[j].Name {
-			return all[i].Name < all[j].Name
-		}
-		if (all[i].Machine == h.self) != (all[j].Machine == h.self) {
-			return all[i].Machine == h.self
-		}
-		return all[i].Machine < all[j].Machine
-	})
-	seen := map[string]bool{}
 	apps := make([]api.App, 0, len(all))
 	for _, a := range all {
-		if !h.access.seesCategory(r, a.Category) {
-			continue
-		}
-		if !seen[a.URL] {
-			seen[a.URL] = true
+		if h.access.seesCategory(r, a.Category) {
+			a.Machine = name
 			apps = append(apps, a)
 		}
 	}
+	sort.SliceStable(apps, func(i, j int) bool {
+		if ci, cj := h.categoryRank(apps[i].Category), h.categoryRank(apps[j].Category); ci != cj {
+			return ci < cj
+		}
+		if apps[i].Category != apps[j].Category {
+			return apps[i].Category < apps[j].Category
+		}
+		return apps[i].Name < apps[j].Name
+	})
 
 	// probe only what this user sees, a few at a time
 	origin := requestOrigin(r)
 	slots := make(chan struct{}, maxFrameProbes)
+	var wg sync.WaitGroup
 	for i := range apps {
 		wg.Go(func() {
 			slots <- struct{}{}

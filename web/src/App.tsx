@@ -6,8 +6,10 @@ import { AppGrid } from '@/features/apps/grid'
 import { AppWindow, type Point } from '@/features/apps/window'
 import { Inspector } from '@/features/inspector/inspector'
 import { NoticeBanner } from '@/features/notice/notice'
-import { type MachineOverview, OverviewWidget } from '@/features/overview/overview'
+import { useOverview } from '@/features/overview/machines'
+import { OverviewWidget } from '@/features/overview/overview'
 import { UserMenu } from '@/features/user/user'
+import { useApps } from '@/features/apps/apps'
 import { type App as AppEntry, type Me, usePoll } from '@/lib/api'
 import { reducedMotion, setPrefs, usePrefs } from '@/lib/prefs'
 import { closeLayer, navigate, useRoute } from '@/lib/router'
@@ -36,10 +38,9 @@ export default function App() {
   const settled = me !== undefined || mePoll.error !== undefined
   const admin = me?.admin ?? false
   const firstName = me?.name.split(' ')[0].toLowerCase()
-  const overview = usePoll<MachineOverview[]>(admin ? '/api/overview' : null, 10000)
+  const overview = useOverview(admin)
   const machines = overview.data ?? []
-  const appsPoll = usePoll<AppEntry[]>('/api/apps', 300000)
-  const apps = appsPoll.data ?? []
+  const { apps, error: appsError, settled: appsSettled } = useApps()
 
   // the address decides what is in front: an app window, a detail panel or
   // nothing over the home view
@@ -49,6 +50,7 @@ export default function App() {
     route.kind === 'app'
       ? apps.find((a) => a.machine === route.machine && a.name === route.name && a.frameable)
       : undefined
+  const routeAppSettled = route.kind === 'app' && appsSettled(route.machine)
   const active = routeApp?.url ?? null
 
   const [open, setOpen] = useState<AppEntry[]>([])
@@ -92,9 +94,9 @@ export default function App() {
   // addresses that cannot be shown lead home: an app that does not exist
   // (or cannot be framed), or details for someone who may not see them
   useEffect(() => {
-    if (route.kind === 'app' && appsPoll.data && !routeApp) closeLayer()
+    if (route.kind === 'app' && routeAppSettled && !routeApp) closeLayer()
     if (detail && me && !admin) closeLayer()
-  }, [route, appsPoll.data, routeApp, detail, me, admin])
+  }, [route, routeAppSettled, routeApp, detail, me, admin])
 
   useEffect(() => {
     if (active === null) returnFocus.current?.focus()
@@ -180,12 +182,12 @@ export default function App() {
                   // keeps its line while the overview loads, so the apps below do not move
                   <p className="mt-3 min-h-5 text-sm text-fg-muted tabular-nums">
                     {overview.data &&
-                      `${online} of ${machines.length} ${machines.length === 1 ? 'machine' : 'machines'} online${appsPoll.data ? ` · ${apps.length} apps` : ''}`}
+                      `${online} of ${machines.length} ${machines.length === 1 ? 'machine' : 'machines'} online · ${apps.length} apps`}
                   </p>
                 )}
-                {appsPoll.error && (
-                  <p className="mt-2 text-sm text-error/90" title={appsPoll.error}>
-                    {appsPoll.data ? 'The app list could not be updated' : 'The app list could not be loaded'}
+                {appsError && (
+                  <p className="mt-2 text-sm text-error/90" title={appsError}>
+                    {apps.length > 0 ? 'The app list could not be updated' : 'The app list could not be loaded'}
                   </p>
                 )}
                 <NoticeBanner />

@@ -12,8 +12,6 @@ export type Me = {
 export type Machine = {
   name: string
   self: boolean
-  online: boolean
-  error: string
 }
 
 export type NetInterface = {
@@ -170,64 +168,101 @@ export type App = {
   description: string
 }
 
+export type AppIndex = {
+  machines: Machine[]
+  categories: string[]
+}
+
 export type Poll<T> = { data?: T; error?: string }
 
 type PollState<T> = Poll<T> & { path: string | null }
 
 const requestTimeout = 15000
 
+// one request at a time: the next starts intervalMs after the previous
+// finished, so a slow peer cannot stack requests or let an old answer
+// overwrite a newer one; returns the function that stops it
+function startPoll<T>(
+  path: string,
+  intervalMs: number,
+  onData: (data: T) => void,
+  onError: (error: string) => void,
+): () => void {
+  const abort = new AbortController()
+  let timer: ReturnType<typeof setTimeout>
+  // a hidden tab stops polling and catches up once it is visible again
+  let paused = false
+  const onVisible = () => {
+    if (paused && !document.hidden) {
+      paused = false
+      load()
+    }
+  }
+  const load = async () => {
+    try {
+      // a request that never finishes would stop the polling for good
+      const res = await fetch(path, { signal: AbortSignal.any([abort.signal, AbortSignal.timeout(requestTimeout)]) })
+      if (!res.ok) {
+        const body = (await res.text()).trim()
+        throw new Error(body || `${res.status} ${res.statusText}`)
+      }
+      onData((await res.json()) as T)
+    } catch (e) {
+      if (abort.signal.aborted) return
+      onError(
+        e instanceof DOMException && e.name === 'TimeoutError'
+          ? 'request timed out'
+          : e instanceof Error
+            ? e.message
+            : String(e),
+      )
+    }
+    if (abort.signal.aborted) return
+    timer = setTimeout(() => {
+      if (document.hidden) paused = true
+      else load()
+    }, intervalMs)
+  }
+  load()
+  document.addEventListener('visibilitychange', onVisible)
+  return () => {
+    abort.abort()
+    clearTimeout(timer)
+    document.removeEventListener('visibilitychange', onVisible)
+  }
+}
+
 export function usePoll<T>(path: string | null, intervalMs: number): Poll<T> {
   const [state, setState] = useState<PollState<T>>({ path })
-  // one request at a time: the next starts intervalMs after the previous
-  // finished, so a slow peer cannot stack requests or let an old answer
-  // overwrite a newer one
   useEffect(() => {
     if (path === null) return
-    const abort = new AbortController()
-    let timer: ReturnType<typeof setTimeout>
-    // a hidden tab stops polling and catches up once it is visible again
-    let paused = false
-    const onVisible = () => {
-      if (paused && !document.hidden) {
-        paused = false
-        load()
-      }
-    }
-    const load = async () => {
-      try {
-        // a request that never finishes would stop the polling for good
-        const res = await fetch(path, { signal: AbortSignal.any([abort.signal, AbortSignal.timeout(requestTimeout)]) })
-        if (!res.ok) {
-          const body = (await res.text()).trim()
-          throw new Error(body || `${res.status} ${res.statusText}`)
-        }
-        const data = (await res.json()) as T
-        setState({ path, data })
-      } catch (e) {
-        if (abort.signal.aborted) return
-        const error =
-          e instanceof DOMException && e.name === 'TimeoutError'
-            ? 'request timed out'
-            : e instanceof Error
-              ? e.message
-              : String(e)
-        setState((s) => ({ path, data: s.path === path ? s.data : undefined, error }))
-      }
-      if (abort.signal.aborted) return
-      timer = setTimeout(() => {
-        if (document.hidden) paused = true
-        else load()
-      }, intervalMs)
-    }
-    load()
-    document.addEventListener('visibilitychange', onVisible)
-    return () => {
-      abort.abort()
-      clearTimeout(timer)
-      document.removeEventListener('visibilitychange', onVisible)
-    }
+    return startPoll<T>(
+      path,
+      intervalMs,
+      (data) => setState({ path, data }),
+      (error) => setState((s) => ({ path, data: s.path === path ? s.data : undefined, error })),
+    )
   }, [path, intervalMs])
   return state.path === path ? state : {}
+}
+
+// polls each path on its own, so a slow one holds up only itself; a path
+// without an answer yet has no entry
+export function usePolls<T>(paths: string[], intervalMs: number): Record<string, Poll<T>> {
+  const [state, setState] = useState<Record<string, Poll<T>>>({})
+  const key = paths.join('\n')
+  useEffect(() => {
+    const stops = (key === '' ? [] : key.split('\n')).map((path) =>
+      startPoll<T>(
+        path,
+        intervalMs,
+        (data) => setState((s) => ({ ...s, [path]: { data } })),
+        (error) => setState((s) => ({ ...s, [path]: { data: s[path]?.data, error } })),
+      ),
+    )
+    return () => stops.forEach((stop) => stop())
+  }, [key, intervalMs])
+  return state
 }
 
 // drives use decimal units as vendors label them, memory uses binary units

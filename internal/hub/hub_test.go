@@ -62,7 +62,7 @@ func TestHubConcurrentRequests(t *testing.T) {
 	mux := http.NewServeMux()
 	h.Register(mux)
 
-	paths := []string{"/api/apps", "/api/overview", "/api/machines/one/system", "/api/machines/" + h.self + "/system"}
+	paths := []string{"/api/apps", "/api/apps/one", "/api/apps/two", "/api/apps/" + h.self, "/api/machines", "/api/machines/one/system", "/api/machines/" + h.self + "/system"}
 	var wg sync.WaitGroup
 	for range 50 {
 		wg.Go(func() {
@@ -77,35 +77,75 @@ func TestHubConcurrentRequests(t *testing.T) {
 	}
 	wg.Wait()
 
-	rec := httptest.NewRecorder()
-	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/apps", nil))
-	var apps []api.App
-	if err := json.Unmarshal(rec.Body.Bytes(), &apps); err != nil {
-		t.Fatal(err)
-	}
-	got := map[string]bool{}
-	for _, a := range apps {
-		got[a.Name] = a.Frameable
-	}
-	if len(apps) != 3 || !got["Framed"] || got["Denied"] || !got["Local"] {
-		t.Errorf("apps: %+v", apps)
-	}
-	if apps[0].Category != "apps" {
-		t.Errorf("listed category first: %+v", apps)
+	get := func(path string, v any) {
+		t.Helper()
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if err := json.Unmarshal(rec.Body.Bytes(), v); err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
 	}
 
-	rec = httptest.NewRecorder()
-	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/overview", nil))
-	var overview []MachineOverview
-	if err := json.Unmarshal(rec.Body.Bytes(), &overview); err != nil {
+	var index AppIndex
+	get("/api/apps", &index)
+	if len(index.Machines) != 3 || !index.Machines[0].Self || index.Machines[1].Name != "one" || len(index.Categories) != 1 || index.Categories[0] != "apps" {
+		t.Errorf("index: %+v", index)
+	}
+	got := map[string]api.App{}
+	for _, m := range index.Machines {
+		var apps []api.App
+		get("/api/apps/"+m.Name, &apps)
+		for _, a := range apps {
+			if a.Machine != m.Name {
+				t.Errorf("%s: %+v", m.Name, a)
+			}
+			got[a.Name] = a
+		}
+	}
+	if len(got) != 3 || !got["Framed"].Frameable || got["Denied"].Frameable || !got["Local"].Frameable {
+		t.Errorf("apps: %+v", got)
+	}
+
+	var machines []Machine
+	get("/api/machines", &machines)
+	if len(machines) != 3 || !machines[0].Self {
+		t.Errorf("machines: %+v", machines)
+	}
+}
+
+// an agent that does not answer must not hold up the others
+func TestUnreachablePeerIsIndependent(t *testing.T) {
+	stuck := make(chan struct{})
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-stuck }))
+	defer slow.Close()
+	defer close(stuck)
+
+	appsFile := filepath.Join(t.TempDir(), "apps.json")
+	if err := os.WriteFile(appsFile, []byte(`[{"name":"Local","url":"http://127.0.0.1:1/"}]`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if len(overview) != 3 {
-		t.Fatalf("overview: %+v", overview)
+	h, err := New(http.NewServeMux(), appsFile, map[string]Peer{"slow": {URL: slow.URL}},
+		func(Peer) *http.Client { return &http.Client{Timeout: time.Minute} }, nil, Access{}, "", "")
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, m := range overview {
-		if !m.Online || m.Error != "" || len(m.System) == 0 || len(m.Storage) == 0 {
-			t.Errorf("overview %s: %+v", m.Name, m)
+	mux := http.NewServeMux()
+	h.Register(mux)
+
+	for _, p := range []string{"/api/apps", "/api/machines", "/api/apps/" + h.self} {
+		done := make(chan int)
+		go func() {
+			rec := httptest.NewRecorder()
+			mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, p, nil))
+			done <- rec.Code
+		}()
+		select {
+		case code := <-done:
+			if code != http.StatusOK {
+				t.Errorf("%s: status %d", p, code)
+			}
+		case <-time.After(2 * time.Second):
+			t.Errorf("%s waits for the unreachable peer", p)
 		}
 	}
 }
@@ -122,7 +162,7 @@ func TestAppsErrorHidesDetails(t *testing.T) {
 	mux := http.NewServeMux()
 	h.Register(mux)
 	rec := httptest.NewRecorder()
-	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/apps", nil))
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/apps/"+h.self, nil))
 	if rec.Code != http.StatusInternalServerError || strings.Contains(rec.Body.String(), appsFile) {
 		t.Fatalf("status %d: %s", rec.Code, rec.Body)
 	}
