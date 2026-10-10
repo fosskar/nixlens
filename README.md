@@ -31,7 +31,6 @@ nixlens is the view onto it: what's actually there and running, at a glance, rea
 ## Features
 
 - **App home screen.** Apps declared in Nix, grouped into collapsible categories, with icons from [dashboard-icons](https://github.com/homarr-labs/dashboard-icons), [selfh.st](https://selfh.st/icons/) or [Material Design Icons](https://pictogrammers.com/library/mdi/).
-- **App windows and a dock.** Apps open inside nixlens and stay alive in the background, so switching is instant. Windows float or maximize above the dock. Apps that forbid framing are detected from their headers and open in a new tab instead.
 - **Machines at a glance.** A sidebar card per machine with CPU and memory rings, uptime, NixOS release and kernel, every pool with its drives, and anything that needs a look. Offline machines say why.
 - **Everything about a machine on one page.** System, network, every pool and every drive in one panel that rolls out from under the sidebar. A pool or drive clicked in the sidebar is scrolled to and marked. Every view has an address, so back, reload and bookmarks work, also with the back gesture of an installed app.
 - **Storage that makes sense.** ZFS and md pools, btrfs, ext4 and other file systems. Capacity is drawn over the raw space of the drives, so you see what redundancy takes, and each vdev shows how many failures it survives. Datasets with quotas and snapshots, partition tables, and a link to look up a replacement drive on geizhals.de.
@@ -44,13 +43,13 @@ nixlens is the view onto it: what's actually there and running, at a glance, rea
 
 ## Screenshots
 
-| Machine details                                                                             | Pool                                                                                         |
-| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| ![Machine panel with system, network ports and connections](./docs/screenshots/machine.png) | ![Pool with capacity dots, vdevs and their failure tolerance](./docs/screenshots/pool.png)   |
-| **Drive**                                                                                   | **App window**                                                                               |
-| ![Drive with SMART values, partitions and a shop link](./docs/screenshots/drive.png)        | ![An app open in a nixlens window above the dock](./docs/screenshots/app-window.png)         |
-| **View for non-admins**                                                                     | **Preferences**                                                                              |
-| ![App grid without the admin sidebar](./docs/screenshots/user-view.png)                     | ![Preferences panel with accent colour, glow and motion](./docs/screenshots/preferences.png) |
+| Machine details                                                                              | Pool                                                                                       |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| ![Machine panel with system, network ports and connections](./docs/screenshots/machine.png)  | ![Pool with capacity dots, vdevs and their failure tolerance](./docs/screenshots/pool.png) |
+| **Drive**                                                                                    | **View for non-admins**                                                                    |
+| ![Drive with SMART values, partitions and a shop link](./docs/screenshots/drive.png)         | ![App grid without the admin sidebar](./docs/screenshots/user-view.png)                    |
+| **Preferences**                                                                              |                                                                                            |
+| ![Preferences panel with accent colour, glow and motion](./docs/screenshots/preferences.png) |                                                                                            |
 
 <details>
 <summary>On a phone</summary>
@@ -76,7 +75,7 @@ flowchart LR
 nixlens is one Go binary built from the standard library only, with the React UI embedded:
 
 - **Agent** (every machine): answers `/api/local/*` with system, storage, network and app data. It reads `/proc`, `/sys`, netlink, `lsblk`, `zpool`, `zfs` and `ethtool` on request and keeps no state.
-- **Hub** (one machine): serves the UI on loopback behind your reverse proxy, fetches its peers' data server-side and decides per app whether it may be framed. It reads the user's groups from the proxy's `Remote-*` headers.
+- **Hub** (one machine): serves the UI on loopback behind your reverse proxy, fetches its peers' data server-side. It reads the user's groups from the proxy's `Remote-*` headers.
 - **SMART collector**: a separate oneshot with raw disk access writes `/run/nixlens-smart/smart.json`, so the agent itself never needs privileges.
 
 ## Getting started

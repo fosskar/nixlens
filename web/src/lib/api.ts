@@ -164,7 +164,6 @@ export type App = {
   name: string
   url: string
   machine: string
-  frameable: boolean
   icon: string
   category: string
   description: string

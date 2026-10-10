@@ -182,28 +182,6 @@ body::before {
 
 /* in the components layer, so utilities can override these without ! */
 @layer components {
-  .nixlens-window {
-    transition:
-      transform 300ms var(--ease-out),
-      opacity 300ms var(--ease-out),
-      visibility 0s linear 0s;
-  }
-
-  .nixlens-window[data-state='home'],
-  .nixlens-window[data-state='switch'] {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition:
-      transform 300ms var(--ease-out),
-      opacity 300ms var(--ease-out),
-      visibility 0s linear 300ms;
-  }
-
-  .nixlens-window[data-state='home'] {
-    transform: scale(0.08);
-  }
-
   .nixlens-breathe {
     animation: nixlens-breathe 2.4s ease-in-out infinite;
   }
@@ -298,18 +276,11 @@ body::before {
     }
   }
 
-  /* apps fade out before they reach the dock. the mask needs the content to
-   scroll inside a viewport-sized box, which the md layout provides; below md
-   the page itself scrolls, so a fixed overlay does the fade there */
+  /* apps fade out at the top edge. the mask needs the content to scroll
+   inside a viewport-sized box, which the md layout provides */
   @media (min-width: 48rem) {
-    .nixlens-dock-fade {
-      mask-image: linear-gradient(
-        to bottom,
-        transparent 0,
-        black 2.5rem,
-        black calc(100% - 11rem),
-        transparent calc(100% - 4.5rem)
-      );
+    .nixlens-scroll-fade {
+      mask-image: linear-gradient(to bottom, transparent 0, black 2.5rem);
     }
   }
 

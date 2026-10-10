@@ -1,8 +1,6 @@
-import { type MouseEvent } from 'react'
 import { AppIcon } from '@/features/apps/icon'
 import { type App } from '@/lib/api'
 import { setPrefs, usePrefs } from '@/lib/prefs'
-import { isPlainClick } from '@/lib/router'
 
 function byCategory(apps: App[]): [string, App[]][] {
   const groups = new Map<string, App[]>()
@@ -14,7 +12,7 @@ function byCategory(apps: App[]): [string, App[]][] {
   return [...groups]
 }
 
-export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DOMRect) => void }) {
+export function AppGrid({ apps }: { apps: App[] }) {
   const { collapsed } = usePrefs()
   const toggle = (category: string) =>
     setPrefs({
@@ -47,7 +45,7 @@ export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from
           className={`grid transition-[grid-template-rows,opacity] duration-300 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
         >
           <div className={open ? '' : 'overflow-hidden'}>
-            <AppSection apps={list} onOpen={onOpen} />
+            <AppSection apps={list} />
           </div>
         </div>
       </section>
@@ -69,45 +67,23 @@ export function AppGrid({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from
 }
 
 function appTitle(app: App): string {
-  const title = `${app.name} on ${app.machine}${app.frameable ? '' : ' (opens in a new tab)'}`
+  const title = `${app.name} on ${app.machine}`
   return app.description ? `${title}\n${app.description}` : title
 }
 
-function AppSection({ apps, onOpen }: { apps: App[]; onOpen: (app: App, from: DOMRect) => void }) {
+function AppSection({ apps }: { apps: App[] }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-y-6">
       {apps.map((app) => (
-        // a link, so the browser's own menu, middle click and modified clicks
-        // open the app in a tab; a plain click opens frameable apps in a window
         <a
           key={app.url}
           href={app.url}
-          target={app.frameable ? undefined : '_blank'}
+          target="_blank"
           rel="noopener"
-          onClick={(e: MouseEvent<HTMLAnchorElement>) => {
-            if (!app.frameable || !isPlainClick(e.nativeEvent)) return
-            e.preventDefault()
-            onOpen(app, (e.currentTarget.firstElementChild ?? e.currentTarget).getBoundingClientRect())
-          }}
           title={appTitle(app)}
           className="group flex flex-col items-center gap-2.5 transition-transform duration-300 hover:-translate-y-1 active:scale-95"
         >
-          <div className="relative">
-            <AppIcon app={app} />
-            {!app.frameable && (
-              <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full border border-line bg-bg-overlay/90 text-fg-base shadow-raised">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-2.5 w-2.5 fill-none stroke-current"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M7 17L17 7M9 7h8v8" />
-                </svg>
-              </span>
-            )}
-          </div>
+          <AppIcon app={app} />
           <span className="max-w-full truncate px-1 text-xs text-fg-muted transition-colors group-hover:text-fg-inverse">
             {app.name}
           </span>

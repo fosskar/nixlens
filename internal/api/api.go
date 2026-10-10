@@ -16,7 +16,6 @@ type App struct {
 	Category    string `json:"category"`
 	Description string `json:"description"`
 	Machine     string `json:"machine,omitempty"`
-	Frameable   bool   `json:"frameable"`
 }
 
 func WriteJSON(w http.ResponseWriter, v any, err error) {

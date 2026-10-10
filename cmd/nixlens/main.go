@@ -30,7 +30,6 @@ func main() {
 	categories := flag.String("categories", "", "hub: comma-separated categories listed first, in this order")
 	adminGroups := flag.String("admin-groups", "", "hub: comma-separated groups that see machines; empty allows everyone")
 	accountURL := flag.String("account-url", "", "hub: page where users manage their account, linked from the user menu")
-	frameCache := flag.String("frame-cache", "", "hub: file keeping which apps open in a window across restarts")
 	iconCache := flag.String("icon-cache", "", "hub: directory keeping fetched app icons across restarts")
 	noticeFile := flag.String("notice-file", "", "hub: file keeping the notice admins set for everyone")
 	categoryGroupsFile := flag.String("category-groups", "", "hub: path to a JSON object mapping categories to the groups that see them")
@@ -135,7 +134,7 @@ func main() {
 			}
 			return &http.Client{Timeout: 5 * time.Second, Transport: transport}
 		}
-		h, err := hub.New(local, *appsFile, peers, clientFor, strings.Split(*categories, ","), acc, *iconCache, *frameCache)
+		h, err := hub.New(local, *appsFile, peers, clientFor, strings.Split(*categories, ","), acc, *iconCache)
 		if err != nil {
 			log.Fatal(err)
 		}

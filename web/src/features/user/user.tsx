@@ -235,9 +235,6 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
               onChange={(reduceMotion) => setPrefs({ reduceMotion })}
             />
           </Row>
-          <Row label="Floating windows" hint="Margins around apps, ending above the dock">
-            <Toggle label="Floating windows" checked={prefs.floating} onChange={(floating) => setPrefs({ floating })} />
-          </Row>
           <Row label="Collapsed sections" hint={`${prefs.collapsed.length} collapsed`}>
             <button
               type="button"

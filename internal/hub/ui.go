@@ -105,9 +105,9 @@ func UI(dist fs.FS) (http.HandlerFunc, error) {
 		} else {
 			h.Set("Cache-Control", "no-cache")
 		}
-		// the ui runs only its own bundle; images come from icon cdns,
-		// app windows frame the apps, and nothing may frame nixlens itself
-		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' https: data:; frame-src http: https:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'")
+		// the ui runs only its own bundle; images come from icon cdns, and
+		// nothing may frame nixlens itself
+		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' https: data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'")
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Referrer-Policy", "same-origin")
 		if ctype := mime.TypeByExtension(path.Ext(a.name)); ctype != "" {

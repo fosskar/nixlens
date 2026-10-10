@@ -16,7 +16,6 @@ type Prefs = {
   glow: number
   solid: boolean
   reduceMotion: boolean
-  floating: boolean
   collapsed: string[]
   machinesOpen: boolean
 }
@@ -27,7 +26,6 @@ const defaults: Prefs = {
   glow: 1,
   solid: false,
   reduceMotion: false,
-  floating: false,
   collapsed: [],
   machinesOpen: false,
 }
@@ -50,7 +48,6 @@ function load(): Prefs {
     glow: typeof p.glow === 'number' && p.glow >= 0 && p.glow <= 1 ? p.glow : defaults.glow,
     solid: p.solid === true,
     reduceMotion: p.reduceMotion === true,
-    floating: p.floating === true,
     collapsed: Array.isArray(p.collapsed) ? p.collapsed.filter((c): c is string => typeof c === 'string') : [],
     machinesOpen: p.machinesOpen === true,
   }

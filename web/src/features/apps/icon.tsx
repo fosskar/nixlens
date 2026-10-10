@@ -13,27 +13,20 @@ function iconSource(icon: string): IconSource | null {
   return { url: `/api/icons/dashboard/${encodeURIComponent(icon)}`, mask: false }
 }
 
-const iconSizes = {
-  lg: { box: 'h-16 w-16 rounded-card', img: 'h-10 w-10', letter: 'text-2xl' },
-  sm: { box: 'h-11 w-11 rounded-card', img: 'h-7 w-7', letter: 'text-lg' },
-  xs: { box: 'h-6 w-6 rounded-control', img: 'h-4 w-4', letter: 'text-2xs' },
-}
-
-export function AppIcon({ app, size = 'lg' }: { app: App; size?: keyof typeof iconSizes }) {
+export function AppIcon({ app }: { app: App }) {
   const source = iconSource(app.icon)
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
-  const s = iconSizes[size]
   const failed = source === null || failedUrl === source.url
   const onError = () => source && setFailedUrl(source.url)
   return (
-    <div className={`${s.box} glass-tile grid place-items-center`}>
+    <div className="glass-tile grid h-16 w-16 place-items-center rounded-card">
       {failed ? (
-        <span className={`${s.letter} font-semibold text-fg-base`}>{app.name.charAt(0).toUpperCase()}</span>
+        <span className="text-2xl font-semibold text-fg-base">{app.name.charAt(0).toUpperCase()}</span>
       ) : source.mask ? (
         <>
           <img src={source.url} alt="" hidden onError={onError} />
           <span
-            className={`${s.img} bg-fg-base`}
+            className="h-10 w-10 bg-fg-base"
             style={{
               maskImage: `url("${source.url}")`,
               maskSize: 'contain',
@@ -48,7 +41,7 @@ export function AppIcon({ app, size = 'lg' }: { app: App; size?: keyof typeof ic
           alt=""
           loading="lazy"
           decoding="async"
-          className={`${s.img} object-contain`}
+          className="h-10 w-10 object-contain"
           onError={onError}
         />
       )}

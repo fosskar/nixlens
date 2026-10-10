@@ -14,15 +14,11 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/fosskar/nixlens/internal/api"
 )
 
-const (
-	maxPeerResponse = 16 << 20
-	maxFrameProbes  = 8
-)
+const maxPeerResponse = 16 << 20
 
 type Machine struct {
 	Name string `json:"name"`
@@ -36,7 +32,6 @@ type Hub struct {
 	peers    map[string]peer
 	order    map[string]int
 	access   Access
-	frames   *frameChecker
 	icons    *iconCache
 }
 
@@ -78,7 +73,7 @@ func ReadPeers(path string) (map[string]Peer, error) {
 
 // New takes the peers with an http client for each, which checks the
 // peer's fingerprint
-func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor func(Peer) *http.Client, categories []string, acc Access, iconDir, frameFile string) (*Hub, error) {
+func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor func(Peer) *http.Client, categories []string, acc Access, iconDir string) (*Hub, error) {
 	self, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -103,7 +98,6 @@ func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor f
 		peers:    byName,
 		order:    order,
 		access:   acc,
-		frames:   newFrameChecker(frameFile),
 		icons:    newIconCache("https://cdn.jsdelivr.net", iconDir),
 	}, nil
 }
@@ -301,19 +295,6 @@ func (h *Hub) apps(w http.ResponseWriter, r *http.Request) {
 		}
 		return apps[i].Name < apps[j].Name
 	})
-
-	// probe only what this user sees, a few at a time
-	origin := requestOrigin(r)
-	slots := make(chan struct{}, maxFrameProbes)
-	var wg sync.WaitGroup
-	for i := range apps {
-		wg.Go(func() {
-			slots <- struct{}{}
-			defer func() { <-slots }()
-			apps[i].Frameable = h.frames.check(r.Context(), apps[i].URL, origin)
-		})
-	}
-	wg.Wait()
 	api.WriteJSON(w, apps, nil)
 }
 

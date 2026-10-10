@@ -15,14 +15,8 @@ import (
 )
 
 // many clients at once against a hub with two agents: exercises the parallel
-// peer fetches, frame probes and the frame cache, so the race detector sees them
+// peer fetches, so the race detector sees them
 func TestHubConcurrentRequests(t *testing.T) {
-	framed := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer framed.Close()
-	denied := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Frame-Options", "DENY")
-	}))
-	defer denied.Close()
 
 	agent := func(apps []api.App) *httptest.Server {
 		mux := http.NewServeMux()
@@ -37,13 +31,13 @@ func TestHubConcurrentRequests(t *testing.T) {
 		})
 		return httptest.NewServer(mux)
 	}
-	a1 := agent([]api.App{{Name: "Framed", URL: framed.URL, Category: "apps"}})
+	a1 := agent([]api.App{{Name: "One", URL: "https://one.example", Category: "apps"}})
 	defer a1.Close()
-	a2 := agent([]api.App{{Name: "Denied", URL: denied.URL, Category: "apps"}})
+	a2 := agent([]api.App{{Name: "Two", URL: "https://two.example", Category: "apps"}})
 	defer a2.Close()
 
 	appsFile := filepath.Join(t.TempDir(), "apps.json")
-	if err := os.WriteFile(appsFile, []byte(`[{"name":"Local","url":"`+framed.URL+`/local","category":"tools"}]`), 0o600); err != nil {
+	if err := os.WriteFile(appsFile, []byte(`[{"name":"Local","url":"https://local.example","category":"tools"}]`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	local := http.NewServeMux()
@@ -55,7 +49,7 @@ func TestHubConcurrentRequests(t *testing.T) {
 	})
 
 	h, err := New(local, appsFile, map[string]Peer{"one": {URL: a1.URL}, "two": {URL: a2.URL}},
-		func(Peer) *http.Client { return &http.Client{Timeout: 5 * time.Second} }, []string{"apps"}, Access{}, "", "")
+		func(Peer) *http.Client { return &http.Client{Timeout: 5 * time.Second} }, []string{"apps"}, Access{}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +96,7 @@ func TestHubConcurrentRequests(t *testing.T) {
 			got[a.Name] = a
 		}
 	}
-	if len(got) != 3 || !got["Framed"].Frameable || got["Denied"].Frameable || !got["Local"].Frameable {
+	if len(got) != 3 {
 		t.Errorf("apps: %+v", got)
 	}
 
@@ -125,7 +119,7 @@ func TestUnreachablePeerIsIndependent(t *testing.T) {
 		t.Fatal(err)
 	}
 	h, err := New(http.NewServeMux(), appsFile, map[string]Peer{"slow": {URL: slow.URL}},
-		func(Peer) *http.Client { return &http.Client{Timeout: time.Minute} }, nil, Access{}, "", "")
+		func(Peer) *http.Client { return &http.Client{Timeout: time.Minute} }, nil, Access{}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +149,7 @@ func TestAppsErrorHidesDetails(t *testing.T) {
 	if err := os.WriteFile(appsFile, []byte("not json"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	h, err := New(http.NewServeMux(), appsFile, nil, nil, nil, Access{}, "", "")
+	h, err := New(http.NewServeMux(), appsFile, nil, nil, nil, Access{}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
