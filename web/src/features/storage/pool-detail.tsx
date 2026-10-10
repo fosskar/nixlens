@@ -263,6 +263,8 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
   const limits = [
     dataset.quota > 0 && `quota ${formatCapacity(dataset.quota)}`,
     dataset.reservation > 0 && `reservation ${formatCapacity(dataset.reservation)}`,
+    dataset.refQuota > 0 && `refquota ${formatCapacity(dataset.refQuota)}`,
+    dataset.refReservation > 0 && `refreservation ${formatCapacity(dataset.refReservation)}`,
   ].filter(Boolean)
   const mount = dataset.mountpoint === 'legacy' || dataset.mountpoint === 'none' || dataset.mountpoint === '-'
   return (

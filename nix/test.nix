@@ -152,10 +152,10 @@ testers.runNixOSTest {
       assert any(p["pool"] == "testpool" and p["role"] == "mirror" for p in vdb["partitions"]), vdb
       assert any(p["pool"] == "" and p["role"] == "zfs reserved" for p in vdb["partitions"]), vdb
 
-      agent.succeed("zfs create -o quota=100M testpool/data && zfs snapshot testpool/data@one")
+      agent.succeed("zfs create -o quota=100M -o refreservation=10M testpool/data && zfs snapshot testpool/data@one")
       detail = get(hub, "/api/machines/agent/pool/testpool")
       data = next(d for d in detail["datasets"] if d["name"] == "testpool/data")
-      assert data["quota"] == 100 * 2**20 and data["snapshots"] == 1 and data["lastSnapshot"] > 0, data
+      assert data["quota"] == 100 * 2**20 and data["refReservation"] == 10 * 2**20 and data["snapshots"] == 1 and data["lastSnapshot"] > 0, data
       assert detail["properties"]["ashift"], detail
       hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/machines/agent/pool/-o")
 

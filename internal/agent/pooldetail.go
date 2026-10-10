@@ -18,17 +18,19 @@ type PoolDetail struct {
 }
 
 type Dataset struct {
-	Name          string `json:"name"`
-	Type          string `json:"type"`
-	Used          uint64 `json:"used"`
-	Available     uint64 `json:"available"`
-	Quota         uint64 `json:"quota"`
-	Reservation   uint64 `json:"reservation"`
-	CompressRatio string `json:"compressRatio"`
-	Mountpoint    string `json:"mountpoint"`
-	Snapshots     int    `json:"snapshots"`
-	SnapshotsUsed uint64 `json:"snapshotsUsed"`
-	LastSnapshot  int64  `json:"lastSnapshot"`
+	Name           string `json:"name"`
+	Type           string `json:"type"`
+	Used           uint64 `json:"used"`
+	Available      uint64 `json:"available"`
+	Quota          uint64 `json:"quota"`
+	Reservation    uint64 `json:"reservation"`
+	RefQuota       uint64 `json:"refQuota"`
+	RefReservation uint64 `json:"refReservation"`
+	CompressRatio  string `json:"compressRatio"`
+	Mountpoint     string `json:"mountpoint"`
+	Snapshots      int    `json:"snapshots"`
+	SnapshotsUsed  uint64 `json:"snapshotsUsed"`
+	LastSnapshot   int64  `json:"lastSnapshot"`
 }
 
 // tab-separated, parseable (-Hp) zfs/zpool output as rows of fields
@@ -87,17 +89,17 @@ func readPoolDetail(pool string) (PoolDetail, error) {
 	}
 
 	rows, err := zfsRows("zfs", "list", "-Hp", "-r", "-t", "filesystem,volume",
-		"-o", "name,type,used,avail,quota,reservation,compressratio,mountpoint", pool)
+		"-o", "name,type,used,avail,quota,reservation,refquota,refreservation,compressratio,mountpoint", pool)
 	if err != nil {
 		return d, err
 	}
 	byName := map[string]*Dataset{}
 	for _, f := range rows {
-		if len(f) != 8 {
+		if len(f) != 10 {
 			return d, fmt.Errorf("zfs list: unexpected row %q", f)
 		}
-		ds := Dataset{Name: f[0], Type: f[1], CompressRatio: f[6], Mountpoint: f[7]}
-		for i, dst := range []*uint64{&ds.Used, &ds.Available, &ds.Quota, &ds.Reservation} {
+		ds := Dataset{Name: f[0], Type: f[1], CompressRatio: f[8], Mountpoint: f[9]}
+		for i, dst := range []*uint64{&ds.Used, &ds.Available, &ds.Quota, &ds.Reservation, &ds.RefQuota, &ds.RefReservation} {
 			if *dst, err = parseSize(f[2+i]); err != nil {
 				return d, fmt.Errorf("zfs list %s: %w", f[0], err)
 			}

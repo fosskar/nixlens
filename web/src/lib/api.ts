@@ -146,6 +146,8 @@ export type Dataset = {
   available: number
   quota: number
   reservation: number
+  refQuota: number
+  refReservation: number
   compressRatio: string
   mountpoint: string
   snapshots: number
