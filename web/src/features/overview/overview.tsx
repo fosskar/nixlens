@@ -4,7 +4,7 @@ import { type MachineOverview } from '@/features/overview/machines'
 import { type Disk, type Poll } from '@/lib/api'
 import { driveHealth, type Health, poolHealth } from '@/lib/health'
 import { setPrefs, usePrefs } from '@/lib/prefs'
-import { navigate } from '@/lib/router'
+import { closeLayer, navigate, useRoute } from '@/lib/router'
 import { type Target, usedPercent } from '@/lib/storage'
 
 type Problem = { health: Health; text: string; target?: Target }
@@ -83,15 +83,18 @@ function MachineCard({ m }: { m: MachineOverview }) {
           ? 'warn'
           : 'ok'
       : 'error'
+  const route = useRoute()
+  const open = route.kind !== 'home' && route.machine === m.name
 
-  // the whole card opens the machine; problem lines open their pool or drive
+  // the whole card opens the machine, or closes it when open; problem lines open their pool or drive
   // and sit above the card's button, since buttons cannot nest
   return (
     <div className={`${card} relative p-3.5 ${m.online || m.loading ? '' : 'opacity-70'}`}>
       <button
         type="button"
-        onClick={() => navigate({ kind: 'machine', machine: m.name })}
-        aria-label={`Open ${m.name}`}
+        onClick={() => (open ? closeLayer() : navigate({ kind: 'machine', machine: m.name }))}
+        aria-label={`${open ? 'Close' : 'Open'} ${m.name}`}
+        aria-expanded={open}
         className="absolute inset-0 rounded-card outline-accent-cyan transition hover:bg-fill focus-visible:outline-2"
       />
       <div className="pointer-events-none relative flex flex-col gap-3">
