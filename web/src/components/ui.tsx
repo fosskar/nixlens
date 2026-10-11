@@ -71,7 +71,7 @@ export function IconButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`grid h-7 w-7 shrink-0 place-items-center rounded-control text-fg-muted transition outline-accent-cyan hover:text-fg-inverse focus-visible:outline-2 ${danger ? 'hover:bg-error/80' : 'hover:bg-fill-hover'}`}
+      className={`grid h-7 w-7 shrink-0 place-items-center rounded-control pointer-coarse:h-11 pointer-coarse:w-11 text-fg-muted transition outline-accent-cyan hover:text-fg-inverse focus-visible:outline-2 ${danger ? 'hover:bg-error/80' : 'hover:bg-fill-hover'}`}
     >
       <svg
         viewBox="0 0 24 24"
