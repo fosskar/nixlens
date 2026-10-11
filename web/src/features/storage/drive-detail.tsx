@@ -39,6 +39,7 @@ function SmartFacts({ smart, nvme }: { smart: Smart; nvme: boolean }) {
   return (
     <section>
       <SectionTitle
+        level={5}
         aside={smart.standby ? 'asleep · not woken' : smart.updated > 0 ? `read ${timeAgo(smart.updated)}` : undefined}
       >
         SMART
@@ -73,7 +74,7 @@ export function DriveDetail({
       <div className="flex items-center gap-3">
         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
         <span className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-fg-inverse">{disk.model || disk.name}</h3>
+          <h4 className="truncate text-base font-semibold text-fg-inverse">{disk.model || disk.name}</h4>
           <span className="block truncate font-mono text-xs text-fg-muted">{disk.serial}</span>
           {memberships.length > 0 && (
             <span className="mt-1.5 flex flex-wrap gap-1.5">
@@ -128,7 +129,7 @@ export function DriveDetail({
       />
       {disk.smart && <SmartFacts smart={disk.smart} nvme={disk.transport === 'nvme'} />}
       <section>
-        <SectionTitle aside={`${partitions.length} ${partitions.length === 1 ? 'partition' : 'partitions'}`}>
+        <SectionTitle level={5} aside={`${partitions.length} ${partitions.length === 1 ? 'partition' : 'partitions'}`}>
           Partitions
         </SectionTitle>
         {partitions.length === 0 ? (

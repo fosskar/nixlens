@@ -85,9 +85,9 @@ export function Modal({
 // the element that names the open panel
 export function ModalTitle({ className, children }: { className: string; children: ReactNode }) {
   return (
-    <span id={use(ModalTitleId)} className={className}>
+    <h2 id={use(ModalTitleId)} className={className}>
       {children}
-    </span>
+    </h2>
   )
 }
 

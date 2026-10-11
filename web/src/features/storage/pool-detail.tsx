@@ -218,7 +218,9 @@ function VdevTree({ pool, disks, onOpenDisk }: { pool: Pool; disks: Disk[]; onOp
   const groups = pool.groups ?? []
   return (
     <section>
-      <SectionTitle aside={`${groups.length} ${groups.length === 1 ? 'vdev' : 'vdevs'}`}>Layout</SectionTitle>
+      <SectionTitle level={5} aside={`${groups.length} ${groups.length === 1 ? 'vdev' : 'vdevs'}`}>
+        Layout
+      </SectionTitle>
       <div className="flex flex-wrap gap-3">
         {groups.map((group) => (
           <div key={group.name} className={`${card} p-3`}>
@@ -316,7 +318,7 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
   if (!detail.data) {
     return (
       <section>
-        <SectionTitle>Properties</SectionTitle>
+        <SectionTitle level={5}>Properties</SectionTitle>
         {detail.error ? (
           <div className={`${card} p-4 text-xs`}>
             <div className="font-medium text-error">Pool details unavailable</div>
@@ -355,7 +357,7 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
   return (
     <>
       <section>
-        <SectionTitle>Properties</SectionTitle>
+        <SectionTitle level={5}>Properties</SectionTitle>
         <div className="flex flex-wrap gap-2">
           {chips
             .filter(([, value]) => value !== '')
@@ -365,7 +367,7 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
         </div>
       </section>
       <section>
-        <SectionTitle aside={`${datasets.length} ${datasets.length === 1 ? 'dataset' : 'datasets'}`}>
+        <SectionTitle level={5} aside={`${datasets.length} ${datasets.length === 1 ? 'dataset' : 'datasets'}`}>
           Datasets
         </SectionTitle>
         <div className={`${card} overflow-x-auto`}>
@@ -408,7 +410,7 @@ export function PoolDetail({
   return (
     <>
       <div className="flex items-center gap-3">
-        <h3 className="truncate font-mono text-base font-semibold text-fg-inverse">{pool.name}</h3>
+        <h4 className="truncate font-mono text-base font-semibold text-fg-inverse">{pool.name}</h4>
         <TypeBadge>{poolType(pool)}</TypeBadge>
         <span className="ml-auto">
           <HealthPill pool={pool} />
@@ -427,7 +429,7 @@ export function PoolDetail({
             ]}
           />
           <section>
-            <SectionTitle>Lives on</SectionTitle>
+            <SectionTitle level={5}>Lives on</SectionTitle>
             <div className={`${card} p-2`}>
               {members.map((member, i) => (
                 <MemberRow

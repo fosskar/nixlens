@@ -107,10 +107,11 @@ export const glass = 'glass glass-blur rounded-surface'
 
 export const card = 'glass-card rounded-card'
 
-export function SectionTitle({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
+export function SectionTitle({ level, children, aside }: { level: 2 | 3 | 5; children: ReactNode; aside?: ReactNode }) {
+  const Heading = `h${level}` as const
   return (
     <div className="mb-3 flex items-baseline justify-between px-1">
-      <span className="text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase">{children}</span>
+      <Heading className="text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase">{children}</Heading>
       {aside && <span className="font-mono text-xs text-fg-muted tabular-nums">{aside}</span>}
     </div>
   )

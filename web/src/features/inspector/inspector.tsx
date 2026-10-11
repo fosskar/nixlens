@@ -90,7 +90,9 @@ export function Inspector({ route, leaving }: { route: Detail; leaving: boolean 
           ) : (
             <div className="flex flex-col gap-8">
               <section>
-                <SectionTitle aside={`${pools.length}`}>Pools</SectionTitle>
+                <SectionTitle level={3} aside={`${pools.length}`}>
+                  Pools
+                </SectionTitle>
                 <StaleNote poll={storagePoll} />
                 <div className="flex flex-col gap-4">
                   {pools.map((pool) => (
@@ -105,7 +107,9 @@ export function Inspector({ route, leaving }: { route: Detail; leaving: boolean 
                 </div>
               </section>
               <section>
-                <SectionTitle aside={`${disks.length}`}>Drives</SectionTitle>
+                <SectionTitle level={3} aside={`${disks.length}`}>
+                  Drives
+                </SectionTitle>
                 <div className="grid gap-4 lg:grid-cols-2">
                   {ordered.map((disk) => (
                     <div

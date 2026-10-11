@@ -164,7 +164,7 @@ export function NetworkWidget({ poll }: { poll: Poll<NetInterface[]> }) {
   if (!ifaces) {
     return (
       <section>
-        <SectionTitle>Network</SectionTitle>
+        <SectionTitle level={3}>Network</SectionTitle>
         <Unavailable error={poll.error} className="h-32" />
       </section>
     )
@@ -177,7 +177,7 @@ export function NetworkWidget({ poll }: { poll: Poll<NetInterface[]> }) {
   const up = ports.filter((p) => p.up).length
   return (
     <section>
-      <SectionTitle aside={ports.length > 0 ? `${up} of ${ports.length} ports linked` : undefined}>
+      <SectionTitle level={3} aside={ports.length > 0 ? `${up} of ${ports.length} ports linked` : undefined}>
         Network
       </SectionTitle>
       <StaleNote poll={poll} />

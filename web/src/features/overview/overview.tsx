@@ -101,7 +101,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
         <div>
           <div className="flex items-center gap-2">
             <Led health={health} />
-            <span className="truncate text-sm font-semibold text-fg-inverse">{m.name}</span>
+            <h3 className="truncate text-sm font-semibold text-fg-inverse">{m.name}</h3>
             {m.self && <span className="text-2xs text-accent-fg">hub</span>}
             <span className="ml-auto shrink-0 font-mono text-xs text-fg-muted">
               {s ? `up ${uptime(s.uptimeSec)}` : m.loading ? '' : 'offline'}
@@ -186,28 +186,32 @@ export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
   // the summary until opened
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => setPrefs({ machinesOpen: !open })}
-        aria-expanded={open}
-        className="flex w-full items-baseline justify-between gap-3 px-1 text-fg-muted transition-colors hover:text-fg-base md:hidden"
-      >
-        <span className="flex items-center gap-2 text-2xs font-semibold tracking-[0.12em] uppercase">
-          <svg
-            viewBox="0 0 24 24"
-            className={`h-3 w-3 shrink-0 self-center fill-none stroke-current transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-          {count}
-        </span>
-        <span className="font-mono text-xs tabular-nums">{summary}</span>
-      </button>
+      <h2 className="md:hidden">
+        <button
+          type="button"
+          onClick={() => setPrefs({ machinesOpen: !open })}
+          aria-expanded={open}
+          className="flex w-full items-baseline justify-between gap-3 px-1 text-fg-muted transition-colors hover:text-fg-base"
+        >
+          <span className="flex items-center gap-2 text-2xs font-semibold tracking-[0.12em] uppercase">
+            <svg
+              viewBox="0 0 24 24"
+              className={`h-3 w-3 shrink-0 self-center fill-none stroke-current transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+            {count}
+          </span>
+          <span className="font-mono text-xs tabular-nums">{summary}</span>
+        </button>
+      </h2>
       <div className="hidden md:block">
-        <SectionTitle aside={summary}>{count}</SectionTitle>
+        <SectionTitle level={2} aside={summary}>
+          {count}
+        </SectionTitle>
       </div>
       <StaleNote poll={poll} />
       <div className={`flex-col gap-2.5 md:mt-0 md:flex ${open ? 'mt-3 flex' : 'hidden'}`}>

@@ -11,7 +11,9 @@ export function SystemWidget({ poll }: { poll: Poll<System> }) {
   const system = poll.data
   return (
     <div>
-      <SectionTitle aside={system && `up ${formatUptime(system.uptimeSec)}`}>System</SectionTitle>
+      <SectionTitle level={3} aside={system && `up ${formatUptime(system.uptimeSec)}`}>
+        System
+      </SectionTitle>
       <StaleNote poll={poll} />
       {system ? (
         <div className={`${card} grid items-center gap-4 p-4 md:grid-cols-2 md:gap-8`}>

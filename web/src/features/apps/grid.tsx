@@ -23,24 +23,26 @@ export function AppGrid({ apps }: { apps: App[] }) {
     return (
       // the order keeps categories in sequence where the columns dissolve
       <section key={category} style={{ order: i }}>
-        <button
-          onClick={() => toggle(category)}
-          aria-expanded={open}
-          className="group mb-4 flex w-full items-center gap-3 px-1 text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase transition-colors hover:text-fg-base"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className={`h-3 w-3 shrink-0 fill-none stroke-current transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <h2 className="mb-4">
+          <button
+            onClick={() => toggle(category)}
+            aria-expanded={open}
+            className="group flex w-full items-center gap-3 px-1 text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase transition-colors hover:text-fg-base"
           >
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-          {category || 'Other'}
-          <span className="text-fg-muted tabular-nums">{list.length}</span>
-          <span className="h-px flex-1 bg-gradient-to-r from-line to-transparent" />
-        </button>
+            <svg
+              viewBox="0 0 24 24"
+              className={`h-3 w-3 shrink-0 fill-none stroke-current transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+            {category || 'Other'}
+            <span className="text-fg-muted tabular-nums">{list.length}</span>
+            <span className="h-px flex-1 bg-gradient-to-r from-line to-transparent" />
+          </button>
+        </h2>
         <div
           className={`grid transition-[grid-template-rows,opacity] duration-300 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
         >
