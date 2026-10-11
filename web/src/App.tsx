@@ -98,8 +98,9 @@ export default function App() {
                   </p>
                 )}
                 {appsError && (
-                  <p className="mt-2 text-sm text-error" title={appsError}>
+                  <p className="mt-2 text-sm text-error">
                     {apps.length > 0 ? 'The app list could not be updated' : 'The app list could not be loaded'}
+                    <span className="mt-0.5 block font-mono text-xs break-words text-fg-muted">{appsError}</span>
                   </p>
                 )}
                 <NoticeBanner />

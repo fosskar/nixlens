@@ -60,7 +60,7 @@ function problems(m: MachineOverview): Problem[] {
 }
 
 // the last part of a go error is the cause ("connection refused"); the full
-// text stays available on hover
+// text follows below it
 function shortError(error?: string): string {
   if (!error) return 'unreachable'
   return error.split(': ').at(-1) ?? error
@@ -113,8 +113,11 @@ function MachineCard({ m }: { m: MachineOverview }) {
             </div>
           )}
           {!m.online && !m.loading && (
-            <div className="mt-1 truncate pl-4 text-2xs text-error" title={m.error}>
-              {shortError(m.error)}
+            <div className="mt-1 pl-4 text-xs">
+              <div className="text-error">{shortError(m.error)}</div>
+              {m.error && (
+                <div className="mt-0.5 font-mono break-words whitespace-pre-line text-fg-muted">{m.error}</div>
+              )}
             </div>
           )}
         </div>
