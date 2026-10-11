@@ -169,6 +169,19 @@ body::before {
 }
 
 /* reduced transparency: nothing blurs and surfaces turn opaque */
+@media (prefers-reduced-transparency: reduce) {
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+  }
+  :root .glass {
+    background: var(--color-bg-surface);
+  }
+  :root .glass-strong {
+    background: var(--color-bg-base);
+  }
+}
 :root.nixlens-solid *,
 :root.nixlens-solid *::before,
 :root.nixlens-solid *::after {

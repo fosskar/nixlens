@@ -225,7 +225,10 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
               className="w-32 accent-[var(--color-accent-cyan)]"
             />
           </Row>
-          <Row label="Transparency" hint="Glass panels with blur; off makes them solid">
+          <Row
+            label="Transparency"
+            hint="Glass panels with blur; off makes them solid. Also follows the system setting"
+          >
             <Toggle label="Transparency" checked={!prefs.solid} onChange={(on) => setPrefs({ solid: !on })} />
           </Row>
           <Row label="Reduce motion" hint="Also follows the system setting">
