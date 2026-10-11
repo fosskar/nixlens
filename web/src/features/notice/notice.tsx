@@ -161,7 +161,7 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
               type="button"
               disabled={busy}
               onClick={() => submit('')}
-              className={`${button} mr-auto border-line text-fg-base hover:bg-error/80`}
+              className={`${button} mr-auto border-line text-fg-base hover:border-error/50 hover:bg-error/15 hover:text-error`}
             >
               Remove
             </button>

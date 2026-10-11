@@ -26,15 +26,16 @@
   --color-bg-overlay: #303030;
 
   --color-fg-base: #cccccc;
-  --color-fg-muted: #9d9d9d;
+  --color-fg-muted: #b4b4b4;
   --color-fg-inverse: #ffffff;
 
   --color-accent: #16a085;
   --color-accent-cyan: #1abc9c;
+  --color-accent-fg: color-mix(in srgb, var(--color-accent-cyan) 65%, white);
 
   --color-success: #73c991;
-  --color-error: #f07167;
-  --color-warning: #c79a3a;
+  --color-error: #f79a93;
+  --color-warning: #d8ad52;
   --color-info: #6796e6;
 
   --color-hairline: rgb(255 255 255 / 0.06);

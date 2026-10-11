@@ -98,7 +98,7 @@ export default function App() {
                   </p>
                 )}
                 {appsError && (
-                  <p className="mt-2 text-sm text-error/90" title={appsError}>
+                  <p className="mt-2 text-sm text-error" title={appsError}>
                     {apps.length > 0 ? 'The app list could not be updated' : 'The app list could not be loaded'}
                   </p>
                 )}

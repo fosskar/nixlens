@@ -102,7 +102,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
           <div className="flex items-center gap-2">
             <Led health={health} />
             <span className="truncate text-sm font-semibold text-fg-inverse">{m.name}</span>
-            {m.self && <span className="text-2xs text-accent-cyan">hub</span>}
+            {m.self && <span className="text-2xs text-accent-fg">hub</span>}
             <span className="ml-auto shrink-0 font-mono text-2xs text-fg-muted">
               {s ? `up ${uptime(s.uptimeSec)}` : m.loading ? '' : 'offline'}
             </span>
@@ -113,7 +113,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
             </div>
           )}
           {!m.online && !m.loading && (
-            <div className="mt-1 truncate pl-4 text-2xs text-error/90" title={m.error}>
+            <div className="mt-1 truncate pl-4 text-2xs text-error" title={m.error}>
               {shortError(m.error)}
             </div>
           )}

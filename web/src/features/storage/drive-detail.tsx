@@ -86,7 +86,7 @@ export function DriveDetail({
                 >
                   {m.pool}
                   <span className="text-fg-muted">· {m.role}</span>
-                  <span className="text-accent-cyan">→</span>
+                  <span className="text-accent-fg">→</span>
                 </button>
               ))}
             </span>
@@ -169,7 +169,7 @@ export function DriveDetail({
                             className="flex items-center gap-2 rounded-control px-1.5 py-0.5 text-left outline-accent-cyan transition-colors hover:bg-fill focus-visible:outline-2"
                           >
                             {health && <Led health={health} small />}
-                            <span className="text-accent-cyan">→</span>
+                            <span className="text-accent-fg">→</span>
                             <span className="font-mono text-fg-inverse">{target.name}</span>
                           </button>
                         ) : (

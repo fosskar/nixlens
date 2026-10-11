@@ -83,7 +83,7 @@ function AddressChip({ address }: { address: string }) {
       type="button"
       onClick={copy}
       title={`Copy ${address}`}
-      className={`max-w-full truncate rounded-control border px-1.5 py-0.5 font-mono text-2xs outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-cyan' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-line bg-fill text-fg-base hover:bg-fill-hover'}`}
+      className={`max-w-full truncate rounded-control border px-1.5 py-0.5 font-mono text-2xs outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-fg' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-line bg-fill text-fg-base hover:bg-fill-hover'}`}
     >
       {copied === 'copied' ? '✓ copied' : copied === 'failed' ? 'copy failed' : address}
     </button>

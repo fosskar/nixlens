@@ -275,7 +275,7 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
           {dataset.type === 'volume' && <TypeBadge>volume</TypeBadge>}
         </div>
         {limits.length > 0 && (
-          <div className="mt-0.5 text-2xs text-accent-cyan/80" style={{ paddingLeft: `${depth * 0.75}rem` }}>
+          <div className="mt-0.5 text-2xs text-accent-fg" style={{ paddingLeft: `${depth * 0.75}rem` }}>
             {limits.join(' · ')}
           </div>
         )}
