@@ -23,7 +23,7 @@ function SmartFacts({ smart, nvme }: { smart: Smart; nvme: boolean }) {
             </span>,
           ],
           ['Temperature', `${smart.temperature}\u00a0°C`],
-          ['Power on', `${smart.powerOnHours.toLocaleString()}\u00a0h · ${days.toLocaleString()}\u00a0days`],
+          ['Power on', `${smart.powerOnHours.toLocaleString('en')}\u00a0h · ${days.toLocaleString('en')}\u00a0days`],
           ...((nvme
             ? [
                 ['Wear', `${smart.percentageUsed}\u00a0%`],
