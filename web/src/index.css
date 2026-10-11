@@ -264,6 +264,12 @@ body::before {
     }
   }
 
+  @keyframes nixlens-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
   @keyframes nixlens-breathe {
     0%,
     100% {
