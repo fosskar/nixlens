@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { card, Led, SectionTitle, Unavailable } from '@/components/ui'
+import { card, Led, SectionTitle, StaleNote, Unavailable } from '@/components/ui'
 import { type NetInterface, type Poll } from '@/lib/api'
 
 const kindLabels: Record<string, string> = {
@@ -172,10 +172,11 @@ export function NetworkWidget({ poll }: { poll: Poll<NetInterface[]> }) {
     .sort((a, b) => Number(!hardware.includes(a.kind)) - Number(!hardware.includes(b.kind)))
   const up = ports.filter((p) => p.up).length
   return (
-    <section className={poll.error ? 'opacity-50' : ''} title={poll.error}>
+    <section>
       <SectionTitle aside={ports.length > 0 ? `${up} of ${ports.length} ports linked` : undefined}>
         Network
       </SectionTitle>
+      <StaleNote poll={poll} />
       <div className="flex flex-col gap-3">
         {ports.length > 0 && (
           <div className={`${card} nixlens-bay flex flex-wrap gap-2 p-3`}>

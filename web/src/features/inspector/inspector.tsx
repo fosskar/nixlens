@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Modal, ModalBody, ModalHeader, ModalTitle } from '@/components/modal'
-import { card, SectionTitle, Unavailable } from '@/components/ui'
+import { card, SectionTitle, StaleNote, Unavailable } from '@/components/ui'
 import { SystemWidget } from '@/features/inspector/system'
 import { NetworkWidget } from '@/features/network/network'
 import { DriveDetail } from '@/features/storage/drive-detail'
@@ -88,9 +88,10 @@ export function Inspector({ route, leaving }: { route: Detail; leaving: boolean 
           {!storage ? (
             <Unavailable error={storagePoll.error} className="h-48" />
           ) : (
-            <div className={`flex flex-col gap-8 ${storagePoll.error ? 'opacity-50' : ''}`} title={storagePoll.error}>
+            <div className="flex flex-col gap-8">
               <section>
                 <SectionTitle aside={`${pools.length}`}>Pools</SectionTitle>
+                <StaleNote poll={storagePoll} />
                 <div className="flex flex-col gap-4">
                   {pools.map((pool) => (
                     <div

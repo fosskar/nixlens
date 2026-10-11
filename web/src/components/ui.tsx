@@ -1,4 +1,6 @@
 import { type ReactNode, useId } from 'react'
+import { type Poll } from '@/lib/api'
+import { timeAgo } from '@/lib/format'
 import { type Health } from '@/lib/health'
 
 export function Led({ health, small, asleep }: { health: Health; small?: boolean; asleep?: boolean }) {
@@ -93,6 +95,18 @@ export function SectionTitle({ children, aside }: { children: ReactNode; aside?:
     <div className="mb-3 flex items-baseline justify-between px-1">
       <span className="text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase">{children}</span>
       {aside && <span className="font-mono text-2xs text-fg-muted tabular-nums">{aside}</span>}
+    </div>
+  )
+}
+
+export function StaleNote({ poll }: { poll: Poll<unknown> }) {
+  if (poll.data === undefined || !poll.error) return null
+  return (
+    <div className="mb-3 px-1 text-xs">
+      <div className="text-warning">
+        Update failed{poll.updated !== undefined && ` · showing data from ${timeAgo(poll.updated)}`}
+      </div>
+      <div className="mt-0.5 font-mono break-words text-fg-muted">{poll.error}</div>
     </div>
   )
 }

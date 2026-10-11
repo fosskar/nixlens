@@ -174,7 +174,8 @@ export type AppIndex = {
   categories: string[]
 }
 
-export type Poll<T> = { data?: T; error?: string }
+// updated is when data last arrived, in unix seconds
+export type Poll<T> = { data?: T; error?: string; updated?: number }
 
 type PollState<T> = Poll<T> & { path: string | null }
 
@@ -240,8 +241,9 @@ export function usePoll<T>(path: string | null, intervalMs: number): Poll<T> {
     return startPoll<T>(
       path,
       intervalMs,
-      (data) => setState({ path, data }),
-      (error) => setState((s) => ({ path, data: s.path === path ? s.data : undefined, error })),
+      (data) => setState({ path, data, updated: Date.now() / 1000 }),
+      (error) =>
+        setState((s) => (s.path === path ? { path, data: s.data, updated: s.updated, error } : { path, error })),
     )
   }, [path, intervalMs])
   return state.path === path ? state : {}

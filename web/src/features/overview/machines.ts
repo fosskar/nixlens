@@ -26,6 +26,7 @@ export function useOverview(enabled: boolean): Poll<MachineOverview[]> {
   if (!list.data) return { error: list.error }
   return {
     error: list.error,
+    updated: list.updated,
     data: list.data.map((m) => {
       const system = systems[`${base(m)}/system`]
       const storage = storages[`${base(m)}/storage`]

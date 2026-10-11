@@ -1,4 +1,4 @@
-import { card, Ring, SectionTitle, Unavailable } from '@/components/ui'
+import { card, Ring, SectionTitle, StaleNote, Unavailable } from '@/components/ui'
 import { formatBytes, type Poll, type System } from '@/lib/api'
 import { formatUptime } from '@/lib/format'
 
@@ -12,11 +12,9 @@ export function SystemWidget({ poll }: { poll: Poll<System> }) {
   return (
     <div>
       <SectionTitle aside={system && `up ${formatUptime(system.uptimeSec)}`}>System</SectionTitle>
+      <StaleNote poll={poll} />
       {system ? (
-        <div
-          className={`${card} grid items-center gap-4 p-4 md:grid-cols-2 md:gap-8 ${poll.error ? 'opacity-50' : ''}`}
-          title={poll.error}
-        >
+        <div className={`${card} grid items-center gap-4 p-4 md:grid-cols-2 md:gap-8`}>
           <div className="grid grid-cols-2 gap-3 md:order-last">
             <Ring label="CPU" value={system.cpuPercent} detail={`${system.cores} cores / ${system.cpus} threads`} />
             <Ring

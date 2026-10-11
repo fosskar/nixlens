@@ -1,4 +1,4 @@
-import { card, Led, Ring, SectionTitle, Unavailable } from '@/components/ui'
+import { card, Led, Ring, SectionTitle, StaleNote, Unavailable } from '@/components/ui'
 import { PoolBays } from '@/features/overview/pool-bays'
 import { type MachineOverview } from '@/features/overview/machines'
 import { type Disk, type Poll } from '@/lib/api'
@@ -182,7 +182,7 @@ export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
   // on phones the sidebar sits above the apps, so its cards stay folded into
   // the summary until opened
   return (
-    <div className={poll.error ? 'opacity-50' : ''} title={poll.error}>
+    <div>
       <button
         type="button"
         onClick={() => setPrefs({ machinesOpen: !open })}
@@ -206,6 +206,7 @@ export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
       <div className="hidden md:block">
         <SectionTitle aside={summary}>{count}</SectionTitle>
       </div>
+      <StaleNote poll={poll} />
       <div className={`flex-col gap-2.5 md:mt-0 md:flex ${open ? 'mt-3 flex' : 'hidden'}`}>
         {machines.map((m) => (
           <MachineCard key={m.name} m={m} />
