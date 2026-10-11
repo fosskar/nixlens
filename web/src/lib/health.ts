@@ -3,6 +3,13 @@ import { type Disk, type Pool, type PoolMember, type Smart } from '@/lib/api'
 
 export type Health = 'ok' | 'warn' | 'error' | 'unknown'
 
+export const healthLabels: Record<Health, string> = {
+  ok: 'healthy',
+  warn: 'needs a look',
+  error: 'failing',
+  unknown: 'state unknown',
+}
+
 const healthRank: Record<Health, number> = { ok: 0, unknown: 1, warn: 2, error: 3 }
 
 const errorStates = ['faulted', 'offline', 'unavail', 'removed', 'faulty']

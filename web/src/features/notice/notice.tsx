@@ -82,7 +82,7 @@ export function NoticeBanner() {
 export function NoticeEditor({ onClose }: { onClose: () => void }) {
   const notice = useNotice()
   const [text, setText] = useState(notice.message)
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState<'save' | 'remove' | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
   const dialog = useRef<HTMLDialogElement>(null)
@@ -100,14 +100,14 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
   }, [])
 
   const submit = async (message: string) => {
-    setBusy(true)
+    setBusy(message === '' ? 'remove' : 'save')
     setError('')
     try {
       await save(message)
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
-      setBusy(false)
+      setBusy(null)
     }
   }
 
@@ -149,12 +149,14 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
           <textarea
             ref={field}
             id={fieldId}
+            name="notice"
+            autoComplete="off"
             aria-describedby={error ? errorId : undefined}
             value={text}
             onChange={(e) => setText(e.target.value)}
             maxLength={maxLength}
             rows={4}
-            placeholder="e.g. Maintenance tonight from 22:00, apps may be unavailable for a while."
+            placeholder="e.g. Maintenance tonight from 22:00, apps may be unavailable for a while…"
             className="resize-none rounded-control border border-line bg-fill px-3 py-2 text-sm text-fg-base outline-accent-cyan placeholder:text-fg-muted focus-visible:outline-2"
           />
           <div className="flex justify-between gap-3 text-xs text-fg-muted">
@@ -172,11 +174,11 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
               <span className="mr-auto flex gap-2">
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy !== null}
                   onClick={() => submit('')}
                   className={`${button} border-error/50 bg-error/15 text-error hover:bg-error/25`}
                 >
-                  Remove for everyone
+                  {busy === 'remove' ? 'Removing…' : 'Remove for everyone'}
                 </button>
                 <button
                   type="button"
@@ -190,7 +192,7 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
             ) : (
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy !== null}
                 onClick={() => setConfirming(true)}
                 className={`${button} mr-auto border-line text-fg-base hover:border-error/50 hover:bg-error/15 hover:text-error`}
               >
@@ -199,10 +201,10 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
             ))}
           <button
             type="submit"
-            disabled={busy || !text.trim() || text.trim() === notice.message}
+            disabled={busy !== null || !text.trim() || text.trim() === notice.message}
             className={`${button} glass-accent text-fg-inverse`}
           >
-            Show to everyone
+            {busy === 'save' ? 'Saving…' : 'Show to everyone'}
           </button>
         </div>
       </form>

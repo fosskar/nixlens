@@ -12,15 +12,18 @@ function ScrollHint({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       tabIndex={visible ? 0 : -1}
       aria-hidden={!visible}
+      aria-label={direction === 'up' ? 'Scroll up' : 'Scroll down'}
       title={direction === 'up' ? 'Scroll up' : 'Scroll down'}
-      className={`nixlens-scroll-hint absolute left-1/2 z-10 grid h-7 w-7 -translate-x-1/2 place-items-center rounded-full glass-tile text-fg-base transition-[opacity,transform,background-color] duration-300 hover:bg-fill-hover hover:text-fg-inverse ${direction === 'up' ? 'top-2' : 'bottom-2'} ${visible ? 'opacity-100' : 'pointer-events-none scale-75 opacity-0'}`}
+      className={`nixlens-scroll-hint absolute left-1/2 z-10 grid h-7 w-7 -translate-x-1/2 place-items-center rounded-full glass-tile text-fg-base outline-accent-cyan transition-[opacity,transform,background-color] duration-300 hover:bg-fill-hover focus-visible:outline-2 hover:text-fg-inverse ${direction === 'up' ? 'top-2' : 'bottom-2'} ${visible ? 'opacity-100' : 'pointer-events-none scale-75 opacity-0'}`}
       data-direction={direction}
       data-visible={visible || undefined}
     >
       <svg
+        aria-hidden="true"
         viewBox="0 0 24 24"
         className="h-3.5 w-3.5 fill-none stroke-current"
         strokeWidth="2.5"

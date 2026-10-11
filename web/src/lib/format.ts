@@ -6,7 +6,7 @@ export function formatCapacity(bytes: number): string {
     bytes /= 1000
     i++
   }
-  return `${bytes.toFixed(bytes < 100 && i > 0 ? 1 : 0)} ${units[i]}`
+  return `${bytes.toFixed(bytes < 100 && i > 0 ? 1 : 0)}\u00a0${units[i]}`
 }
 
 const relativeTime = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
@@ -43,11 +43,11 @@ export function shortAgo(unix: number): string {
 }
 
 export function formatUsage(used: number, total: number): string {
-  const [usedValue, usedUnit] = formatCapacity(used).split(' ')
-  const [totalValue, totalUnit] = formatCapacity(total).split(' ')
+  const [usedValue, usedUnit] = formatCapacity(used).split('\u00a0')
+  const [totalValue, totalUnit] = formatCapacity(total).split('\u00a0')
   return usedUnit === totalUnit
-    ? `${usedValue} / ${totalValue} ${totalUnit}`
-    : `${usedValue} ${usedUnit} / ${totalValue} ${totalUnit}`
+    ? `${usedValue} / ${totalValue}\u00a0${totalUnit}`
+    : `${usedValue}\u00a0${usedUnit} / ${totalValue}\u00a0${totalUnit}`
 }
 
 export function formatRecordsize(value: string): string {

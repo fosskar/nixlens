@@ -86,7 +86,13 @@ export function UserMenu({ me, hidden }: { me?: Me; hidden: boolean }) {
           {name ? (
             initials(name)
           ) : (
-            <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="2" strokeLinecap="round">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5 fill-none stroke-current"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <circle cx="12" cy="8" r="4" />
               <path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5" />
             </svg>
@@ -121,7 +127,10 @@ export function UserMenu({ me, hidden }: { me?: Me; hidden: boolean }) {
               )}
               {me?.accountUrl && (
                 <MenuItem href={me.accountUrl}>
-                  Account settings <span className="text-fg-muted">↗</span>
+                  Account settings{' '}
+                  <span aria-hidden="true" className="text-fg-muted">
+                    ↗
+                  </span>
                 </MenuItem>
               )}
             </div>
@@ -157,11 +166,15 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
       className={`relative h-6 w-11 shrink-0 rounded-full border transition outline-accent-cyan focus-visible:outline-2 ${checked ? 'border-accent-cyan/50 bg-accent/70' : 'border-line bg-fill'}`}
     >
       <span
-        className={`absolute top-0.5 h-4.5 w-4.5 rounded-full bg-fg-inverse shadow transition-[left] ${checked ? 'left-[1.375rem]' : 'left-0.5'}`}
+        className={`absolute top-0.5 left-0.5 h-4.5 w-4.5 rounded-full bg-fg-inverse shadow transition-[translate] ${checked ? 'translate-x-[1.25rem]' : ''}`}
       />
     </button>
   )
 }
+
+const accentKeys = Object.keys(accents) as Accent[]
+
+const arrowSteps: Record<string, number | undefined> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }
 
 function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () => void }) {
   const prefs = usePrefs()
@@ -206,15 +219,28 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
             {closeIcon}
           </IconButton>
         </div>
-        <div className="flex-1 divide-y divide-hairline overflow-y-auto px-5 py-2">
+        <div className="flex-1 divide-y divide-hairline overflow-y-auto overscroll-contain px-5 py-2">
           <Row label="Accent colour">
-            <div role="radiogroup" aria-label="Accent colour" className="flex gap-2">
-              {(Object.keys(accents) as Accent[]).map((accent) => (
+            <div
+              role="radiogroup"
+              aria-label="Accent colour"
+              className="flex gap-2"
+              onKeyDown={(e) => {
+                const step = arrowSteps[e.key]
+                if (!step) return
+                e.preventDefault()
+                const i = (accentKeys.indexOf(prefs.accent) + step + accentKeys.length) % accentKeys.length
+                setPrefs({ accent: accentKeys[i] })
+                ;(e.currentTarget.children[i] as HTMLElement).focus()
+              }}
+            >
+              {accentKeys.map((accent) => (
                 <button
                   key={accent}
                   type="button"
                   role="radio"
                   aria-checked={prefs.accent === accent}
+                  tabIndex={prefs.accent === accent ? 0 : -1}
                   aria-label={accent}
                   title={accent}
                   onClick={() => setPrefs({ accent })}
@@ -224,7 +250,7 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
               ))}
             </div>
           </Row>
-          <Row label="Background glow" hint={`${Math.round(prefs.glow * 100)} %`}>
+          <Row label="Background glow" hint={`${Math.round(prefs.glow * 100)}\u00a0%`}>
             <input
               type="range"
               min={0}

@@ -277,5 +277,5 @@ export function formatBytes(bytes: number, binary = false): string {
     bytes /= base
     i++
   }
-  return `${bytes.toFixed(bytes < 10 && i > 0 ? 1 : 0)} ${units[i]}`
+  return `${bytes.toFixed(bytes < 10 && i > 0 ? 1 : 0)}\u00a0${units[i]}`
 }

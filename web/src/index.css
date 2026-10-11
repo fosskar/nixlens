@@ -62,6 +62,15 @@
 
 :root {
   color-scheme: dark;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* touch keeps pull-to-refresh and swipe navigation */
+@media (pointer: fine) {
+  :root {
+    overscroll-behavior: none;
+  }
 }
 
 body {
@@ -314,6 +323,7 @@ body::before {
 
   .nixlens-scroll {
     scrollbar-width: none;
+    overscroll-behavior: contain;
     --fade-top: 0px;
     --fade-bottom: 0px;
     mask-image: linear-gradient(

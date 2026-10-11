@@ -63,6 +63,14 @@ export default function App() {
           the home view goes while they are open instead of showing through */}
       {settled && (
         <div className={detail ? 'max-md:invisible' : undefined}>
+          {detail === null && (
+            <a
+              href="#main"
+              className="glass-strong fixed top-[calc(1rem+var(--safe-top))] left-[calc(1rem+var(--safe-left))] z-[80] -translate-y-24 rounded-control px-3 py-2 text-sm text-fg-inverse outline-accent-cyan focus-visible:translate-y-0 focus-visible:outline-2"
+            >
+              Skip to apps
+            </a>
+          )}
           <UserMenu me={me} hidden={detail !== null} />
           {admin && (
             <aside
@@ -71,8 +79,10 @@ export default function App() {
               <ScrollArea>
                 <div className="flex flex-col gap-7 p-4 md:pb-6">
                   <div className="flex items-center gap-2.5 px-1 pt-1">
-                    <img src="/favicon.svg" alt="" className="h-7 w-7" />
-                    <span className="text-lg font-semibold tracking-tight text-fg-inverse">nixlens</span>
+                    <img src="/favicon.svg" alt="" width={28} height={28} className="h-7 w-7" />
+                    <span translate="no" className="text-lg font-semibold tracking-tight text-fg-inverse">
+                      nixlens
+                    </span>
                   </div>
                   <OverviewWidget poll={overview} />
                 </div>
@@ -81,12 +91,14 @@ export default function App() {
           )}
 
           <main
+            id="main"
+            tabIndex={-1}
             inert={detail !== null}
-            className={`nixlens-scroll-fade px-6 ${admin ? 'pt-8' : 'pt-[calc(4.5rem+var(--safe-top))]'} pb-[calc(3rem+var(--safe-bottom))] md:fixed md:inset-y-0 md:right-0 md:overflow-y-auto ${admin ? 'md:left-[23.5rem]' : 'md:left-0'} md:pt-[calc(4rem+var(--safe-top))]`}
+            className={`nixlens-scroll-fade px-6 ${admin ? 'pt-8' : 'pt-[calc(4.5rem+var(--safe-top))]'} pb-[calc(3rem+var(--safe-bottom))] md:fixed md:inset-y-0 md:right-0 md:overflow-y-auto ${admin ? 'md:left-[23.5rem]' : 'md:left-0'} md:pt-[calc(4rem+var(--safe-top))] outline-none`}
           >
             <div className="mx-auto max-w-5xl">
               <header className="mb-10 text-center">
-                <h1 className="bg-gradient-to-b from-fg-inverse to-fg-base bg-clip-text text-4xl leading-tight font-semibold tracking-tight text-transparent md:text-5xl">
+                <h1 className="bg-gradient-to-b from-fg-inverse to-fg-base bg-clip-text text-4xl leading-tight font-semibold tracking-tight text-balance text-transparent md:text-5xl">
                   {greeting()}
                   {firstName && `, ${firstName}`}.
                 </h1>
@@ -97,12 +109,15 @@ export default function App() {
                       `${online} of ${machines.length} ${machines.length === 1 ? 'machine' : 'machines'} online · ${apps.length} apps`}
                   </p>
                 )}
-                {appsError && (
-                  <p className="mt-2 text-sm text-error">
-                    {apps.length > 0 ? 'The app list could not be updated' : 'The app list could not be loaded'}
-                    <span className="mt-0.5 block font-mono text-xs break-words text-fg-muted">{appsError}</span>
-                  </p>
-                )}
+                <div aria-live="polite">
+                  {appsError && (
+                    <p className="mt-2 text-sm text-error">
+                      {apps.length > 0 ? 'The app list could not be updated' : 'The app list could not be loaded'}; it
+                      is tried again every 5 minutes.
+                      <span className="mt-0.5 block font-mono text-xs break-words text-fg-muted">{appsError}</span>
+                    </p>
+                  )}
+                </div>
                 <NoticeBanner />
               </header>
               <AppGrid apps={apps} />

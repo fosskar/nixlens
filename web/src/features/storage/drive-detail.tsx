@@ -22,11 +22,11 @@ function SmartFacts({ smart, nvme }: { smart: Smart; nvme: boolean }) {
               {smart.passed ? 'passed' : 'failed'}
             </span>,
           ],
-          ['Temperature', `${smart.temperature} °C`],
-          ['Power on', `${smart.powerOnHours.toLocaleString()} h · ${days.toLocaleString()} days`],
+          ['Temperature', `${smart.temperature}\u00a0°C`],
+          ['Power on', `${smart.powerOnHours.toLocaleString()}\u00a0h · ${days.toLocaleString()}\u00a0days`],
           ...((nvme
             ? [
-                ['Wear', `${smart.percentageUsed} %`],
+                ['Wear', `${smart.percentageUsed}\u00a0%`],
                 ['Critical warning', smart.criticalWarning === 0 ? 'none' : `0x${smart.criticalWarning.toString(16)}`],
                 ['Media errors', String(smart.mediaErrors)],
               ]
@@ -87,7 +87,9 @@ export function DriveDetail({
                 >
                   {m.pool}
                   <span className="text-fg-muted">· {m.role}</span>
-                  <span className="text-accent-fg">→</span>
+                  <span aria-hidden="true" className="text-accent-fg">
+                    →
+                  </span>
                 </button>
               ))}
             </span>
@@ -100,9 +102,11 @@ export function DriveDetail({
               target="_blank"
               rel="noopener noreferrer"
               title={`Search ${shopQuery(disk.model)} on geizhals.de`}
+              aria-label={`Search ${shopQuery(disk.model)} on geizhals.de`}
               className="grid h-6 w-6 place-items-center rounded-control text-fg-muted outline-accent-cyan transition hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
             >
               <svg
+                aria-hidden="true"
                 viewBox="0 0 24 24"
                 className="h-3.5 w-3.5 fill-none stroke-current"
                 strokeWidth="2"
@@ -174,7 +178,9 @@ export function DriveDetail({
                             className="flex items-center gap-2 rounded-control px-1.5 py-0.5 text-left outline-accent-cyan transition-colors hover:bg-fill focus-visible:outline-2"
                           >
                             {health && <Led health={health} small />}
-                            <span className="text-accent-fg">→</span>
+                            <span aria-hidden="true" className="text-accent-fg">
+                              →
+                            </span>
                             <span className="font-mono text-fg-inverse">{target.name}</span>
                           </button>
                         ) : (

@@ -63,6 +63,7 @@ export function Modal({
             className="mr-1 flex items-center gap-1 rounded-control px-2 py-1 text-fg-muted transition outline-accent-cyan hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
           >
             <svg
+              aria-hidden="true"
               viewBox="0 0 24 24"
               className="h-3.5 w-3.5 fill-none stroke-current"
               strokeWidth="2.5"

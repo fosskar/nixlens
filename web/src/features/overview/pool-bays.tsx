@@ -2,15 +2,8 @@ import { DriveGlyph } from '@/components/drive-glyph'
 import { Led, linkTransition, UsageBar } from '@/components/ui'
 import { type Storage } from '@/lib/api'
 import { formatUsage } from '@/lib/format'
-import { driveHealth, type Health, poolHealth, redundant } from '@/lib/health'
+import { driveHealth, healthLabels, poolHealth, redundant } from '@/lib/health'
 import { driveTitle, poolBays, poolLayout, type Target, usedPercent } from '@/lib/storage'
-
-const healthLabels: Record<Health, string> = {
-  ok: 'healthy',
-  warn: 'needs a look',
-  error: 'failing',
-  unknown: 'state unknown',
-}
 
 // one panel per machine, a row per pool: name, layout and its drives on
 // top, the bar beneath; data vdevs are set apart by a thin line

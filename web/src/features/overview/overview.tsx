@@ -1,8 +1,9 @@
-import { card, Led, Ring, SectionTitle, StaleNote, Unavailable } from '@/components/ui'
+import { useId } from 'react'
+import { card, Led, Loading, Ring, SectionTitle, StaleNote, Unavailable } from '@/components/ui'
 import { PoolBays } from '@/features/overview/pool-bays'
 import { type MachineOverview } from '@/features/overview/machines'
 import { type Disk, type Poll } from '@/lib/api'
-import { driveHealth, type Health, poolHealth } from '@/lib/health'
+import { driveHealth, type Health, healthLabels, poolHealth } from '@/lib/health'
 import { setPrefs, usePrefs } from '@/lib/prefs'
 import { closeLayer, navigate, useRoute } from '@/lib/router'
 import { type Target, usedPercent } from '@/lib/storage'
@@ -21,7 +22,7 @@ function driveProblem(disk: Disk): string {
     s?.uncorrectable && `${s.uncorrectable} uncorrectable`,
     s?.criticalWarning && 'critical warning',
     s?.mediaErrors && `${s.mediaErrors} media errors`,
-    s && s.percentageUsed >= 90 && `${s.percentageUsed} % worn`,
+    s && s.percentageUsed >= 90 && `${s.percentageUsed}\u00a0% worn`,
   ].filter(Boolean)
   return parts.length > 0 ? parts.join(', ') : 'errors in its pool'
 }
@@ -41,7 +42,7 @@ function problems(m: MachineOverview): Problem[] {
     } else if (pool.state !== 'unmounted' && usedPercent(pool) >= fullAt) {
       items.push({
         health: 'warn',
-        text: `${pool.name} is ${Math.round(usedPercent(pool))} % full`,
+        text: `${pool.name} is ${Math.round(usedPercent(pool))}\u00a0% full`,
         target: { kind: 'pool', name: pool.name },
       })
     }
@@ -100,7 +101,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
       <div className="pointer-events-none relative flex flex-col gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Led health={health} />
+            <Led health={health} label={healthLabels[health]} />
             <h3 className="truncate text-sm font-semibold text-fg-inverse">{m.name}</h3>
             {m.self && <span className="text-2xs text-accent-fg">hub</span>}
             <span className="ml-auto shrink-0 font-mono text-xs text-fg-muted">
@@ -122,7 +123,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
           )}
         </div>
 
-        {m.loading && <div className="ml-4 h-3 w-24 animate-pulse rounded-full bg-fill" />}
+        {m.loading && <Loading className="ml-4 h-3 w-24 rounded-full" />}
 
         {s && (
           <div className="grid grid-cols-2 gap-3">
@@ -131,7 +132,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
               small
               label="Memory"
               value={(100 * (s.memTotal - s.memAvailable)) / s.memTotal}
-              detail={`${Math.round((s.memTotal - s.memAvailable) / gib)} / ${Math.round((s.memInstalled || s.memTotal) / gib)} GiB`}
+              detail={`${Math.round((s.memTotal - s.memAvailable) / gib)} / ${Math.round((s.memInstalled || s.memTotal) / gib)}\u00a0GiB`}
             />
           </div>
         )}
@@ -155,7 +156,9 @@ function MachineCard({ m }: { m: MachineOverview }) {
               >
                 <Led health={item.health} small />
                 <span className="min-w-0 flex-1 truncate">{item.text}</span>
-                <span className="text-fg-muted">›</span>
+                <span aria-hidden="true" className="text-fg-muted">
+                  ›
+                </span>
               </button>
             ))}
           </div>
@@ -167,6 +170,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
 
 export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
   const { machinesOpen: open } = usePrefs()
+  const listId = useId()
   const machines = poll.data
   if (!machines) return <Unavailable error={poll.error} className="h-48" />
 
@@ -175,7 +179,7 @@ export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
   const summary =
     offline + attention === 0
       ? machines.some((m) => m.loading)
-        ? 'checking'
+        ? 'checking…'
         : 'all healthy'
       : [offline && `${offline} offline`, attention && `${attention} need${attention === 1 ? 's' : ''} attention`]
           .filter(Boolean)
@@ -191,10 +195,12 @@ export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
           type="button"
           onClick={() => setPrefs({ machinesOpen: !open })}
           aria-expanded={open}
-          className="flex w-full items-baseline justify-between gap-3 px-1 text-fg-muted transition-colors hover:text-fg-base"
+          aria-controls={listId}
+          className="flex w-full items-baseline justify-between gap-3 rounded-control px-1 text-fg-muted outline-accent-cyan transition-colors hover:text-fg-base focus-visible:outline-2"
         >
           <span className="flex items-center gap-2 text-2xs font-semibold tracking-[0.12em] uppercase">
             <svg
+              aria-hidden="true"
               viewBox="0 0 24 24"
               className={`h-3 w-3 shrink-0 self-center fill-none stroke-current transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
               strokeWidth="3"
@@ -214,7 +220,7 @@ export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
         </SectionTitle>
       </div>
       <StaleNote poll={poll} />
-      <div className={`flex-col gap-2.5 md:mt-0 md:flex ${open ? 'mt-3 flex' : 'hidden'}`}>
+      <div id={listId} className={`flex-col gap-2.5 md:mt-0 md:flex ${open ? 'mt-3 flex' : 'hidden'}`}>
         {machines.map((m) => (
           <MachineCard key={m.name} m={m} />
         ))}

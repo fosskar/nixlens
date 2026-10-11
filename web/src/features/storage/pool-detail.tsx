@@ -159,6 +159,7 @@ function Tolerance({ group, pool }: { group: PoolGroup; pool: Pool }) {
       {Array.from({ length: total }, (_, i) => (
         <svg
           key={i}
+          aria-hidden="true"
           viewBox="0 0 16 16"
           className={`h-3 w-3 ${i < left ? 'fill-current' : 'fill-none'} stroke-current`}
         >
@@ -189,7 +190,11 @@ function MemberTile({
       {disk ? (
         <DriveGlyph disk={disk} health={health} />
       ) : (
-        <span className="grid h-14 w-9 place-items-center rounded-md border border-dashed border-error/60 text-error">
+        <span
+          role="img"
+          aria-label="missing drive"
+          className="grid h-14 w-9 place-items-center rounded-md border border-dashed border-error/60 text-error"
+        >
           ?
         </span>
       )}
@@ -325,7 +330,8 @@ function ZfsDetail({ machine, pool }: { machine: string; pool: Pool }) {
             <div className="mt-1 font-mono text-xs break-all text-fg-muted">{detail.error}</div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div role="status" className="flex flex-col gap-3">
+            <span className="sr-only">Loading…</span>
             <div className="flex flex-wrap gap-2">
               {[16, 20, 14, 18, 12, 22].map((w, i) => (
                 <div

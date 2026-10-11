@@ -21,11 +21,14 @@ export function AppIcon({ app }: { app: App }) {
   return (
     <div className="glass-tile grid h-16 w-16 place-items-center rounded-card">
       {failed ? (
-        <span className="text-2xl font-semibold text-fg-base">{app.name.charAt(0).toUpperCase()}</span>
+        <span aria-hidden="true" className="text-2xl font-semibold text-fg-base">
+          {app.name.charAt(0).toUpperCase()}
+        </span>
       ) : source.mask ? (
         <>
           <img src={source.url} alt="" hidden onError={onError} />
           <span
+            aria-hidden="true"
             className="h-10 w-10 bg-fg-base"
             style={{
               maskImage: `url("${source.url}")`,
@@ -39,6 +42,8 @@ export function AppIcon({ app }: { app: App }) {
         <img
           src={source.url}
           alt=""
+          width={40}
+          height={40}
           loading="lazy"
           decoding="async"
           className="h-10 w-10 object-contain"

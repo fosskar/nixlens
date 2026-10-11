@@ -5,12 +5,25 @@ import { type Health } from '@/lib/health'
 
 // warnings and errors get a symbol as well as their colour, so they can be
 // told apart without seeing colour
-export function Led({ health, small, asleep }: { health: Health; small?: boolean; asleep?: boolean }) {
+// without a label the led is hidden from screen readers, for places where
+// text next to it already says the same
+export function Led({
+  health,
+  small,
+  asleep,
+  label,
+}: {
+  health: Health
+  small?: boolean
+  asleep?: boolean
+  label?: string
+}) {
+  const a11y = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true }
   if (!asleep && (health === 'warn' || health === 'error')) {
     return (
       <svg
         viewBox="0 0 10 10"
-        aria-hidden="true"
+        {...a11y}
         className={`nixlens-led-symbol nixlens-led-${health} ${small ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
       >
         {health === 'warn' ? (
@@ -23,6 +36,7 @@ export function Led({ health, small, asleep }: { health: Health; small?: boolean
   }
   return (
     <span
+      {...a11y}
       title={asleep ? 'asleep' : undefined}
       className={`nixlens-led nixlens-led-${health} ${small ? 'h-1.5 w-1.5' : ''} ${asleep ? 'nixlens-led-asleep' : ''}`}
     />
@@ -45,7 +59,14 @@ export function UsageBar({ percent, className }: { percent: number; className: s
         ? 'from-warning/80 to-warning shadow-[0_0_8px_color-mix(in_srgb,var(--color-warning)_40%,transparent)]'
         : 'from-accent to-accent-cyan shadow-[0_0_8px_color-mix(in_srgb,var(--color-accent-cyan)_40%,transparent)]'
   return (
-    <div className={`overflow-hidden rounded-full bg-fill shadow-well ${className}`}>
+    <div
+      role="meter"
+      aria-label="Used"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(percent)}
+      className={`overflow-hidden rounded-full bg-fill shadow-well ${className}`}
+    >
       <div
         className={`h-full w-full rounded-full bg-gradient-to-r ${fill} transition-transform duration-300`}
         style={{ transform: `translateX(${Math.min(percent, 100) - 100}%)` }}
@@ -74,6 +95,7 @@ export function IconButton({
       className={`grid h-7 w-7 shrink-0 place-items-center rounded-control pointer-coarse:h-11 pointer-coarse:w-11 text-fg-muted transition outline-accent-cyan hover:text-fg-inverse focus-visible:outline-2 ${danger ? 'hover:bg-error/80' : 'hover:bg-fill-hover'}`}
     >
       <svg
+        aria-hidden="true"
         viewBox="0 0 24 24"
         className="h-4 w-4 fill-none stroke-current"
         strokeWidth="2"
@@ -138,8 +160,16 @@ export function Unavailable({ error, className }: { error?: string; className: s
           <div className="mt-1 line-clamp-3 font-mono text-xs break-all text-fg-muted">{error}</div>
         </div>
       ) : (
-        <div className="h-3 w-24 animate-pulse rounded-full bg-fill" />
+        <Loading className="h-3 w-24 rounded-full" />
       )}
+    </div>
+  )
+}
+
+export function Loading({ className }: { className: string }) {
+  return (
+    <div role="status" className={`animate-pulse bg-fill ${className}`}>
+      <span className="sr-only">Loading…</span>
     </div>
   )
 }
@@ -162,7 +192,7 @@ export function Ring({
   return (
     <div className={`flex min-w-0 items-center ${small ? 'gap-2.5' : 'flex-col gap-2'}`}>
       <div className={`relative shrink-0 ${small ? 'h-11 w-11' : 'h-16 w-16'}`}>
-        <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
+        <svg aria-hidden="true" viewBox="0 0 64 64" className="h-full w-full -rotate-90">
           <defs>
             <linearGradient id={gradient} x1="0" y1="1" x2="1" y2="0">
               <stop offset="0%" stopColor="var(--color-accent)" />

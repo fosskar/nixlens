@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { AppIcon } from '@/features/apps/icon'
 import { type App } from '@/lib/api'
 import { setPrefs, usePrefs } from '@/lib/prefs'
@@ -14,22 +15,27 @@ function byCategory(apps: App[]): [string, App[]][] {
 
 export function AppGrid({ apps }: { apps: App[] }) {
   const { collapsed } = usePrefs()
+  const baseId = useId()
   const toggle = (category: string) =>
     setPrefs({
       collapsed: collapsed.includes(category) ? collapsed.filter((c) => c !== category) : [...collapsed, category],
     })
   const sections = byCategory(apps).map(([category, list], i) => {
     const open = !collapsed.includes(category)
+    const listId = `${baseId}-${i}`
     return (
       // the order keeps categories in sequence where the columns dissolve
       <section key={category} style={{ order: i }}>
         <h2 className="mb-4">
           <button
+            type="button"
             onClick={() => toggle(category)}
             aria-expanded={open}
-            className="group flex w-full items-center gap-3 px-1 text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase transition-colors hover:text-fg-base"
+            aria-controls={listId}
+            className="group flex w-full items-center gap-3 rounded-control px-1 text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase outline-accent-cyan transition-colors hover:text-fg-base focus-visible:outline-2"
           >
             <svg
+              aria-hidden="true"
               viewBox="0 0 24 24"
               className={`h-3 w-3 shrink-0 fill-none stroke-current transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
               strokeWidth="3"
@@ -46,7 +52,7 @@ export function AppGrid({ apps }: { apps: App[] }) {
         <div
           className={`grid transition-[grid-template-rows,opacity] duration-300 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
         >
-          <div inert={!open} className={open ? '' : 'overflow-hidden'}>
+          <div id={listId} inert={!open} className={open ? '' : 'overflow-hidden'}>
             <AppSection apps={list} />
           </div>
         </div>
@@ -83,7 +89,7 @@ function AppSection({ apps }: { apps: App[] }) {
           target="_blank"
           rel="noopener"
           title={appTitle(app)}
-          className="group flex flex-col items-center gap-2.5 transition-transform duration-300 hover:-translate-y-1 active:scale-95"
+          className="group flex flex-col items-center gap-2.5 rounded-card outline-offset-4 outline-accent-cyan transition-transform duration-300 hover:-translate-y-1 focus-visible:outline-2 active:scale-95"
         >
           <AppIcon app={app} />
           <span className="max-w-full truncate px-1 text-xs text-fg-muted transition-colors group-hover:text-fg-inverse">
