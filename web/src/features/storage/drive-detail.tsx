@@ -75,11 +75,14 @@ export function DriveDetail({
         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
         <span className="min-w-0">
           <h4 className="truncate text-base font-semibold text-fg-inverse">{disk.model || disk.name}</h4>
-          <span className="block truncate font-mono text-xs text-fg-muted">{disk.serial}</span>
+          <span translate="no" className="block truncate font-mono text-xs text-fg-muted">
+            {disk.serial}
+          </span>
           {memberships.length > 0 && (
             <span className="mt-1.5 flex flex-wrap gap-1.5">
               {memberships.map((m) => (
                 <button
+                  translate="no"
                   key={m.pool}
                   type="button"
                   onClick={() => onOpenPool(m.pool)}
@@ -157,6 +160,7 @@ export function DriveDetail({
                   return (
                     <tr key={partition.name} className={partition.pool ? '' : 'text-fg-muted'}>
                       <td
+                        translate="no"
                         className={`py-2 pr-2 pl-4 font-mono whitespace-nowrap ${partition.pool ? 'text-fg-inverse' : ''}`}
                       >
                         {partition.name}
@@ -181,7 +185,9 @@ export function DriveDetail({
                             <span aria-hidden="true" className="text-accent-fg">
                               →
                             </span>
-                            <span className="font-mono text-fg-inverse">{target.name}</span>
+                            <span translate="no" className="font-mono text-fg-inverse">
+                              {target.name}
+                            </span>
                           </button>
                         ) : (
                           <span className="px-1.5 text-fg-muted">

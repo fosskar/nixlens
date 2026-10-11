@@ -92,7 +92,10 @@ function AppSection({ apps }: { apps: App[] }) {
           className="group flex flex-col items-center gap-2.5 rounded-card outline-offset-4 outline-accent-cyan transition-transform duration-300 hover:-translate-y-1 focus-visible:outline-2 active:scale-95"
         >
           <AppIcon app={app} />
-          <span className="max-w-full truncate px-1 text-xs text-fg-muted transition-colors group-hover:text-fg-inverse">
+          <span
+            translate="no"
+            className="max-w-full truncate px-1 text-xs text-fg-muted transition-colors group-hover:text-fg-inverse"
+          >
             {app.name}
           </span>
         </a>

@@ -32,7 +32,9 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
             <div className="pointer-events-none relative flex items-end gap-3">
               <div className="flex max-w-[55%] min-w-0 shrink-0 items-center gap-2 self-center">
                 <Led health={poolHealth(pool)} />
-                <span className="truncate font-mono text-sm font-semibold text-fg-inverse">{pool.name}</span>
+                <span translate="no" className="truncate font-mono text-sm font-semibold text-fg-inverse">
+                  {pool.name}
+                </span>
                 <span className="shrink-0 text-2xs text-fg-muted">{poolLayout(pool)}</span>
               </div>
               <div className="pointer-events-auto ml-auto flex min-w-0 flex-wrap items-end justify-end gap-x-1.5 gap-y-1">

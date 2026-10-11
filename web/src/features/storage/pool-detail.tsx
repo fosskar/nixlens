@@ -109,12 +109,14 @@ function MemberRow({
     <>
       {showState && <Led health={health} />}
       <span className="min-w-0">
-        <span className="block truncate font-mono text-xs text-fg-inverse">
+        <span translate="no" className="block truncate font-mono text-xs text-fg-inverse">
           {disk?.serial || member.device || 'missing'}
         </span>
         <span className="block truncate text-xs text-fg-muted">{disk?.model || member.path}</span>
       </span>
-      <span className="font-mono text-xs text-fg-muted">{memberPartition(member, pool, disk)}</span>
+      <span translate="no" className="font-mono text-xs text-fg-muted">
+        {memberPartition(member, pool, disk)}
+      </span>
       {showState && (
         <span className="text-right text-xs tabular-nums">
           <span className={textStyles[health]}>{member.device === '' ? 'missing' : member.state || 'unknown'}</span>
@@ -198,7 +200,9 @@ function MemberTile({
           ?
         </span>
       )}
-      <span className="w-full truncate text-center font-mono text-xs text-fg-base">{label}</span>
+      <span translate="no" className="w-full truncate text-center font-mono text-xs text-fg-base">
+        {label}
+      </span>
       {health !== 'ok' && (
         <span className={`text-xs ${textStyles[health]}`}>{member.errors > 0 ? `${member.errors} errors` : state}</span>
       )}
@@ -230,7 +234,9 @@ function VdevTree({ pool, disks, onOpenDisk }: { pool: Pool; disks: Disk[]; onOp
         {groups.map((group) => (
           <div key={group.name} className={`${card} p-3`}>
             <div className="flex items-center gap-3 px-1 text-xs">
-              <span className="font-mono font-semibold text-fg-inverse">{groupTitle(group)}</span>
+              <span translate="no" className="font-mono font-semibold text-fg-inverse">
+                {groupTitle(group)}
+              </span>
               <span className="ml-auto">
                 <Tolerance group={group} pool={pool} />
               </span>
@@ -276,7 +282,12 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
     <tr className="transition-colors hover:bg-fill">
       <td className="py-2 pr-3 pl-4" title={dataset.name}>
         <div className="flex items-center gap-2" style={{ paddingLeft: `${depth * 0.75}rem` }}>
-          <span className={`font-mono ${depth === 0 ? 'font-semibold text-fg-inverse' : 'text-fg-base'}`}>{name}</span>
+          <span
+            translate="no"
+            className={`font-mono ${depth === 0 ? 'font-semibold text-fg-inverse' : 'text-fg-base'}`}
+          >
+            {name}
+          </span>
           {dataset.type === 'volume' && <TypeBadge>volume</TypeBadge>}
         </div>
         {limits.length > 0 && (
@@ -291,6 +302,7 @@ function DatasetRow({ dataset, pool }: { dataset: Dataset; pool: string }) {
       <td className="px-3 py-2 text-right font-mono whitespace-nowrap">{formatCapacity(dataset.available)}</td>
       <td className="px-3 py-2 text-right font-mono">{dataset.compressRatio}x</td>
       <td
+        translate="no"
         className={`max-w-40 truncate px-3 py-2 font-mono ${mount ? 'text-fg-muted' : ''}`}
         title={dataset.mountpoint}
       >
@@ -416,7 +428,9 @@ export function PoolDetail({
   return (
     <>
       <div className="flex items-center gap-3">
-        <h4 className="truncate font-mono text-base font-semibold text-fg-inverse">{pool.name}</h4>
+        <h4 translate="no" className="truncate font-mono text-base font-semibold text-fg-inverse">
+          {pool.name}
+        </h4>
         <TypeBadge>{poolType(pool)}</TypeBadge>
         <span className="ml-auto">
           <HealthPill pool={pool} />

@@ -73,14 +73,19 @@ export function Inspector({ route, leaving }: { route: Detail; leaving: boolean 
   return (
     <Modal focusKey={machine} leaving={leaving} onBack={canGoBack() ? goBack : undefined} onClose={closeLayer}>
       <ModalHeader onClose={closeLayer}>
-        <ModalTitle className="truncate text-base font-semibold text-fg-inverse">{machine}</ModalTitle>
+        <ModalTitle className="truncate text-base font-semibold text-fg-inverse">
+          <span translate="no">{machine}</span>
+        </ModalTitle>
       </ModalHeader>
       <ModalBody>
         <div ref={body} className="flex flex-col gap-8">
           {missing && (
             <p className={`${card} px-4 py-3 text-sm text-warning`}>
               No {route.kind === 'pool' ? 'pool' : 'drive'}{' '}
-              <span className="font-mono">{route.kind !== 'machine' && route.name}</span> on {machine}
+              <span translate="no" className="font-mono">
+                {route.kind !== 'machine' && route.name}
+              </span>{' '}
+              on <span translate="no">{machine}</span>
             </p>
           )}
           <SystemWidget poll={system} />

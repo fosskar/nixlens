@@ -64,7 +64,9 @@ function Port({ iface }: { iface: NetInterface }) {
         />
       </div>
       <Led health={iface.up ? 'ok' : 'unknown'} small label={iface.up ? 'linked' : 'no link'} />
-      <span className="w-full truncate text-center font-mono text-xs text-fg-muted">{iface.name}</span>
+      <span translate="no" className="w-full truncate text-center font-mono text-xs text-fg-muted">
+        {iface.name}
+      </span>
     </div>
   )
 }
@@ -87,6 +89,7 @@ function AddressChip({ address }: { address: string }) {
       type="button"
       onClick={copy}
       title={`Copy ${address}`}
+      translate="no"
       aria-live="polite"
       className={`max-w-full truncate rounded-control border px-1.5 py-0.5 font-mono text-xs outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-fg' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-line bg-fill text-fg-base hover:bg-fill-hover'}`}
     >
@@ -98,6 +101,7 @@ function AddressChip({ address }: { address: string }) {
 function Chip({ children }: { children: string }) {
   return (
     <span
+      translate="no"
       title={children}
       className="max-w-full truncate rounded-control border border-line bg-fill px-1.5 py-0.5 font-mono text-xs text-fg-base"
     >
@@ -127,7 +131,9 @@ function Connection({ iface, members }: { iface: NetInterface; members: NetInter
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2 text-xs">
-          <span className="min-w-0 truncate font-mono font-medium text-fg-inverse">{iface.name}</span>
+          <span translate="no" className="min-w-0 truncate font-mono font-medium text-fg-inverse">
+            {iface.name}
+          </span>
           <span className="shrink-0 text-2xs text-fg-muted">{kindLabels[iface.kind] ?? iface.kind}</span>
           {!iface.up && <span className="text-2xs text-fg-muted">{iface.state}</span>}
           <span className="ml-auto flex min-w-0 items-baseline gap-2 font-mono text-xs text-fg-muted">
