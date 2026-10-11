@@ -38,7 +38,14 @@ export function UserMenu({ me, hidden }: { me?: Me; hidden: boolean }) {
   }
   const [noticeOpen, setNoticeOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
   const menuId = useId()
+  // panels opened from the menu return focus to the trigger, since the
+  // menu item that opened them is gone by then
+  const closeMenu = () => {
+    trigger.current?.focus()
+    setOpen(false)
+  }
   const name = me?.name || me?.user || ''
 
   useEffect(() => {
@@ -47,7 +54,10 @@ export function UserMenu({ me, hidden }: { me?: Me; hidden: boolean }) {
       if (!root.current?.contains(e.target as Node)) setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        trigger.current?.focus()
+        setOpen(false)
+      }
     }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
@@ -65,6 +75,7 @@ export function UserMenu({ me, hidden }: { me?: Me; hidden: boolean }) {
         className={`fixed top-[calc(1rem+var(--safe-top))] right-[calc(1rem+var(--safe-right))] z-30 ${hidden ? 'invisible' : ''}`}
       >
         <button
+          ref={trigger}
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
@@ -92,7 +103,7 @@ export function UserMenu({ me, hidden }: { me?: Me; hidden: boolean }) {
             <div className="pt-1.5">
               <MenuItem
                 onClick={() => {
-                  setOpen(false)
+                  closeMenu()
                   setPrefsState('open')
                 }}
               >
@@ -101,7 +112,7 @@ export function UserMenu({ me, hidden }: { me?: Me; hidden: boolean }) {
               {me?.admin && (
                 <MenuItem
                   onClick={() => {
-                    setOpen(false)
+                    closeMenu()
                     setNoticeOpen(true)
                   }}
                 >
