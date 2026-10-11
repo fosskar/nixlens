@@ -2,8 +2,15 @@ import { DriveGlyph } from '@/components/drive-glyph'
 import { Led, linkTransition, UsageBar } from '@/components/ui'
 import { type Storage } from '@/lib/api'
 import { formatUsage } from '@/lib/format'
-import { driveHealth, poolHealth, redundant } from '@/lib/health'
+import { driveHealth, type Health, poolHealth, redundant } from '@/lib/health'
 import { driveTitle, poolBays, poolLayout, type Target, usedPercent } from '@/lib/storage'
+
+const healthLabels: Record<Health, string> = {
+  ok: 'healthy',
+  warn: 'needs a look',
+  error: 'failing',
+  unknown: 'state unknown',
+}
 
 // one panel per machine, a row per pool: name, layout and its drives on
 // top, the bar beneath; data vdevs are set apart by a thin line
@@ -48,7 +55,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
                         type="button"
                         title={driveTitle(disk)}
                         onClick={() => onOpen({ kind: 'disk', name: disk.name })}
-                        aria-label={`${disk.model || 'drive'} ${disk.serial || disk.name}`}
+                        aria-label={`${disk.model || 'drive'} ${disk.serial || disk.name}, ${disk.smart?.standby ? 'asleep' : healthLabels[driveHealth(disk, pools)]}`}
                         className={`flex h-11 min-w-6 items-end justify-center rounded-control p-0.5 outline-accent-cyan hover:bg-fill-hover focus-visible:outline-2 ${linkTransition}`}
                       >
                         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />

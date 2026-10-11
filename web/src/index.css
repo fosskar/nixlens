@@ -207,6 +207,14 @@ body::before {
       0 0 9px 2px color-mix(in srgb, var(--nixlens-led) 45%, transparent);
   }
 
+  .nixlens-led-symbol {
+    flex-shrink: 0;
+    overflow: visible;
+    color: var(--nixlens-led);
+    filter: drop-shadow(0 0 1.5px color-mix(in srgb, var(--nixlens-led) 90%, transparent))
+      drop-shadow(0 0 4px color-mix(in srgb, var(--nixlens-led) 45%, transparent));
+  }
+
   .nixlens-led-ok {
     --nixlens-led: var(--color-success);
   }

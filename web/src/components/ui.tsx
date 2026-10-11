@@ -3,7 +3,24 @@ import { type Poll } from '@/lib/api'
 import { timeAgo } from '@/lib/format'
 import { type Health } from '@/lib/health'
 
+// warnings and errors get a symbol as well as their colour, so they can be
+// told apart without seeing colour
 export function Led({ health, small, asleep }: { health: Health; small?: boolean; asleep?: boolean }) {
+  if (!asleep && (health === 'warn' || health === 'error')) {
+    return (
+      <svg
+        viewBox="0 0 10 10"
+        aria-hidden="true"
+        className={`nixlens-led-symbol nixlens-led-${health} ${small ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
+      >
+        {health === 'warn' ? (
+          <path d="M5 1.2 9.2 8.8H.8Z" className="fill-current stroke-current" strokeWidth="1" strokeLinejoin="round" />
+        ) : (
+          <path d="M2 2l6 6M8 2 2 8" className="fill-none stroke-current" strokeWidth="2.6" strokeLinecap="round" />
+        )}
+      </svg>
+    )
+  }
   return (
     <span
       title={asleep ? 'asleep' : undefined}
