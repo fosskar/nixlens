@@ -87,6 +87,8 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const field = useRef<HTMLTextAreaElement>(null)
   const titleId = useId()
+  const fieldId = useId()
+  const errorId = useId()
 
   // a modal dialog keeps focus inside and makes the page behind inert
   useEffect(() => {
@@ -140,8 +142,13 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
           </IconButton>
         </div>
         <div className="flex flex-col gap-2 px-5 py-4">
+          <label htmlFor={fieldId} className="text-xs font-medium text-fg-base">
+            Message
+          </label>
           <textarea
             ref={field}
+            id={fieldId}
+            aria-describedby={error ? errorId : undefined}
             value={text}
             onChange={(e) => setText(e.target.value)}
             maxLength={maxLength}
@@ -150,7 +157,9 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
             className="resize-none rounded-control border border-line bg-fill px-3 py-2 text-sm text-fg-base outline-accent-cyan placeholder:text-fg-muted focus-visible:outline-2"
           />
           <div className="flex justify-between gap-3 text-xs text-fg-muted">
-            <span className="text-error">{error}</span>
+            <span id={errorId} role="alert" className="text-error">
+              {error}
+            </span>
             <span className="tabular-nums">
               {text.length}/{maxLength}
             </span>
