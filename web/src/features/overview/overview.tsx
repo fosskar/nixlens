@@ -89,7 +89,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
   // the whole card opens the machine, or closes it when open; problem lines open their pool or drive
   // and sit above the card's button, since buttons cannot nest
   return (
-    <div className={`${card} relative p-3.5 ${m.online || m.loading ? '' : 'opacity-70'}`}>
+    <div className={`${card} relative p-3.5`}>
       <button
         type="button"
         onClick={() => (open ? closeLayer() : navigate({ kind: 'machine', machine: m.name }))}

@@ -150,8 +150,12 @@ export function DriveDetail({
                   const target = pools.find((p) => p.name === partition.pool)
                   const health = partitionHealth(partition, disk, pools)
                   return (
-                    <tr key={partition.name} className={partition.pool ? '' : 'opacity-45'}>
-                      <td className="py-2 pr-2 pl-4 font-mono whitespace-nowrap text-fg-inverse">{partition.name}</td>
+                    <tr key={partition.name} className={partition.pool ? '' : 'text-fg-muted'}>
+                      <td
+                        className={`py-2 pr-2 pl-4 font-mono whitespace-nowrap ${partition.pool ? 'text-fg-inverse' : ''}`}
+                      >
+                        {partition.name}
+                      </td>
                       <td className="px-2 py-2 text-right font-mono whitespace-nowrap">
                         {formatBytes(partition.size)}
                       </td>
