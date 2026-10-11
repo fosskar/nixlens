@@ -44,7 +44,7 @@ export function AppGrid({ apps }: { apps: App[] }) {
         <div
           className={`grid transition-[grid-template-rows,opacity] duration-300 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
         >
-          <div className={open ? '' : 'overflow-hidden'}>
+          <div inert={!open} className={open ? '' : 'overflow-hidden'}>
             <AppSection apps={list} />
           </div>
         </div>
