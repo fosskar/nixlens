@@ -83,6 +83,7 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
   const notice = useNotice()
   const [text, setText] = useState(notice.message)
   const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
   const dialog = useRef<HTMLDialogElement>(null)
   const field = useRef<HTMLTextAreaElement>(null)
@@ -166,16 +167,36 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <div className="flex justify-end gap-2 border-t border-hairline px-5 py-3">
-          {notice.message && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => submit('')}
-              className={`${button} mr-auto border-line text-fg-base hover:border-error/50 hover:bg-error/15 hover:text-error`}
-            >
-              Remove
-            </button>
-          )}
+          {notice.message &&
+            (confirming ? (
+              <span className="mr-auto flex gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => submit('')}
+                  className={`${button} border-error/50 bg-error/15 text-error hover:bg-error/25`}
+                >
+                  Remove for everyone
+                </button>
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={() => setConfirming(false)}
+                  className={`${button} border-line text-fg-base hover:bg-fill-hover`}
+                >
+                  Keep
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setConfirming(true)}
+                className={`${button} mr-auto border-line text-fg-base hover:border-error/50 hover:bg-error/15 hover:text-error`}
+              >
+                Remove
+              </button>
+            ))}
           <button
             type="submit"
             disabled={busy || !text.trim() || text.trim() === notice.message}
