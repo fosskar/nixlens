@@ -49,7 +49,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
                         title={driveTitle(disk)}
                         onClick={() => onOpen({ kind: 'disk', name: disk.name })}
                         aria-label={`${disk.model || 'drive'} ${disk.serial || disk.name}`}
-                        className={`flex h-11 items-end rounded-control p-0.5 outline-accent-cyan hover:bg-fill-hover focus-visible:outline-2 ${linkTransition}`}
+                        className={`flex h-11 min-w-6 items-end justify-center rounded-control p-0.5 outline-accent-cyan hover:bg-fill-hover focus-visible:outline-2 ${linkTransition}`}
                       >
                         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
                       </button>
