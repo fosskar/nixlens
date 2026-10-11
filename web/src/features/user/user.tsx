@@ -180,6 +180,7 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
   const prefs = usePrefs()
   const panel = useRef<HTMLDivElement>(null)
   const titleId = useId()
+  const [confirmingReset, setConfirmingReset] = useState(false)
 
   // runs once: every preference change re-renders the page, and moving focus
   // to the panel again would end a drag on the slider
@@ -287,13 +288,36 @@ function PreferencesPanel({ leaving, onClose }: { leaving: boolean; onClose: () 
           </Row>
         </div>
         <div className="border-t border-hairline px-5 py-3 text-right">
-          <button
-            type="button"
-            onClick={resetPrefs}
-            className="text-xs text-fg-muted transition outline-accent-cyan hover:text-fg-inverse focus-visible:outline-2"
-          >
-            Reset to defaults
-          </button>
+          {confirmingReset ? (
+            <span className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  resetPrefs()
+                  setConfirmingReset(false)
+                }}
+                className="rounded-control border border-error/50 bg-error/15 px-3 py-1.5 text-xs text-error transition outline-accent-cyan hover:bg-error/25 focus-visible:outline-2"
+              >
+                Reset all preferences
+              </button>
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setConfirmingReset(false)}
+                className="rounded-control border border-line px-3 py-1.5 text-xs text-fg-base transition outline-accent-cyan hover:bg-fill-hover focus-visible:outline-2"
+              >
+                Keep
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingReset(true)}
+              className="text-xs text-fg-muted transition outline-accent-cyan hover:text-fg-inverse focus-visible:outline-2"
+            >
+              Reset to defaults
+            </button>
+          )}
         </div>
       </div>
     </div>
