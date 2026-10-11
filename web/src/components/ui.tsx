@@ -94,7 +94,7 @@ export function SectionTitle({ children, aside }: { children: ReactNode; aside?:
   return (
     <div className="mb-3 flex items-baseline justify-between px-1">
       <span className="text-2xs font-semibold tracking-[0.12em] text-fg-muted uppercase">{children}</span>
-      {aside && <span className="font-mono text-2xs text-fg-muted tabular-nums">{aside}</span>}
+      {aside && <span className="font-mono text-xs text-fg-muted tabular-nums">{aside}</span>}
     </div>
   )
 }
@@ -117,7 +117,7 @@ export function Unavailable({ error, className }: { error?: string; className: s
       {error ? (
         <div>
           <div className="text-sm font-medium text-error">Unavailable</div>
-          <div className="mt-1 line-clamp-3 font-mono text-2xs break-all text-fg-muted">{error}</div>
+          <div className="mt-1 line-clamp-3 font-mono text-xs break-all text-fg-muted">{error}</div>
         </div>
       ) : (
         <div className="h-3 w-24 animate-pulse rounded-full bg-fill" />
@@ -173,7 +173,7 @@ export function Ring({
       </div>
       <div className={`min-w-0 ${small ? '' : 'text-center'}`}>
         <div className="text-xs font-medium text-fg-base">{label}</div>
-        <div className="text-2xs whitespace-nowrap text-fg-muted tabular-nums">{detail}</div>
+        <div className="text-xs whitespace-nowrap text-fg-muted tabular-nums">{detail}</div>
       </div>
     </div>
   )

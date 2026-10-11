@@ -148,7 +148,7 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
             placeholder="e.g. Maintenance tonight from 22:00, apps may be unavailable for a while."
             className="resize-none rounded-control border border-line bg-fill px-3 py-2 text-sm text-fg-base outline-accent-cyan placeholder:text-fg-muted focus-visible:outline-2"
           />
-          <div className="flex justify-between gap-3 text-2xs text-fg-muted">
+          <div className="flex justify-between gap-3 text-xs text-fg-muted">
             <span className="text-error">{error}</span>
             <span className="tabular-nums">
               {text.length}/{maxLength}

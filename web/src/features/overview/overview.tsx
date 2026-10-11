@@ -103,12 +103,12 @@ function MachineCard({ m }: { m: MachineOverview }) {
             <Led health={health} />
             <span className="truncate text-sm font-semibold text-fg-inverse">{m.name}</span>
             {m.self && <span className="text-2xs text-accent-fg">hub</span>}
-            <span className="ml-auto shrink-0 font-mono text-2xs text-fg-muted">
+            <span className="ml-auto shrink-0 font-mono text-xs text-fg-muted">
               {s ? `up ${uptime(s.uptimeSec)}` : m.loading ? '' : 'offline'}
             </span>
           </div>
           {s && (
-            <div className="mt-1 truncate pl-4 font-mono text-2xs text-fg-muted">
+            <div className="mt-1 truncate pl-4 font-mono text-xs text-fg-muted">
               NixOS {s.nixosVersion.split('.').slice(0, 2).join('.')} · Linux {s.kernel} · {s.cores}c/{s.cpus}t
             </div>
           )}
@@ -151,7 +151,7 @@ function MachineCard({ m }: { m: MachineOverview }) {
                 onClick={() =>
                   item.target && navigate({ kind: item.target.kind, machine: m.name, name: item.target.name })
                 }
-                className="flex items-center gap-2 rounded-control px-1.5 py-1 text-left text-2xs text-fg-base outline-accent-cyan transition hover:bg-fill-hover focus-visible:outline-2"
+                className="flex items-center gap-2 rounded-control px-1.5 py-1 text-left text-xs text-fg-base outline-accent-cyan transition hover:bg-fill-hover focus-visible:outline-2"
               >
                 <Led health={item.health} small />
                 <span className="min-w-0 flex-1 truncate">{item.text}</span>
@@ -204,7 +204,7 @@ export function OverviewWidget({ poll }: { poll: Poll<MachineOverview[]> }) {
           </svg>
           {count}
         </span>
-        <span className="font-mono text-2xs tabular-nums">{summary}</span>
+        <span className="font-mono text-xs tabular-nums">{summary}</span>
       </button>
       <div className="hidden md:block">
         <SectionTitle aside={summary}>{count}</SectionTitle>

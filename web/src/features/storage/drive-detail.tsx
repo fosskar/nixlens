@@ -74,7 +74,7 @@ export function DriveDetail({
         <DriveGlyph disk={disk} health={driveHealth(disk, pools)} size="sm" />
         <span className="min-w-0">
           <h3 className="truncate text-base font-semibold text-fg-inverse">{disk.model || disk.name}</h3>
-          <span className="block truncate font-mono text-2xs text-fg-muted">{disk.serial}</span>
+          <span className="block truncate font-mono text-xs text-fg-muted">{disk.serial}</span>
           {memberships.length > 0 && (
             <span className="mt-1.5 flex flex-wrap gap-1.5">
               {memberships.map((m) => (
@@ -82,7 +82,7 @@ export function DriveDetail({
                   key={m.pool}
                   type="button"
                   onClick={() => onOpenPool(m.pool)}
-                  className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-2xs text-fg-inverse transition outline-accent-cyan hover:bg-accent/20 focus-visible:outline-2"
+                  className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-xs text-fg-inverse transition outline-accent-cyan hover:bg-accent/20 focus-visible:outline-2"
                 >
                   {m.pool}
                   <span className="text-fg-muted">· {m.role}</span>

@@ -60,7 +60,7 @@ export function PoolBays({ storage, onOpen }: { storage: Storage; onOpen: (targe
             </div>
             <div className="pointer-events-none relative mt-2 flex items-center gap-3">
               {mounted ? <UsageBar percent={usedPercent(pool)} className="h-1 flex-1" /> : <span className="flex-1" />}
-              <span className="shrink-0 font-mono text-2xs text-fg-muted tabular-nums">
+              <span className="shrink-0 font-mono text-xs text-fg-muted tabular-nums">
                 {mounted ? formatUsage(pool.used, pool.usable) : 'not mounted'}
               </span>
             </div>

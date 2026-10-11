@@ -64,7 +64,7 @@ function Port({ iface }: { iface: NetInterface }) {
         />
       </div>
       <Led health={iface.up ? 'ok' : 'unknown'} small />
-      <span className="w-full truncate text-center font-mono text-2xs text-fg-muted">{iface.name}</span>
+      <span className="w-full truncate text-center font-mono text-xs text-fg-muted">{iface.name}</span>
     </div>
   )
 }
@@ -87,7 +87,7 @@ function AddressChip({ address }: { address: string }) {
       type="button"
       onClick={copy}
       title={`Copy ${address}`}
-      className={`max-w-full truncate rounded-control border px-1.5 py-0.5 font-mono text-2xs outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-fg' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-line bg-fill text-fg-base hover:bg-fill-hover'}`}
+      className={`max-w-full truncate rounded-control border px-1.5 py-0.5 font-mono text-xs outline-accent-cyan transition-colors focus-visible:outline-2 ${copied === 'copied' ? 'border-accent-cyan/40 bg-accent/15 text-accent-fg' : copied === 'failed' ? 'border-error/40 bg-error/10 text-error' : 'border-line bg-fill text-fg-base hover:bg-fill-hover'}`}
     >
       {copied === 'copied' ? '✓ copied' : copied === 'failed' ? 'copy failed' : address}
     </button>
@@ -98,7 +98,7 @@ function Chip({ children }: { children: string }) {
   return (
     <span
       title={children}
-      className="max-w-full truncate rounded-control border border-line bg-fill px-1.5 py-0.5 font-mono text-2xs text-fg-base"
+      className="max-w-full truncate rounded-control border border-line bg-fill px-1.5 py-0.5 font-mono text-xs text-fg-base"
     >
       {children}
     </span>
@@ -129,7 +129,7 @@ function Connection({ iface, members }: { iface: NetInterface; members: NetInter
           <span className="font-mono font-medium text-fg-inverse">{iface.name}</span>
           <span className="text-2xs text-fg-muted">{kindLabels[iface.kind] ?? iface.kind}</span>
           {!iface.up && <span className="text-2xs text-fg-muted">{iface.state}</span>}
-          <span className="ml-auto flex min-w-0 items-baseline gap-2 font-mono text-2xs text-fg-muted">
+          <span className="ml-auto flex min-w-0 items-baseline gap-2 font-mono text-xs text-fg-muted">
             {members.length > 0 && <span className="truncate">via {members.map((m) => m.name).join(', ')}</span>}
             {iface.speedMbps && <span className="shrink-0 text-fg-base">{speedLabel(iface.speedMbps)}</span>}
           </span>
@@ -145,7 +145,7 @@ function Connection({ iface, members }: { iface: NetInterface; members: NetInter
               onClick={() => setExpanded(!expanded)}
               aria-expanded={expanded}
               title={expanded ? 'Show fewer addresses' : 'Show all addresses'}
-              className="rounded-control border border-line bg-fill px-1.5 py-0.5 font-mono text-2xs text-fg-muted outline-accent-cyan transition-colors hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
+              className="rounded-control border border-line bg-fill px-1.5 py-0.5 font-mono text-xs text-fg-muted outline-accent-cyan transition-colors hover:bg-fill-hover hover:text-fg-inverse focus-visible:outline-2"
             >
               {expanded ? 'less' : `+${hidden.length}`}
             </button>
