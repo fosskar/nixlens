@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { closeIcon, IconButton, Led } from '@/components/ui'
 
 type Notice = {
@@ -84,20 +84,16 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
   const [text, setText] = useState(notice.message)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const dialog = useRef<HTMLDialogElement>(null)
   const field = useRef<HTMLTextAreaElement>(null)
   const titleId = useId()
 
-  const onKey = useEffectEvent((e: KeyboardEvent) => {
-    if (e.key === 'Escape') onClose()
-  })
+  // a modal dialog keeps focus inside and makes the page behind inert
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialog.current?.showModal()
     field.current?.focus()
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      previous?.focus()
-    }
+    return () => previous?.focus()
   }, [])
 
   const submit = async (message: string) => {
@@ -115,16 +111,21 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
   const button =
     'rounded-control border px-3 py-1.5 text-xs transition outline-accent-cyan focus-visible:outline-2 disabled:opacity-40'
   return (
-    <div
-      className="fixed inset-0 z-[70] grid animate-[nixlens-fade_150ms_var(--ease-out)] place-items-center bg-black/30 p-3"
+    <dialog
+      ref={dialog}
+      aria-labelledby={titleId}
+      className="m-auto w-[min(28rem,calc(100%-1.5rem))] max-w-none animate-[nixlens-fade_150ms_var(--ease-out)] overflow-visible bg-transparent p-0 text-fg-base backdrop:animate-[nixlens-fade_150ms_var(--ease-out)] backdrop:bg-black/30"
+      onCancel={(e) => {
+        e.preventDefault()
+        onClose()
+      }}
+      // a press on the backdrop lands on the dialog itself
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
       <form
-        role="dialog"
-        aria-labelledby={titleId}
-        className="glass-strong glass-blur flex w-[min(28rem,100%)] flex-col rounded-surface"
+        className="glass-strong glass-blur flex flex-col rounded-surface"
         onSubmit={(e) => {
           e.preventDefault()
           submit(text)
@@ -175,6 +176,6 @@ export function NoticeEditor({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </form>
-    </div>
+    </dialog>
   )
 }
