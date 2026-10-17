@@ -2,12 +2,15 @@ package hub
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -235,5 +238,123 @@ func TestIconsGzipSVG(t *testing.T) {
 	}
 	if rec := get("/api/icons/dashboard/x.png", "gzip"); rec.Header().Get("Content-Encoding") != "" {
 		t.Fatal("png gzipped")
+	}
+}
+
+func TestIconsFetchOnceForConcurrentRequests(t *testing.T) {
+	var hits atomic.Int32
+	release := make(chan struct{})
+	cdn := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		<-release
+		if _, err := w.Write([]byte("<svg/>")); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer cdn.Close()
+	c := newIconCache(cdn.URL, "")
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/icons/{kind}/{name}", c.serve)
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Go(func() {
+			rec := httptest.NewRecorder()
+			mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/icons/mdi/printer.svg", nil))
+			if rec.Code != http.StatusOK {
+				t.Errorf("concurrent request: %d", rec.Code)
+			}
+		})
+	}
+	// lets all requests reach the cdn, or wait for the one that did
+	time.Sleep(200 * time.Millisecond)
+	close(release)
+	wg.Wait()
+	if n := hits.Load(); n != 1 {
+		t.Fatalf("cdn asked %d times, want 1", n)
+	}
+}
+
+func TestIconsEvictOldestWhenFull(t *testing.T) {
+	var hits atomic.Int32
+	cdn := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		http.NotFound(w, r)
+	}))
+	defer cdn.Close()
+	c := newIconCache(cdn.URL, "")
+	now := time.Now()
+	for i := range iconMax {
+		c.cache[fmt.Sprintf("mdi/filler%d.svg", i)] = iconEntry{at: now.Add(time.Duration(i) * time.Second)}
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/icons/{kind}/{name}", c.serve)
+	for range 2 {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/icons/mdi/new.svg", nil))
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("new icon: %d", rec.Code)
+		}
+	}
+	if n := hits.Load(); n != 1 {
+		t.Fatalf("cdn asked %d times with a full cache, want 1", n)
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if len(c.cache) != iconMax {
+		t.Fatalf("cache holds %d entries, want %d", len(c.cache), iconMax)
+	}
+	if _, ok := c.cache["mdi/filler0.svg"]; ok {
+		t.Fatal("oldest entry not evicted")
+	}
+}
+
+func TestIconsRememberMissingOnDisk(t *testing.T) {
+	var hits atomic.Int32
+	var found atomic.Bool
+	cdn := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		if !found.Load() {
+			http.NotFound(w, r)
+			return
+		}
+		if _, err := w.Write([]byte("<svg/>")); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer cdn.Close()
+	dir := t.TempDir()
+	get := func() int {
+		mux := http.NewServeMux()
+		mux.HandleFunc("GET /api/icons/{kind}/{name}", newIconCache(cdn.URL, dir).serve)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/icons/mdi/missing.svg", nil))
+		return rec.Code
+	}
+	for range 2 {
+		if code := get(); code != http.StatusNotFound {
+			t.Fatalf("missing icon: %d", code)
+		}
+	}
+	if n := hits.Load(); n != 1 {
+		t.Fatalf("a missing icon was fetched again after a restart: cdn asked %d times", n)
+	}
+
+	// once the check expires the icon is asked for again
+	err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		old := time.Now().Add(-2 * iconTTL)
+		return os.Chtimes(p, old, old)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found.Store(true)
+	if code := get(); code != http.StatusOK || hits.Load() != 2 {
+		t.Fatalf("expired miss: %d, cdn asked %d times", code, hits.Load())
+	}
+	if code := get(); code != http.StatusOK || hits.Load() != 2 {
+		t.Fatalf("found after a miss, restarted: %d, cdn asked %d times", code, hits.Load())
 	}
 }

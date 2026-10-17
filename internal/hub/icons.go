@@ -54,10 +54,28 @@ type iconCache struct {
 	client *http.Client
 	mu     sync.Mutex
 	cache  map[string]iconEntry
+	// fetches under way, so concurrent requests for one icon share a fetch
+	flights map[string]*iconFlight
 }
 
+type iconFlight struct {
+	done chan struct{}
+	icon iconEntry
+	err  error
+}
+
+// icons the cdn does not have are kept on disk here, apart from the found
+// ones, so misses cannot crowd them out
+const missingDir = "missing"
+
 func newIconCache(cdn, dir string) *iconCache {
-	return &iconCache{cdn: cdn, dir: dir, client: &http.Client{Timeout: 5 * time.Second}, cache: map[string]iconEntry{}}
+	return &iconCache{
+		cdn:     cdn,
+		dir:     dir,
+		client:  &http.Client{Timeout: 5 * time.Second},
+		cache:   map[string]iconEntry{},
+		flights: map[string]*iconFlight{},
+	}
 }
 
 // only these sets and plain names are fetched, so the hub cannot be made to
@@ -143,6 +161,37 @@ func (c *iconCache) get(ctx context.Context, key, url string) (iconEntry, error)
 		c.remember(key, cached)
 		return cached, nil
 	}
+
+	c.mu.Lock()
+	// another request may have fetched it since the look above
+	if icon, ok := c.cache[key]; ok && time.Since(icon.at) < iconTTL {
+		c.mu.Unlock()
+		return icon, nil
+	}
+	f, waiting := c.flights[key]
+	if !waiting {
+		f = &iconFlight{done: make(chan struct{})}
+		c.flights[key] = f
+	}
+	c.mu.Unlock()
+	if waiting {
+		select {
+		case <-f.done:
+			return f.icon, f.err
+		case <-ctx.Done():
+			return iconEntry{}, ctx.Err()
+		}
+	}
+	// others may wait for this fetch, so it outlives a request that gives up
+	f.icon, f.err = c.refresh(context.WithoutCancel(ctx), key, url, cached, ok)
+	c.mu.Lock()
+	delete(c.flights, key)
+	c.mu.Unlock()
+	close(f.done)
+	return f.icon, f.err
+}
+
+func (c *iconCache) refresh(ctx context.Context, key, url string, cached iconEntry, ok bool) (iconEntry, error) {
 	icon, err := c.fetch(ctx, url)
 	if err != nil {
 		if ok {
@@ -155,6 +204,10 @@ func (c *iconCache) get(ctx context.Context, key, url string) (iconEntry, error)
 	c.remember(key, icon)
 	if icon.found {
 		c.save(key, icon.body)
+		c.forget(path.Join(missingDir, key))
+	} else {
+		c.save(path.Join(missingDir, key), nil)
+		c.forget(key)
 	}
 	return icon, nil
 }
@@ -162,16 +215,24 @@ func (c *iconCache) get(ctx context.Context, key, url string) (iconEntry, error)
 func (c *iconCache) remember(key string, icon iconEntry) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if len(c.cache) >= iconMax {
+	if _, ok := c.cache[key]; !ok && len(c.cache) >= iconMax {
 		for k, v := range c.cache {
 			if time.Since(v.at) >= iconTTL {
 				delete(c.cache, k)
 			}
 		}
+		// a full cache of fresh entries makes room for the new one
+		if len(c.cache) >= iconMax {
+			oldest := ""
+			for k, v := range c.cache {
+				if oldest == "" || v.at.Before(c.cache[oldest].at) {
+					oldest = k
+				}
+			}
+			delete(c.cache, oldest)
+		}
 	}
-	if len(c.cache) < iconMax {
-		c.cache[key] = icon
-	}
+	c.cache[key] = icon
 }
 
 // a fetched icon also goes to disk, so a restart does not need the cdn;
@@ -185,8 +246,18 @@ func (c *iconCache) load(key string) (iconEntry, bool) {
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			log.Printf("icon cache: %v", err)
+			return iconEntry{}, false
 		}
-		return iconEntry{}, false
+		// an empty file marks an icon the cdn did not have, checked at its
+		// modification time
+		info, err := os.Stat(filepath.Join(c.dir, missingDir, key))
+		if err != nil {
+			if !errors.Is(err, fs.ErrNotExist) {
+				log.Printf("icon cache: %v", err)
+			}
+			return iconEntry{}, false
+		}
+		return iconEntry{at: info.ModTime()}, true
 	}
 	info, err := os.Stat(file)
 	if err != nil {
@@ -194,6 +265,16 @@ func (c *iconCache) load(key string) (iconEntry, bool) {
 		return iconEntry{}, false
 	}
 	return foundIcon(key, body, info.ModTime()), true
+}
+
+// removes a file the other answer of the cdn left
+func (c *iconCache) forget(key string) {
+	if c.dir == "" {
+		return
+	}
+	if err := os.Remove(filepath.Join(c.dir, key)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Printf("icon cache: %v", err)
+	}
 }
 
 func (c *iconCache) save(key string, body []byte) {
