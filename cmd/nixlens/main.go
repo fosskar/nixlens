@@ -163,6 +163,9 @@ func main() {
 	}
 
 	mux.Handle("GET /api/local/", localHandler)
+	if host, _, err := net.SplitHostPort(*listen); err == nil && !*isHub && !useTLS && isLoopback(host) {
+		server.Handler = loopbackHostOnly(mux)
+	}
 
 	ln, err := listener(*listen)
 	if err != nil {
@@ -174,6 +177,27 @@ func main() {
 		log.Fatal(server.ServeTLS(ln, "", ""))
 	}
 	log.Fatal(server.Serve(ln))
+}
+
+// an agent on loopback without tls authenticates no one; a browser page whose
+// name an attacker rebound to 127.0.0.1 would reach it under that name
+func loopbackHostOnly(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host, _, err := net.SplitHostPort(r.Host)
+		if err != nil {
+			host = r.Host
+		}
+		if !isLoopback(host) {
+			http.Error(w, "this agent answers to loopback names only", http.StatusMisdirectedRequest)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+func isLoopback(host string) bool {
+	ip := net.ParseIP(strings.Trim(host, "[]"))
+	return host == "localhost" || ip != nil && ip.IsLoopback()
 }
 
 // set tells -trust given as "" apart from no -trust, which leave the same value
