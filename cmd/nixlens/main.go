@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -72,11 +73,11 @@ func main() {
 	} else if *printFingerprint {
 		log.Fatal("-fingerprint needs -key")
 	}
-	var trusted []string
-	for _, fp := range strings.Split(*trust, ",") {
-		if fp != "" {
-			trusted = append(trusted, fp)
-		}
+	trustSet := false
+	flag.Visit(func(f *flag.Flag) { trustSet = trustSet || f.Name == "trust" })
+	trusted, err := trustedHubs(*trust, trustSet)
+	if err != nil {
+		log.Fatal(err)
 	}
 	useTLS := !*isHub && len(trusted) > 0
 	if useTLS && *keyFile == "" {
@@ -173,6 +174,20 @@ func main() {
 		log.Fatal(server.ServeTLS(ln, "", ""))
 	}
 	log.Fatal(server.Serve(ln))
+}
+
+// set tells -trust given as "" apart from no -trust, which leave the same value
+func trustedHubs(value string, set bool) ([]string, error) {
+	var trusted []string
+	for _, fp := range strings.Split(value, ",") {
+		if fp != "" {
+			trusted = append(trusted, fp)
+		}
+	}
+	if set && len(trusted) == 0 {
+		return nil, errors.New("-trust holds no fingerprint")
+	}
+	return trusted, nil
 }
 
 // a socket passed by systemd (sd_listen_fds) takes the place of addr; the

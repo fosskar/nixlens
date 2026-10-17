@@ -71,7 +71,9 @@ in
     };
 
     trustedHubs = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
+      # the binary drops empty entries, so [ "" ] would serve plain http
+      # where this list promises mutual tls
+      type = lib.types.listOf (lib.types.strMatching "SHA256:[A-Za-z0-9+/]{43}");
       default = [ ];
       example = [ "SHA256:mE3VtPq1Zz8l1d7m4cX0nV2QHqzQd5a8V0b8m1f7n6Y" ];
       description = ''
