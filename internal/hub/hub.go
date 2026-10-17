@@ -14,6 +14,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/fosskar/nixlens/internal/api"
 )
@@ -33,6 +34,11 @@ type Hub struct {
 	order    map[string]int
 	access   Access
 	icons    *iconCache
+
+	// "<machine> <kind>" of requests that failed last time, so a machine
+	// that is down is logged once, not on every poll
+	mu      sync.Mutex
+	failing map[string]bool
 }
 
 // Peer is an agent: where it listens, and the fingerprint of its key, which
@@ -99,6 +105,7 @@ func New(local http.Handler, appsFile string, peers map[string]Peer, clientFor f
 		order:    order,
 		access:   acc,
 		icons:    newIconCache("https://cdn.jsdelivr.net", iconDir),
+		failing:  map[string]bool{},
 	}, nil
 }
 
@@ -206,15 +213,44 @@ func (h *Hub) poolDetail(w http.ResponseWriter, r *http.Request) {
 	h.proxy(w, r, r.PathValue("name"), "pool/"+url.PathEscape(r.PathValue("pool")))
 }
 
+// logs a machine's request failing and answering again, not each failure.
+// names that are no machine are logged every time, so requests cannot
+// grow the map
+func (h *Hub) report(name, kind string, err error) {
+	if _, ok := h.peers[name]; !ok && name != h.self {
+		if err != nil {
+			log.Printf("%s %s: %v", name, kind, err)
+		}
+		return
+	}
+	key := name + " " + kind
+	h.mu.Lock()
+	was := h.failing[key]
+	if err != nil {
+		h.failing[key] = true
+	} else {
+		delete(h.failing, key)
+	}
+	h.mu.Unlock()
+	switch {
+	case err != nil && !was:
+		log.Printf("%s %s: %v", name, kind, err)
+	case err == nil && was:
+		log.Printf("%s %s: answering again", name, kind)
+	}
+}
+
 func (h *Hub) proxy(w http.ResponseWriter, r *http.Request, name, path string) {
 	body, err := h.fetch(r.Context(), name, path)
+	// pool/<name> counts as one kind, so pool names cannot grow the map
+	kind, _, _ := strings.Cut(path, "/")
+	h.report(name, kind, err)
 	if err != nil {
 		status := http.StatusBadGateway
 		var se statusError
 		if errors.As(err, &se) {
 			status = se.status
 		}
-		log.Print(err)
 		http.Error(w, err.Error(), status)
 		return
 	}
@@ -265,9 +301,9 @@ func (h *Hub) apps(w http.ResponseWriter, r *http.Request) {
 			err = json.Unmarshal(body, &all)
 		}
 	}
+	h.report(name, "apps", err)
 	if err != nil {
 		// every user may ask for apps; the details stay in the log
-		log.Printf("%s apps: %v", name, err)
 		status := http.StatusBadGateway
 		var se statusError
 		if errors.As(err, &se) {
