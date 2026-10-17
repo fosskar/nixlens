@@ -1,13 +1,16 @@
 package hub
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -159,5 +162,60 @@ func TestAppsErrorHidesDetails(t *testing.T) {
 	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/apps/"+h.self, nil))
 	if rec.Code != http.StatusInternalServerError || strings.Contains(rec.Body.String(), appsFile) {
 		t.Fatalf("status %d: %s", rec.Code, rec.Body)
+	}
+}
+
+// an offline peer is logged when it fails and when it answers again, not
+// on every poll
+func TestPeerFailureLoggedOnce(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	var down atomic.Bool
+	down.Store(true)
+	agent := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if down.Load() {
+			// a dropped connection, as from a machine going away
+			conn, _, err := w.(http.Hijacker).Hijack()
+			if err == nil {
+				conn.Close()
+			}
+			return
+		}
+		api.WriteJSON(w, map[string]string{"hostname": "ghost"}, nil)
+	}))
+	defer agent.Close()
+
+	h, err := New(http.NewServeMux(), "", map[string]Peer{"ghost": {URL: agent.URL}},
+		func(Peer) *http.Client { return &http.Client{Timeout: 5 * time.Second} }, nil, Access{}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	h.Register(mux)
+	get := func(want int) {
+		t.Helper()
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/machines/ghost/system", nil))
+		if rec.Code != want {
+			t.Fatalf("status %d, want %d: %s", rec.Code, want, rec.Body)
+		}
+	}
+
+	for range 5 {
+		get(http.StatusBadGateway)
+	}
+	lines := strings.Split(strings.TrimSpace(logs.String()), "\n")
+	if len(lines) != 1 || !strings.Contains(lines[0], "ghost") {
+		t.Fatalf("logged while offline:\n%s", logs.String())
+	}
+
+	down.Store(false)
+	get(http.StatusOK)
+	get(http.StatusOK)
+	lines = strings.Split(strings.TrimSpace(logs.String()), "\n")
+	if len(lines) != 2 || !strings.Contains(lines[1], "ghost") {
+		t.Fatalf("logged after recovery:\n%s", logs.String())
 	}
 }
