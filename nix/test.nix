@@ -44,7 +44,15 @@ testers.runNixOSTest {
         hub.adminGroups = [ "admin" ];
         hub.accountUrl = "https://auth.example.com/settings";
         hub.categoryGroups.Monitoring = [ "admin" ];
+        hub.socketGroup = "proxy";
       };
+      # the reverse proxy may open the hub's socket, other local users may not
+      users.groups.proxy = { };
+      users.users.proxy = {
+        isSystemUser = true;
+        group = "proxy";
+      };
+      users.users.mallory.isNormalUser = true;
       services.nixlens.apps.Grafana = {
         url = "http://grafana.example.com:3000";
         icon = "grafana.svg";
@@ -82,12 +90,18 @@ testers.runNixOSTest {
     ''
       import json
 
+      proxy = "runuser -u proxy -- curl -sf --unix-socket ${nodes.hub.services.nixlens.hub.socket}"
+
       def get(node, path, groups="admin"):
-          return json.loads(node.succeed(f"curl -sf -H 'Remote-Groups: {groups}' -H 'Remote-Name: Simon' http://127.0.0.1:7480{path}"))
+          return json.loads(node.succeed(f"{proxy} -H 'Remote-Groups: {groups}' -H 'Remote-Name: Simon' http://hub{path}"))
 
       start_all()
       agent.wait_for_open_port(7480, timeout=60)
-      hub.wait_for_open_port(7480, timeout=60)
+      hub.wait_for_unit("nixlens.socket")
+
+      # only the proxy reaches the hub, which trusts its Remote-* headers
+      hub.fail("curl -s http://127.0.0.1:7480/")
+      hub.fail("runuser -u mallory -- curl -s --unix-socket ${nodes.hub.services.nixlens.hub.socket} -H 'Remote-Groups: admin' http://hub/api/machines")
 
       # curl pins the agent's key like the hub does; the hub's key needs a
       # certificate around it for curl
@@ -162,7 +176,7 @@ testers.runNixOSTest {
       data = next(d for d in detail["datasets"] if d["name"] == "testpool/data")
       assert data["quota"] == 100 * 2**20 and data["refReservation"] == 10 * 2**20 and data["snapshots"] == 1 and data["lastSnapshot"] > 0, data
       assert detail["properties"]["ashift"], detail
-      hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/machines/agent/pool/-o")
+      hub.fail(f"{proxy} -H 'Remote-Groups: admin' http://hub/api/machines/agent/pool/-o")
 
       agent.succeed("systemctl start nixlens-smart.service")
       agent.succeed("test -s /run/nixlens-smart/smart.json")
@@ -176,21 +190,20 @@ testers.runNixOSTest {
         ("Immich", "agent", "Media", ""),
       ], apps()
 
-      hub.succeed("curl -sf http://127.0.0.1:7480/ | grep -q '<title>nixlens</title>'")
+      hub.succeed(f"{proxy} http://hub/ | grep -q '<title>nixlens</title>'")
 
       me = get(hub, "/api/me", groups="user, admin")
       assert me["name"] == "Simon" and me["groups"] == ["user", "admin"] and me["admin"], me
       assert me["accountUrl"] == "https://auth.example.com/settings", me
       assert not get(hub, "/api/me", groups="user")["admin"]
-      hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/machines")
-      hub.fail("curl -sf -H 'Remote-Groups: user' http://127.0.0.1:7480/api/machines/agent/system")
+      hub.fail(f"{proxy} -H 'Remote-Groups: user' http://hub/api/machines")
+      hub.fail(f"{proxy} -H 'Remote-Groups: user' http://hub/api/machines/agent/system")
       assert [a["name"] for a in apps(groups="user")] == ["Immich"]
 
-      put_notice = "curl -sf -X PUT -H 'Content-Type: application/json' -d '{\"message\":\"maintenance\"}' http://127.0.0.1:7480/api/notice"
+      put_notice = proxy + " -X PUT -H 'Content-Type: application/json' -d '{\"message\":\"maintenance\"}' http://hub/api/notice"
       hub.fail(f"{put_notice} -H 'Remote-Groups: user'")
       hub.succeed(f"{put_notice} -H 'Remote-Groups: admin'")
       hub.systemctl("restart nixlens.service")
-      hub.wait_for_open_port(7480)
       assert get(hub, "/api/notice", groups="user")["message"] == "maintenance"
 
       agent.stop_job("nixlens.service")
@@ -198,7 +211,7 @@ testers.runNixOSTest {
       assert len(get(hub, "/api/machines")) == 2
       get(hub, "/api/machines/hub/storage")
       assert [a["name"] for a in get(hub, "/api/apps/hub")] == ["Grafana"]
-      hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/machines/agent/system")
-      hub.fail("curl -sf -H 'Remote-Groups: admin' http://127.0.0.1:7480/api/apps/agent")
+      hub.fail(f"{proxy} -H 'Remote-Groups: admin' http://hub/api/machines/agent/system")
+      hub.fail(f"{proxy} -H 'Remote-Groups: admin' http://hub/api/apps/agent")
     '';
 }

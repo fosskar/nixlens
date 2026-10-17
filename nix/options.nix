@@ -81,5 +81,15 @@
       };
       description = "Categories listed only for the given groups; unlisted categories are visible to everyone.";
     };
+
+    socketGroup = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "caddy";
+      description = ''
+        Group of the reverse proxy, which alone may open the hub's unix socket
+        ({option}`services.nixlens.hub.socket`). Required for a hub.
+      '';
+    };
   };
 }

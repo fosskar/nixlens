@@ -9,6 +9,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -161,10 +163,29 @@ func main() {
 
 	mux.Handle("GET /api/local/", localHandler)
 
-	log.Printf("listening on %s (hub: %t, tls: %t)", *listen, *isHub, useTLS)
+	ln, err := listener(*listen)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("listening on %s (hub: %t, tls: %t)", ln.Addr(), *isHub, useTLS)
 	if useTLS {
 		server.TLSConfig = id.Server(trusted)
-		log.Fatal(server.ListenAndServeTLS("", ""))
+		log.Fatal(server.ServeTLS(ln, "", ""))
 	}
-	log.Fatal(server.ListenAndServe())
+	log.Fatal(server.Serve(ln))
+}
+
+// a socket passed by systemd (sd_listen_fds) takes the place of addr; the
+// module gives the hub a unix socket only its proxy may open
+func listener(addr string) (net.Listener, error) {
+	if os.Getenv("LISTEN_PID") != strconv.Itoa(os.Getpid()) {
+		return net.Listen("tcp", addr)
+	}
+	if n := os.Getenv("LISTEN_FDS"); n != "1" {
+		return nil, fmt.Errorf("expected one socket from systemd, got LISTEN_FDS=%q", n)
+	}
+	// the first passed descriptor is always 3
+	f := os.NewFile(3, "systemd socket")
+	defer f.Close()
+	return net.FileListener(f)
 }

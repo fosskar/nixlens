@@ -75,7 +75,7 @@ flowchart LR
 nixlens is one Go binary built from the standard library only, with the React UI embedded:
 
 - **Agent** (every machine): answers `/api/local/*` with system, storage, network and app data. It reads `/proc`, `/sys`, netlink, `lsblk`, `zpool`, `zfs` and `ethtool` on request and keeps no state.
-- **Hub** (one machine): serves the UI on loopback behind your reverse proxy, fetches its peers' data server-side. It reads the user's groups from the proxy's `Remote-*` headers.
+- **Hub** (one machine): serves the UI on a unix socket behind your reverse proxy, fetches its peers' data server-side. It reads the user's groups from the proxy's `Remote-*` headers.
 - **SMART collector**: a separate oneshot with raw disk access writes `/run/nixlens-smart/smart.json`, so the agent itself never needs privileges.
 
 ## Getting started
@@ -110,6 +110,7 @@ The hub also reports its own machine, so one host needs nothing else:
     enable = true;
     smart.enable = true;
     hub.enable = true;
+    hub.socketGroup = "caddy"; # your reverse proxy's group
 
     apps.Jellyfin = {
       url = "https://jellyfin.example.com";
@@ -133,12 +134,12 @@ nixlens.example.com {
 		uri /api/authz/forward-auth
 		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
 	}
-	reverse_proxy 127.0.0.1:7480
+	reverse_proxy unix//run/nixlens-hub/hub.sock
 }
 ```
 
 > [!IMPORTANT]
-> The hub trusts the `Remote-*` headers of your proxy, so it must listen on loopback. The module enforces this with an assertion.
+> The hub trusts the `Remote-*` headers of your proxy, so it listens on a unix socket that only `services.nixlens.hub.socketGroup` may open. On a TCP port, even on loopback, any local process could claim any group.
 
 ### Several machines
 
@@ -167,6 +168,7 @@ services.nixlens = {
 services.nixlens = {
   enable = true;
   hub.enable = true;
+  hub.socketGroup = "caddy";
   hub.peers.vault = {
     url = "https://vault.example.lan:7480";
     fingerprint = "SHA256:kCMYrBc50GUIBasXh+I46P+YP5e5kWUBIUN/iegW9fM"; # vault's
@@ -187,6 +189,7 @@ inventory.instances.nixlens = {
     input = "nixlens";
   };
   roles.hub.machines.atlas = { };
+  roles.hub.settings.socketGroup = "caddy";
   roles.agent.machines.vault = { };
   roles.agent.machines.relay = { };
 };
@@ -199,7 +202,7 @@ The hub reaches each agent at `https://<machine>.<meta.domain>:7480`. Run `clan 
 | Option                                           | Default       | Description                                                                           |
 | ------------------------------------------------ | ------------- | ------------------------------------------------------------------------------------- |
 | `services.nixlens.enable`                        | `false`       | Run the agent, which reports this machine's state.                                    |
-| `services.nixlens.listenAddress`                 | `"127.0.0.1"` | Address to listen on. A hub must stay on loopback.                                    |
+| `services.nixlens.listenAddress`                 | `"127.0.0.1"` | Address an agent listens on. A hub listens on `services.nixlens.hub.socket`.          |
 | `services.nixlens.port`                          | `7480`        | Port to listen on.                                                                    |
 | `services.nixlens.openFirewall`                  | `false`       | Open the port in the firewall.                                                        |
 | `services.nixlens.apps.<name>`                   | `{ }`         | Apps on this machine: `url`, `icon`, `category` (default `"Apps"`) and `description`. |
@@ -207,6 +210,8 @@ The hub reaches each agent at `https://<machine>.<meta.domain>:7480`. Run `clan 
 | `services.nixlens.keyFile`                       | `null`        | Key for mutual TLS; created in the state directory when unset.                        |
 | `services.nixlens.trustedHubs`                   | `[ ]`         | Fingerprints of the hubs that may read this agent. Required beyond loopback.          |
 | `services.nixlens.hub.enable`                    | `false`       | Serve the UI and aggregate this machine with its peers.                               |
+| `services.nixlens.hub.socketGroup`               | `null`        | Group of the reverse proxy, which alone may open the hub's socket. Required.          |
+| `services.nixlens.hub.socket`                    | read-only     | `/run/nixlens-hub/hub.sock`, the socket to point the reverse proxy at.                |
 | `services.nixlens.hub.peers.<name>`              | `{ }`         | Agents to show, by machine name: `url` and the `fingerprint` of their key.            |
 | `services.nixlens.hub.categories`                | `[ ]`         | Categories listed first, in this order; the rest follow alphabetically.               |
 | `services.nixlens.hub.adminGroups`               | `[ ]`         | Groups that see machines and storage. Empty allows everyone.                          |

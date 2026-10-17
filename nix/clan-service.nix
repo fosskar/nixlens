@@ -29,8 +29,9 @@ in
   manifest.name = "@fosskar/nixlens";
   manifest.description = "Visual overview of the machines of a clan, with their apps one click away";
   manifest.readme = ''
-    `agent` machines report their state; the `hub` serves the web UI on
-    loopback (put an authenticating reverse proxy in front) and reaches each
+    `agent` machines report their state; the `hub` serves the web UI on a
+    unix socket for an authenticating reverse proxy in front, whose group is
+    the hub's `socketGroup` setting, and reaches each
     agent at `<machine>.<meta.domain>` over mutual TLS. Every machine gets
     its own key from the vars store; hub and agents pin each other's
     fingerprints, so there is no CA. A hub machine needs no agent role.
@@ -77,16 +78,12 @@ in
     description = "Serves the web UI for all agents";
     interface = {
       options = machineOptions // {
-        port = lib.mkOption {
-          type = lib.types.port;
-          default = 7480;
-          description = "Loopback port the hub listens on.";
-        };
         inherit (shared.hub)
           categories
           accountUrl
           adminGroups
           categoryGroups
+          socketGroup
           ;
       };
     };
@@ -98,10 +95,6 @@ in
           {
             services.nixlens = machineConfig settings // {
               enable = true;
-              # explicit, so a machine that is also an agent (::) fails
-              # evaluation instead of exposing the unauthenticated ui
-              listenAddress = "127.0.0.1";
-              inherit (settings) port;
               hub = {
                 enable = true;
                 peers = lib.mapAttrs (name: machine: {
@@ -112,6 +105,7 @@ in
                   categories
                   adminGroups
                   categoryGroups
+                  socketGroup
                   ;
                 accountUrl = lib.mkDefault settings.accountUrl;
               };
