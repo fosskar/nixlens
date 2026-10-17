@@ -40,7 +40,7 @@ in
     listenAddress = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
-      description = "Address nixlens listens on. A hub should stay on loopback behind an authenticating reverse proxy.";
+      description = "Address the agent listens on. A hub listens on {option}`services.nixlens.hub.socket` instead.";
     };
 
     port = lib.mkOption {
@@ -112,21 +112,23 @@ in
         accountUrl
         adminGroups
         categoryGroups
+        socketGroup
         ;
+
+      socket = lib.mkOption {
+        type = lib.types.str;
+        default = "/run/nixlens-hub/hub.sock";
+        readOnly = true;
+        description = "Unix socket the hub listens on, for the reverse proxy, e.g. Caddy's `reverse_proxy unix/<socket>`.";
+      };
     };
   };
 
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion =
-          !cfg.hub.enable
-          || lib.elem cfg.listenAddress [
-            "127.0.0.1"
-            "::1"
-            "localhost"
-          ];
-        message = "services.nixlens.hub trusts the Remote-* headers of a reverse proxy, so services.nixlens.listenAddress must be a loopback address";
+        assertion = !cfg.hub.enable || cfg.hub.socketGroup != null;
+        message = "services.nixlens.hub trusts the Remote-* headers of its reverse proxy, so it listens on a unix socket only the proxy may open; set services.nixlens.hub.socketGroup to the proxy's group, e.g. \"caddy\"";
       }
       {
         assertion = cfg.hub.enable || loopback || tls;
@@ -142,14 +144,25 @@ in
       message = "services.nixlens.hub.peers.${name}: an https url needs a fingerprint, and a fingerprint an https url";
     }) cfg.hub.peers;
 
+    # a tcp port on loopback would let every local process claim any group
+    systemd.sockets.nixlens = lib.mkIf cfg.hub.enable {
+      wantedBy = [ "sockets.target" ];
+      listenStreams = [ cfg.hub.socket ];
+      socketConfig = {
+        SocketMode = "0660";
+        SocketGroup = cfg.hub.socketGroup;
+      };
+    };
+
     systemd.services.nixlens = {
       description = "nixlens dashboard";
       wantedBy = [ "multi-user.target" ];
-      requires = [ "nixlens-memory.service" ];
+      requires = [ "nixlens-memory.service" ] ++ lib.optional cfg.hub.enable "nixlens.socket";
       after = [
         "network.target"
         "nixlens-memory.service"
-      ];
+      ]
+      ++ lib.optional cfg.hub.enable "nixlens.socket";
       path = [
         pkgs.ethtool
         pkgs.util-linux

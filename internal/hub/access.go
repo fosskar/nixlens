@@ -10,7 +10,7 @@ import (
 )
 
 // the hub sits behind an authenticating reverse proxy (forward auth) that
-// sets these headers; it listens on loopback, so clients cannot set them
+// sets these headers; under the module only the proxy may open its socket
 const (
 	headerUser   = "Remote-User"
 	headerName   = "Remote-Name"
