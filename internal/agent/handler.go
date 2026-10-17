@@ -26,7 +26,7 @@ func Handler(o Options) http.Handler {
 	// zpool and zfs take about 100 ms per pool; details change slowly
 	pools := &cachedBy[PoolDetail]{
 		ttl:     30 * time.Second,
-		read:    poolDetail,
+		read:    func(name string) (PoolDetail, error) { return poolDetail(storage.get, name) },
 		drop:    func(err error) bool { return errors.Is(err, errUnknownPool) },
 		entries: map[string]*cached[PoolDetail]{},
 	}

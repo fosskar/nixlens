@@ -56,14 +56,16 @@ func parseSize(s string) (uint64, error) {
 
 var errUnknownPool = errors.New("unknown pool")
 
-// only names of imported pools reach zfs, so a request cannot pass options
-func poolDetail(pool string) (PoolDetail, error) {
-	pools, err := readZpools()
+// only names of imported pools reach zfs, so a request cannot pass options.
+// the names come from the shared storage reading, so an unknown name runs
+// no command of its own
+func poolDetail(storage func() (Storage, error), pool string) (PoolDetail, error) {
+	s, err := storage()
 	if err != nil {
 		return PoolDetail{}, err
 	}
-	for _, p := range pools {
-		if p.Name == pool {
+	for _, p := range s.Pools {
+		if p.Kind == "zfs" && p.Name == pool {
 			return readPoolDetail(pool)
 		}
 	}
