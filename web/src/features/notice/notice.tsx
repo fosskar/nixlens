@@ -1,59 +1,12 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { closeIcon, IconButton, Led } from '@/components/ui'
-
-type Notice = {
-  message: string
-  updated?: number
-}
+import { getSnapshot, type Notice, save, subscribe } from '@/features/notice/store'
 
 const maxLength = 500
 const dismissedKey = 'nixlens.notice-dismissed'
 
-// one poll for the banner and the editor, which updates it on saving
-let current: Notice = { message: '' }
-const listeners = new Set<() => void>()
-let timer: ReturnType<typeof setInterval> | undefined
-
-function publish(n: Notice) {
-  current = n
-  listeners.forEach((l) => l())
-}
-
-async function load() {
-  const res = await fetch('/api/notice')
-  if (!res.ok) throw new Error((await res.text()).trim() || `${res.status} ${res.statusText}`)
-  publish((await res.json()) as Notice)
-}
-
-function poll() {
-  load().catch((e: unknown) => console.warn('notice:', e))
-}
-
 function useNotice(): Notice {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener)
-      if (listeners.size === 1) {
-        poll()
-        timer = setInterval(poll, 60000)
-      }
-      return () => {
-        listeners.delete(listener)
-        if (listeners.size === 0) clearInterval(timer)
-      }
-    },
-    () => current,
-  )
-}
-
-async function save(message: string) {
-  const res = await fetch('/api/notice', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message }),
-  })
-  if (!res.ok) throw new Error((await res.text()).trim() || `${res.status} ${res.statusText}`)
-  publish((await res.json()) as Notice)
+  return useSyncExternalStore(subscribe, getSnapshot)
 }
 
 // dismissing hides this notice until a new one is set

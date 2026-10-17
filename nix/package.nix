@@ -25,6 +25,12 @@ let
     # updates need no hash bump
     npmDeps = importNpmLock { npmRoot = webSrc; };
     inherit (importNpmLock) npmConfigHook;
+    doCheck = true;
+    checkPhase = ''
+      runHook preCheck
+      npm test
+      runHook postCheck
+    '';
     installPhase = ''
       cp -r dist $out
     '';
