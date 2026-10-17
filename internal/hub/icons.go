@@ -19,8 +19,11 @@ import (
 )
 
 const (
-	iconTTL     = 24 * time.Hour
-	iconMax     = 1000
+	iconTTL = 24 * time.Hour
+	iconMax = 1000
+	// the real sets hold 1000 icons of 144 MiB together, more than half of
+	// the 256M the module grants the whole hub
+	iconBytes   = 64 << 20
 	maxIconSize = 1 << 20
 )
 
@@ -221,19 +224,30 @@ func (c *iconCache) remember(key string, icon iconEntry) {
 				delete(c.cache, k)
 			}
 		}
-		// a full cache of fresh entries makes room for the new one
-		if len(c.cache) >= iconMax {
-			oldest := ""
-			for k, v := range c.cache {
-				if oldest == "" || v.at.Before(c.cache[oldest].at) {
-					oldest = k
-				}
-			}
-			delete(c.cache, oldest)
-		}
 	}
 	c.cache[key] = icon
+	// a full cache of fresh entries makes room for the new one; evicted
+	// icons stay on disk
+	size := 0
+	for _, v := range c.cache {
+		size += v.size()
+	}
+	for len(c.cache) > iconMax || size > iconBytes {
+		oldest := ""
+		for k, v := range c.cache {
+			if k != key && (oldest == "" || v.at.Before(c.cache[oldest].at)) {
+				oldest = k
+			}
+		}
+		if oldest == "" {
+			break
+		}
+		size -= c.cache[oldest].size()
+		delete(c.cache, oldest)
+	}
 }
+
+func (icon iconEntry) size() int { return len(icon.body) + len(icon.gz) }
 
 // a fetched icon also goes to disk, so a restart does not need the cdn;
 // its modification time is when it was fetched

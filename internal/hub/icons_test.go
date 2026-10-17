@@ -308,6 +308,44 @@ func TestIconsEvictOldestWhenFull(t *testing.T) {
 	}
 }
 
+func TestIconsEvictOldestOverByteBudget(t *testing.T) {
+	big := make([]byte, maxIconSize)
+	cdn := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write(big); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer cdn.Close()
+	c := newIconCache(cdn.URL, "")
+	now := time.Now()
+	n := iconBytes / maxIconSize
+	for i := range n {
+		c.cache[fmt.Sprintf("dashboard/filler%d.png", i)] = iconEntry{body: big, found: true, at: now.Add(time.Duration(i) * time.Second)}
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/icons/{kind}/{name}", c.serve)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/icons/dashboard/new.png", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("new icon: %d", rec.Code)
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	total := 0
+	for _, icon := range c.cache {
+		total += len(icon.body) + len(icon.gz)
+	}
+	if total > iconBytes {
+		t.Fatalf("cache holds %d bytes, want at most %d", total, iconBytes)
+	}
+	if _, ok := c.cache["dashboard/new.png"]; !ok {
+		t.Fatal("new icon not cached")
+	}
+	if _, ok := c.cache["dashboard/filler0.png"]; ok {
+		t.Fatal("oldest entry not evicted")
+	}
+}
+
 func TestIconsRememberMissingOnDisk(t *testing.T) {
 	var hits atomic.Int32
 	var found atomic.Bool
