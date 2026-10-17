@@ -263,6 +263,9 @@ in
         DevicePolicy = "closed";
         DeviceAllow = lib.optional config.boot.zfs.enabled "/dev/zfs rw";
         MemoryMax = "256M";
+        # go ignores the cgroup limit and lets the heap grow to twice its live
+        # size before collecting, past MemoryMax; collect harder before that
+        Environment = "GOMEMLIMIT=200MiB";
         TasksMax = 64;
         UMask = "0077";
       };
