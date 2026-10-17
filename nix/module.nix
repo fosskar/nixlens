@@ -145,7 +145,11 @@ in
     systemd.services.nixlens = {
       description = "nixlens dashboard";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" ];
+      requires = [ "nixlens-memory.service" ];
+      after = [
+        "network.target"
+        "nixlens-memory.service"
+      ];
       path = [
         pkgs.ethtool
         pkgs.util-linux
@@ -162,7 +166,7 @@ in
             "-apps"
             appsFile
             "-installed-memory-file"
-            "/run/nixlens/installed-memory"
+            "/run/nixlens-memory/installed-memory"
           ]
           ++ lib.optionals cfg.smart.enable [
             "-smart-file"
@@ -203,8 +207,6 @@ in
             cfg.hub.accountUrl
           ]
         );
-        ExecStartPre = "+${lib.getExe cfg.package} -write-installed-memory /run/nixlens/installed-memory";
-        RuntimeDirectory = "nixlens";
         # holds the key nixlens creates when services.nixlens.keyFile is unset,
         # and the app icons and the notice of a hub
         StateDirectory = "nixlens";
@@ -252,6 +254,50 @@ in
     };
 
     networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [ cfg.port ];
+
+    # the smbios table is readable by root only; root owns the files, so no
+    # capability is needed to read them
+    systemd.services.nixlens-memory = {
+      description = "nixlens installed memory";
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = "${lib.getExe cfg.package} -write-installed-memory /run/nixlens-memory/installed-memory";
+        RuntimeDirectory = "nixlens-memory";
+        RuntimeDirectoryMode = "0755";
+        RuntimeDirectoryPreserve = true;
+        CapabilityBoundingSet = "";
+        PrivateNetwork = true;
+        IPAddressDeny = "any";
+        RestrictAddressFamilies = "none";
+        PrivateDevices = true;
+        PrivateUsers = true;
+        SystemCallFilter = [
+          "@system-service"
+          "~@privileged @resources"
+        ];
+        SystemCallErrorNumber = "EPERM";
+        ProtectKernelTunables = true;
+        ProtectProc = "invisible";
+        ProcSubset = "pid";
+        UMask = "0077";
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        ProtectControlGroups = true;
+        ProtectKernelModules = true;
+        ProtectKernelLogs = true;
+        ProtectClock = true;
+        ProtectHostname = true;
+        LockPersonality = true;
+        MemoryDenyWriteExecute = true;
+        RestrictRealtime = true;
+        RestrictSUIDSGID = true;
+        RestrictNamespaces = true;
+        SystemCallArchitectures = "native";
+      };
+    };
 
     systemd.services.nixlens-smart = lib.mkIf cfg.smart.enable {
       description = "nixlens SMART collection";

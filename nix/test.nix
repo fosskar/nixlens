@@ -122,6 +122,11 @@ testers.runNixOSTest {
       assert 0 < system["cores"] <= system["cpus"], system
 
       assert system["memInstalled"] == 1024 * 2**20, system
+      # smbios is read by its own sandboxed unit, without capabilities
+      agent.succeed("test -s /run/nixlens-memory/installed-memory")
+      assert agent.succeed("systemctl show -P CapabilityBoundingSet nixlens-memory.service").strip() == ""
+      assert "+" not in agent.succeed("systemctl show -P ExecStartPre nixlens.service")
+      print(agent.succeed("systemd-analyze security nixlens-memory.service | tail -1"))
 
       agent.succeed("ip link add nixlensbr0 type bridge && ip tuntap add nixlenstap0 mode tap && ip link set nixlenstap0 master nixlensbr0")
       network = {i["name"]: i for i in get(hub, "/api/machines/agent/network")}

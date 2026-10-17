@@ -217,7 +217,7 @@ An app's `icon` can be a dashboard-icons file or name (`jellyfin.svg`), a selfh.
 ## Security
 
 - **Read-only agents.** The agent runs as a `DynamicUser` with an empty capability set, a read-only file system, a system call allow-list, closed device access apart from `/dev/zfs`, only the `AF_INET`, `AF_INET6`, `AF_NETLINK` and `AF_UNIX` socket families, and memory and task limits. `systemd-analyze security` rates it 1.5.
-- **Privileged parts are isolated.** Reading installed memory from SMBIOS runs once in a privileged `ExecStartPre`. SMART runs in `nixlens-smart.service` with only `CAP_SYS_RAWIO` and `CAP_SYS_ADMIN`, read-only disk access and no network.
+- **Privileged parts are isolated.** Reading installed memory from SMBIOS runs once in `nixlens-memory.service`, as root but without capabilities, network or write access beyond its own runtime directory. SMART runs in `nixlens-smart.service` with only `CAP_SYS_RAWIO` and `CAP_SYS_ADMIN`, read-only disk access and no network.
 - **Transport.** Mutual TLS 1.3 between hub and agents, each pinning the other's key by its fingerprint. Keys are created on the machine or reach the service through `LoadCredential`, and may not live in the Nix store.
 - **Browser.** The UI is served with a strict Content Security Policy and `frame-ancestors 'none'`.
 
